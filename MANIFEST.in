@@ -1,0 +1,3 @@
+include psdig/trace_event/*
+include VERSION
+recursive-include libbpf *
