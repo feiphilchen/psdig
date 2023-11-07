@@ -39,6 +39,7 @@ class Syscall(object):
 
     def syscall_exit(self, event):
         event_name = event['event']
+        remove_args = ["common_type", "common_flags", "common_preempt_count", "common_pid", "__syscall_nr"]
         hit = re.match('syscalls/sys_exit_(.*)$', event_name)
         if not hit:
             return
@@ -60,12 +61,15 @@ class Syscall(object):
             metadata['syscall_nr'] = syscall_nr
             metadata['cpuid'] = cpuid
             metadata['latency'] = ktime_ns - event['ktime_ns']
-            if  ktime_ns - event['ktime_ns'] < 0:
-                self.logger.error(f"error latentcy: {ktime_ns} {event['ktime_ns']}")
-                self.logger.error(str(event))
+            #if  ktime_ns - event['ktime_ns'] < 0:
+            #    self.logger.error(f"error latentcy: {ktime_ns} {event['ktime_ns']}")
+            #    self.logger.error(str(event))
             metadata['pid'] = event['pid']
             metadata['uid'] = event['uid']
             metadata['comm'] = event["comm"]
             if event:
+                for arg in remove_args:
+                    if arg in event['parameters']:
+                        del event['parameters'][arg]
                 cb(syscall, metadata, event['parameters'], ret, ctx)
 

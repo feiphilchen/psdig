@@ -50,14 +50,15 @@ class PsWatch(object):
     def set_logger(self, logfile):
         self.logger_name = LOGGER_NAME
         self.logger = logging.getLogger(self.logger_name)
-        if logfile:
-            self.logger.setLevel(logging.DEBUG)
-            # create file handler which logs even debug messages
-            fh = logging.FileHandler(logfile)
-            fh.setLevel(logging.DEBUG)
-            trace_formatter = logging.Formatter("%(asctime)s [%(levelname)s] " + f"{self.logger_name}" + ": %(message)s")
-            fh.setFormatter(trace_formatter)
-            self.logger.addHandler(fh)
+        if not logfile:
+            logfile = "/dev/null"
+        self.logger.setLevel(logging.DEBUG)
+        # create file handler which logs even debug messages
+        fh = logging.FileHandler(logfile)
+        fh.setLevel(logging.DEBUG)
+        trace_formatter = logging.Formatter("%(asctime)s [%(levelname)s] " + f"{self.logger_name}" + ": %(message)s")
+        fh.setFormatter(trace_formatter)
+        self.logger.addHandler(fh)
 
     def init_windows(self):
         status_win_height = 4
