@@ -217,6 +217,8 @@ class PsWatch(object):
             self.filter_editing = False
         elif input_ch == ord(' '):
             self.event_scroll = not self.event_scroll
+            if self.event_scroll:
+                self.main_win.event_update(None, True)
         elif input_ch == curses.KEY_UP:
             self.event_scroll = False
             self.main_win.select_row(True)

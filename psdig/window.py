@@ -217,6 +217,8 @@ class MainWin(CurseWin):
         if filter_text != self.filter_text:
             self.filter_text = filter_text
             filtered_events = self.get_filtered_events()
+            del self.event_buffer
+            self.event_buffer = EventBuffer()
             self.event_buffer.set(filtered_events)
             self.reset_buffer()
             self.scroll_to_bottom()
@@ -239,13 +241,15 @@ class MainWin(CurseWin):
 
     def event_update(self, event, refresh):
         if event:
+            event_id = self.all_events.length()
+            event['id'] = event_id
+            self.all_events.append(event)
             if self.filter_text:
                 filter_out = self.filter_check(event)
                 if not filter_out:
                     self.event_buffer.append(event)
             else:
                 self.event_buffer.append(event)
-            self.all_events.append(event)
         if refresh:
             self.select_index = None
             self.scroll_to_bottom()
@@ -365,6 +369,8 @@ class MainWin(CurseWin):
 
     def select_row(self, dir_up):
         buf_count = self.event_buffer.length()
+        if buf_count == 0:
+            return
         if dir_up:
             if self.select_index == None:
                 self.select_index = self.display_end - 1

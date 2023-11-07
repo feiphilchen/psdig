@@ -130,5 +130,23 @@ predefined_syscall_events = [
        "syscall":"accept",
        "detail_fmt": "address={args[upeer_sockaddr]} ret={ret}",
        "result": "ret >= 0"
+   },
+   {
+       "event":"bind",
+       "syscall":"bind",
+       "detail_fmt": "address={args[umyaddr]} ret={ret}",
+       "result": "ret >= 0"
+   },
+   {
+       "event":"mount",
+       "syscall":"mount",
+       "detail_fmt": "dev_name={args[dev_name]} dir_name={args[dir_name]} type={args[type]} ret={ret}",
+       "result": "ret == 0"
+   },
+   {
+       "event":"umount",
+       "syscall":"umount",
+       "detail_fmt": "name={args[name]} flags={args[flags]} ret={ret}",
+       "result": "ret == 0"
    }
 ]

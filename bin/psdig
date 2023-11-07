@@ -47,20 +47,20 @@ def event_load(stdscr, input_file, log):
 @click.option('--output', '-o', help='Save events to the file')
 @click.option('--log', '-l', help='Log all messages to logfile')
 def watch(pid, uid, output, log):
-    """Watch process events"""
+    """Watch events and save to file"""
     wrapper(watch_start, pid, uid, output, log)
 
 @click.command()
 @click.option('--input', '-i', required=True, help='Load events from the file')
 @click.option('--log', '-l', help='Log all messages to logfile')
 def load(input, log):
-    """Load process events from file"""
+    """Load events from file"""
     wrapper(event_load,  input, log)
     pass
 
 @click.group()
 def trace():
-    """Trace events"""
+    """Trace events with specified formats"""
     pass
 
 @click.group()

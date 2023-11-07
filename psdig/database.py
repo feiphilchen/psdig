@@ -19,7 +19,8 @@ class EventDb(object):
         cursor = conn.cursor()
         cursor.execute('''
           CREATE TABLE IF NOT EXISTS events
-          ([id] INTEGER PRIMARY KEY,
+          ([row_id] INTEGER PRIMARY KEY,
+          [id] INTEGER,
           [timestamp] REAL,
           [command] TEXT,
           [pid] INTEGER,
@@ -52,7 +53,7 @@ class EventDb(object):
     def event_to_tuple(self, event):
         result = 1 if event['ok'] else 0
         extend_str = json.dumps(event['extend'])
-        return (event['timestamp'], event['comm'], str(event['pid']), str(event['uid']), event['name'], result, event['detail'], extend_str)
+        return (event['id'], event['timestamp'], event['comm'], str(event['pid']), str(event['uid']), event['name'], result, event['detail'], extend_str)
 
     def event_to_dict(self, evt):
         id,timestamp,command,pid,uid,name,result,detail,extend_str = evt
@@ -75,7 +76,7 @@ class EventDb(object):
         row_id_start = row_start + 1
         row_id_end = row_id_start + count
         result = []
-        sql = f"SELECT id,timestamp, command, pid, uid, event, result, detail, extend FROM events WHERE id >={row_id_start} and id < {row_id_end}"
+        sql = f"SELECT id,timestamp, command, pid, uid, event, result, detail, extend FROM events WHERE row_id >={row_id_start} and row_id < {row_id_end}"
         for row in cur.execute(sql):
             event = self.event_to_dict(row)
             result.append(event)
@@ -90,7 +91,7 @@ class EventDb(object):
         for evt in events:
             t = self.event_to_tuple(evt)
             event_tuples.append(t)
-        sql = "INSERT INTO events(timestamp, command, pid, uid, event, result, detail, extend) VALUES(?, ?, ?, ?, ?, ?, ?, ?)"
+        sql = "INSERT INTO events(id, timestamp, command, pid, uid, event, result, detail, extend) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"
         cur.executemany(sql, event_tuples)
         conn.commit()
         cur.close()

@@ -88,8 +88,8 @@ class EventManager(object):
             result_check = lambda ret: eval(event_def['result'])
             syscall_ok = result_check(ret)
             extend = {}
-            extend['syscall name'] = name
-            extend['syscall no.'] = metadata['syscall_nr']
+            syscall_info = "%d/%s" % (metadata['syscall_nr'], name)
+            extend['syscall'] = syscall_info
             arg_list = [f"{k}={args[k]}" for k in args]
             extend['arguments'] = "\n".join(arg_list)
             extend['return code'] = ret
@@ -102,7 +102,7 @@ class EventManager(object):
                 pass
             else:
                 extend['elf'] = elf
-                extend['parent processes'] = "\n".join(parent_proc)
+                extend['parent processes'] = parent_proc
             event = {
                "name": event_name,
                "comm": metadata["comm"],
