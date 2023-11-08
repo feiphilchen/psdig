@@ -14,7 +14,7 @@ from .event_tcp import EventTcpRecvRst,EventTcpSendRst
 from .event_buffer import EventBuffer
 from .syscall import Syscall
 from .event_syscall import predefined_syscall_events
-from .conf import LOGGER_NAME
+from .conf import LOGGER_NAME,BPF_OBJ_DIR
 
 predefined_events = [
     EventTcpRecvRst,
@@ -24,7 +24,7 @@ predefined_events = [
 class EventManager(object):
     def __init__(self, pid_filter=[], uid_filter=[]):
         self.set_logger()
-        self.tp = TracePoint(pid_filter=pid_filter, uid_filter=uid_filter)
+        self.tp = TracePoint(pid_filter=pid_filter, uid_filter=uid_filter, obj_dir=BPF_OBJ_DIR)
         self.syscall = Syscall(self.tp)
         self.stats = {}
         self.callback = None
@@ -141,6 +141,10 @@ class EventManager(object):
         self.callback = callback
         self.logger.info("tracepoint start to run")
         self.tp.start()
+
+    def compile(self):
+        self.logger.info("tracepoint start to compile objects ...")
+        self.tp.start(compile_only=True)
 
     def file_read(self, event_file, callback):
         eb = EventBuffer(file_path=event_file, persist=True)

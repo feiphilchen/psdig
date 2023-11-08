@@ -6,6 +6,7 @@ import subprocess
 from setuptools import setup,find_packages
 from setuptools.command.install import install
 from setuptools.command.build_ext import build_ext
+from psdig import compile_event_objs
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
@@ -48,9 +49,9 @@ class CustomInstall(install):
     def run(self):
         install.run(self)
         os_id = get_os_id()
-        #install_lib(os_id)
         install_libbpf(os_id)
-        #install_clang(os_id)
+        print("compiling event objects ...")
+        compile_event_objs()
 
 setup(
     name = "psdig",

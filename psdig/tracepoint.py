@@ -15,12 +15,15 @@ from .schema import EventSchema
 from .conf import LOGGER_NAME
 
 class TracePoint(object):
-    def __init__(self, pid_filter=[], uid_filter=[], ignore_self=True):
+    def __init__(self, pid_filter=[], 
+                       uid_filter=[], 
+                       ignore_self=True, 
+                       obj_dir='/var/tmp/psdig',
+                       obj_cache=True):
         self.event_handlers = {}
         self.set_logger()
-        #dir_name = "event_trace_%d" % random.randint(0, 1000000) 
-        dir_name = "event_trace"
-        self.obj_dir = os.path.join("/var/tmp", dir_name)
+        self.obj_dir = obj_dir
+        self.obj_cache = obj_cache
         self.trace_event_elf = os.path.join(self.obj_dir, "trace_event")
         self.trace_event_c = os.path.join(self.obj_dir, "trace_event.c")
         self.trace_bpf_o = []
@@ -80,6 +83,9 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
         event_id = event.replace('/', '_')
         event_id = event_id.lower()
         bpf_o = os.path.join(self.obj_dir, f"{event_id}.bpf.o")
+        if self.obj_cache and os.path.exists(bpf_o):
+            self.trace_bpf_o.append(bpf_o)
+            return
         bpf_c = self.build_bpf_c(event)
         cmd = f"clang -I/usr/local/share/psdig/usr/include -O2 -target bpf -c {bpf_c} -o {bpf_o}"
         #os.popen(cmd)
@@ -125,7 +131,7 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
     def loading_status(self):
         return self.loading,self.loaded
 
-    def start(self):
+    def start(self, compile_only=False):
         try:
             self.build_trace_objs()
         except:
@@ -146,6 +152,8 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
         self.logger.info('starting event trace ...')
         self.logger.info(f'{cmd_str}')
         self.proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        if compile_only:
+            return
         self.logger.info('running now')
         json_str = None
         while True:
