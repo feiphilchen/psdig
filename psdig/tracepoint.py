@@ -11,6 +11,7 @@ import shutil
 import logging
 import traceback
 import pkgutil
+import threading
 from .schema import EventSchema
 from .conf import LOGGER_NAME
 
@@ -35,6 +36,10 @@ class TracePoint(object):
         self.ignore_self = ignore_self
         self.pid = os.getpid()
         self.init_obj_dir()
+        self.callout_thread_running = False
+        self.callout_thread = None
+        self.event_bucket = {}
+        self.event_mutex = threading.Lock()
         self.loading = 0
         self.loaded = 0
 
@@ -131,6 +136,39 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
     def loading_status(self):
         return self.loading,self.loaded
 
+    def events_callout(self, events):
+        events.sort(key=lambda x: x['ktime_ns'], reverse=False)
+        for event_obj in events:
+            self.call_event_handlers(event_obj)
+
+    def callout(self):
+        while self.callout_thread_running:
+            time_now = time.time()
+            to_delete = []
+            with self.event_mutex:
+                for key in sorted(self.event_bucket):
+                    if time_now - self.event_bucket[key]['last_updated'] > 1:
+                        self.events_callout(self.event_bucket[key]['events'])
+                        to_delete.append(key)
+                for key in to_delete:
+                    del self.event_bucket[key]
+            time.sleep(0.1)
+
+    def start_callout_thread(self):
+        self.callout_thread_running = True
+        self.callout_thread = threading.Thread(target = self.callout, args = (), daemon=True)
+        self.callout_thread.start()
+
+    def event_obj_enqueue(self, event_obj):
+        ktime_ns = event_obj['ktime_ns']
+        bucket_key = int(ktime_ns/1000000000)
+        time_now = time.time()
+        with self.event_mutex:
+            if bucket_key not in self.event_bucket:
+                self.event_bucket[bucket_key] = {"last_updated":time_now, "events":[]}
+            self.event_bucket[bucket_key]['last_updated'] = time_now
+            self.event_bucket[bucket_key]['events'].append(event_obj)
+
     def start(self, compile_only=False):
         try:
             self.build_trace_objs()
@@ -155,6 +193,7 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
         if compile_only:
             return
         self.logger.info('running now')
+        self.start_callout_thread()
         json_str = None
         while True:
             line = self.proc.stdout.readline()
@@ -170,11 +209,16 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
             elif line == "}\n":
                 json_str += line
                 event_obj = json.loads(json_str)
-                self.call_event_handlers(event_obj)
+                #self.call_event_handlers(event_obj)
+                self.event_obj_enqueue(event_obj)
                 json_str = None
             else:
                 json_str += line
         self.logger.info('trace_event exiting')
+        if self.callout_thread:
+            self.callout_thread_running = False
+            self.callout_thread.join()
+            self.callout_thread = None
         self.proc = None
 
     def stop(self):
