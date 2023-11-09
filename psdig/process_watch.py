@@ -13,7 +13,7 @@ from curses.textpad import Textbox,rectangle
 import threading
 from .event_manager import EventManager
 from .window import FilterWin,StatusWin,MainWin,TagWin,ExtendWin
-from .event_buffer import EventBuffer
+from .trace_buffer import TraceBuffer
 from .conf import LOGGER_NAME
 
 class PsWatch(object):
@@ -41,7 +41,7 @@ class PsWatch(object):
         curses.init_pair(5, curses.COLOR_WHITE, curses.COLOR_YELLOW)
         curses.init_pair(6, curses.COLOR_WHITE, curses.COLOR_BLUE)
         curses.init_pair(7, curses.COLOR_WHITE, curses.COLOR_GREEN)
-        self.pevents = EventManager(pid_filter=pid_filter, uid_filter=uid_filter)
+        self.event_mgr = EventManager(pid_filter=pid_filter, uid_filter=uid_filter)
         self.running = False
         self.ext_display = False
         self.mutex = threading.Lock()
@@ -82,9 +82,9 @@ class PsWatch(object):
         self.filter_win = FilterWin(self.stdscr, filter_win_width, filter_win_height, filter_win_x, filter_win_y, "Filter")
         self.win_list.append(self.filter_win)
         self.main_win = MainWin(self.stdscr, main_win_width, main_win_height, \
-                  main_win_x, main_win_y, "Event List", event_file=self.event_file)
+                  main_win_x, main_win_y, "Traces", event_file=self.event_file)
         self.win_list.append(self.main_win)
-        self.tag_win = TagWin(self.stdscr, tag_win_width, tag_win_height, tag_win_x, tag_win_y, "Event Statistics")
+        self.tag_win = TagWin(self.stdscr, tag_win_width, tag_win_height, tag_win_x, tag_win_y, "Statistics")
         self.win_list.append(self.tag_win)
         ext_win_width = int(main_win_width/2)
         ext_win_height = int(main_win_height/2)
@@ -154,7 +154,7 @@ class PsWatch(object):
 
     def watch(self):
         try:
-            self.pevents.collect(self.process_watched_event)
+            self.event_mgr.collect(self.process_watched_event)
         except:
             pass
         finally:
@@ -166,26 +166,26 @@ class PsWatch(object):
 
     def stop_watch_thread(self):
         if self.watch_thread:
-            self.pevents.stop()
+            self.event_mgr.stop()
             self.watch_thread.join()
             self.watch_thread = None
 
     def get_message(self):
         message = None
-        loading,loaded = self.pevents.loading_status()
+        loading,loaded = self.event_mgr.loading_status()
         if loading > 0 and loading != loaded:
             percent = int((loaded/loading) * 100)
             return f"Loading events collector, {percent}%"   
         if self.load_from == None and not self.event_scroll:
             return "Scrolling is stopped, press <SPACE> to continue..."
-        return "Watching events ..."
+        return "Watching ..."
 
     def stats(self):
         self.stats_running =  True
         while self.stats_running:
             if not self.filter_editing:
                 with self.mutex:
-                    tag_stats = self.pevents.get_stats()
+                    tag_stats = self.event_mgr.get_stats()
                     self.tag_win.stats_update(tag_stats)
                     main_stats = self.main_win.get_stats()
                     main_stats['message'] = self.get_message()
@@ -242,7 +242,7 @@ class PsWatch(object):
                 self.ext_display = False
 
     def load_events(self, event_file):
-        self.pevents.file_read(event_file, self.process_event_from_file)
+        self.event_mgr.file_read(event_file, self.process_event_from_file)
         self.main_win.event_update(None, True)
 
     def run(self):

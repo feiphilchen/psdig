@@ -7,7 +7,7 @@ import re
 import json
 from .conf import LOGGER_NAME
 
-class EventDb(object):
+class TraceDB(object):
     def __init__(self, name=None, persist=False):
         if name:
             self.db_name = name
@@ -18,14 +18,14 @@ class EventDb(object):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         cursor.execute('''
-          CREATE TABLE IF NOT EXISTS events
+          CREATE TABLE IF NOT EXISTS traces
           ([row_id] INTEGER PRIMARY KEY,
           [id] INTEGER,
           [timestamp] REAL,
           [command] TEXT,
           [pid] INTEGER,
           [uid] INTEGER,
-          [event] TEXT,
+          [name] TEXT,
           [level] TEXT,
           [detail] TEXT,
           [extend] TEXT)
@@ -35,7 +35,7 @@ class EventDb(object):
 
     def get_default_db(self):
         r = random.randint(0, 1000000) 
-        return f"/var/tmp/{r}.event.db"
+        return f"/var/tmp/{r}.trace.db"
 
     def set_logger(self):
         self.logger_name = LOGGER_NAME
@@ -44,29 +44,29 @@ class EventDb(object):
     def count(self):
         conn = sqlite3.connect(self.db_name)
         cur = conn.cursor()
-        cur.execute('SELECT COUNT(*) from events')
+        cur.execute('SELECT COUNT(*) from traces')
         result = cur.fetchone()
         cur.close()
         conn.close()
         return result[0]
 
-    def event_to_tuple(self, event):
-        extend_str = json.dumps(event['extend'])
-        return (event['id'], event['timestamp'], event['comm'], str(event['pid']), str(event['uid']), event['name'], event['level'], event['detail'], extend_str)
+    def trace_to_tuple(self, trace):
+        extend_str = json.dumps(trace['extend'])
+        return (trace['id'], trace['timestamp'], trace['comm'], str(trace['pid']), str(trace['uid']), trace['name'], trace['level'], trace['detail'], extend_str)
 
-    def event_to_dict(self, evt):
-        id,timestamp,command,pid,uid,name,level,detail,extend_str = evt
-        event = {}
-        event['id'] = id
-        event['timestamp'] = timestamp
-        event['comm'] = command
-        event['pid'] = pid
-        event['uid'] = uid
-        event['name'] = name
-        event['level'] = level
-        event['detail'] = detail
-        event['extend'] = json.loads(extend_str)
-        return event
+    def trace_to_dict(self, trace_tuple):
+        id,timestamp,command,pid,uid,name,level,detail,extend_str = trace_tuple
+        trace = {}
+        trace['id'] = id
+        trace['timestamp'] = timestamp
+        trace['comm'] = command
+        trace['pid'] = pid
+        trace['uid'] = uid
+        trace['name'] = name
+        trace['level'] = level
+        trace['detail'] = detail
+        trace['extend'] = json.loads(extend_str)
+        return trace
 
     def read(self, row_start, count):
         conn = sqlite3.connect(self.db_name)
@@ -74,23 +74,23 @@ class EventDb(object):
         row_id_start = row_start + 1
         row_id_end = row_id_start + count
         result = []
-        sql = f"SELECT id,timestamp, command, pid, uid, event, level, detail, extend FROM events WHERE row_id >={row_id_start} and row_id < {row_id_end}"
+        sql = f"SELECT id,timestamp, command, pid, uid, name, level, detail, extend FROM traces WHERE row_id >={row_id_start} and row_id < {row_id_end}"
         for row in cur.execute(sql):
-            event = self.event_to_dict(row)
-            result.append(event)
+            trace = self.trace_to_dict(row)
+            result.append(trace)
         cur.close()
         conn.close()
         return result
 
-    def write(self, events):
+    def write(self, traces):
         conn = sqlite3.connect(self.db_name)
         cur = conn.cursor()
-        event_tuples = []
-        for evt in events:
-            t = self.event_to_tuple(evt)
-            event_tuples.append(t)
-        sql = "INSERT INTO events(id, timestamp, command, pid, uid, event, level, detail, extend) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        cur.executemany(sql, event_tuples)
+        trace_tuples = []
+        for trace in traces:
+            t = self.trace_to_tuple(trace)
+            trace_tuples.append(t)
+        sql = "INSERT INTO traces(id, timestamp, command, pid, uid, name, level, detail, extend) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        cur.executemany(sql, trace_tuples)
         conn.commit()
         cur.close()
         conn.close()
@@ -98,18 +98,18 @@ class EventDb(object):
     def clear(self):
         conn = sqlite3.connect(self.db_name)
         cur = conn.cursor()
-        sql = "DELETE FROM events"
+        sql = "DELETE FROM traces"
         cur.execute(sql)
         conn.commit()
         cur.close()
         conn.close()
 
-    def filter_check(self, event, filter_text):
+    def filter_check(self, trace, filter_text):
         filter_out = True
         if filter_text == None:
             return False
-        for evt_field in event:
-            value = str(evt_field)
+        for field in trace:
+            value = str(field)
             if re.search(filter_text, value):
                 filter_out = False
                 break
@@ -119,13 +119,13 @@ class EventDb(object):
         result = []
         conn = sqlite3.connect(self.db_name)
         cur = conn.cursor()
-        sql = "SELECT id,timestamp,command,pid,uid,event,level,detail,extend FROM events"
+        sql = "SELECT id,timestamp,command,pid,uid,name,level,detail,extend FROM traces"
         for row in cur.execute(sql):
             filter_out = self.filter_check(row, filter_text)
             if filter_out:
                 continue
-            event = self.event_to_dict(row)
-            result.append(event)
+            trace = self.trace_to_dict(row)
+            result.append(trace)
         cur.close()
         conn.close()
         return result

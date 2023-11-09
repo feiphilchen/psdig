@@ -10,7 +10,7 @@ from curses import wrapper
 from curses.textpad import Textbox,rectangle
 import threading
 from tabulate import tabulate
-from .event_buffer import EventBuffer
+from .trace_buffer import TraceBuffer
 from .conf import LOGGER_NAME
 
 class CurseWin(object):
@@ -131,7 +131,7 @@ class StatusWin(CurseWin):
             "DOWN": "Scroll down",
             "LEFT": "Page up",
             "RIGHT": "Page down",
-            "ENTER": "Show/Hide event",
+            "ENTER": "Show/Hide trace",
             "'f'": "Edit filter",
         }
     def update_stats(self, stats):
@@ -155,7 +155,7 @@ class StatusWin(CurseWin):
         else:
             filtered_text = ""
         displaying = f", displaying from {display_start} to {display_end}"
-        stat_str = f"Total events:{total}{filtered_text}{displaying}. "
+        stat_str = f"Total traces:{total}{filtered_text}{displaying}. "
         curse_win.addstr(1, 1, stat_str, curses.A_BOLD)
         if message != None:
             curse_win.addstr(message, curses.A_REVERSE)
@@ -171,11 +171,11 @@ class MainWin(CurseWin):
     def __init__(self, stdscr, width, height, x = 0, y = 0, title=None, event_file=None):
         super().__init__(stdscr, width, height, x, y, title, text_mode=True)
         self.set_logger()
-        self.event_buffer = EventBuffer()
+        self.trace_buffer = TraceBuffer()
         if event_file:
-            self.all_events = EventBuffer(event_file, persist=True)
+            self.all_traces = TraceBuffer(event_file, persist=True)
         else:
-            self.all_events = EventBuffer()
+            self.all_traces = TraceBuffer()
         self.width = width
         self.height = height
         self.x = x
@@ -217,15 +217,15 @@ class MainWin(CurseWin):
         if filter_text != self.filter_text:
             self.filter_text = filter_text
             filtered_events = self.get_filtered_events()
-            del self.event_buffer
-            self.event_buffer = EventBuffer()
-            self.event_buffer.set(filtered_events)
+            del self.trace_buffer
+            self.trace_buffer = TraceBuffer()
+            self.trace_buffer.set(filtered_events)
             self.reset_buffer()
             self.scroll_to_bottom()
             self.pad_display()
 
     def get_filtered_events(self):
-        filtered_events = self.all_events.filter(self.filter_text)
+        filtered_events = self.all_traces.filter(self.filter_text)
         return filtered_events
 
     def filter_check(self, event):
@@ -241,28 +241,28 @@ class MainWin(CurseWin):
 
     def event_update(self, event, refresh):
         if event:
-            event_id = self.all_events.length()
+            event_id = self.all_traces.length()
             event['id'] = event_id
-            self.all_events.append(event)
+            self.all_traces.append(event)
             if self.filter_text:
                 filter_out = self.filter_check(event)
                 if not filter_out:
-                    self.event_buffer.append(event)
+                    self.trace_buffer.append(event)
             else:
-                self.event_buffer.append(event)
+                self.trace_buffer.append(event)
         if refresh:
             self.select_index = None
             self.scroll_to_bottom()
             self.pad_display()
 
     def scroll_to_bottom(self):
-        self.display_end = self.event_buffer.length()
+        self.display_end = self.trace_buffer.length()
         self.display_start = self.display_end - self.pad_display_height
         if self.display_start < 0:
             self.display_start = 0
 
     def scroll_up(self, to):
-        buf_count = self.event_buffer.length()
+        buf_count = self.trace_buffer.length()
         self.display_start = to
         self.display_end = self.display_start + self.pad_display_height
         if self.display_end >= buf_count:
@@ -280,14 +280,14 @@ class MainWin(CurseWin):
         if self.display_start < 0:
             self.display_start = 0
         self.display_end = self.display_start + self.pad_display_height
-        buf_count = self.event_buffer.length()
+        buf_count = self.trace_buffer.length()
         if self.display_end >= buf_count:
             self.display_end = buf_count
         self.pad_display()
 
     def page_down(self):
         self.select_index = None
-        buf_count = self.event_buffer.length()
+        buf_count = self.trace_buffer.length()
         self.display_end += self.pad_display_height
         if self.display_end >= buf_count:
             self.display_end = buf_count
@@ -298,7 +298,7 @@ class MainWin(CurseWin):
 
     def pad_reload(self, afterward):
         load_count = int(self.pad_height/2)
-        buf_count = self.event_buffer.length()
+        buf_count = self.trace_buffer.length()
         if afterward:
             pad_end = self.display_end + load_count
             if pad_end > buf_count:
@@ -321,11 +321,11 @@ class MainWin(CurseWin):
         self.pad_start = pad_start
         self.pad_end = pad_end
         for pos in range(self.pad_start, self.pad_end):
-            event = self.event_buffer.read(pos)
+            event = self.trace_buffer.read(pos)
             if event:
                 self.event_format_add(event)
             else:
-                length = self.event_buffer.length()
+                length = self.trace_buffer.length()
                 self.logger.error(f"row {pos} is none, {length}!!")
 
     def pad_refresh(self):
@@ -368,7 +368,7 @@ class MainWin(CurseWin):
             self.pad_count += 1
 
     def select_row(self, dir_up):
-        buf_count = self.event_buffer.length()
+        buf_count = self.trace_buffer.length()
         if buf_count == 0:
             return
         if dir_up:
@@ -393,20 +393,20 @@ class MainWin(CurseWin):
 
     def get_stats(self):
         result = {
-           "total": self.all_events.length(),
+           "total": self.all_traces.length(),
            "display_start":self.display_start,
            "display_end":self.display_end,
            "reloaded":self.reloaded
         }
         if self.filter_text:
-            result['filtered'] = self.event_buffer.length()
+            result['filtered'] = self.trace_buffer.length()
         return result
 
     def get_selected_event(self):
         if self.select_index == None:
             return None
         else:
-            return self.event_buffer.read(self.select_index)
+            return self.trace_buffer.read(self.select_index)
 
     def display(self):
         super().clear()
@@ -419,8 +419,8 @@ class MainWin(CurseWin):
         curse_win.refresh()
 
     def __del__(self):
-        del self.event_buffer
-        del self.all_events
+        del self.trace_buffer
+        del self.all_traces
 
 class ExtendWin(CurseWin):
     def __init__(self, stdscr, width, height, x = 0, y = 0, title=None):

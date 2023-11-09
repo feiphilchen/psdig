@@ -11,7 +11,7 @@ import traceback
 import psutil
 from .tracepoint import TracePoint
 from .event_tcp import EventTcpRecvRst,EventTcpSendRst
-from .event_buffer import EventBuffer
+from .trace_buffer import TraceBuffer
 from .syscall import Syscall
 from .predefined_traces import predefined_traces
 from .conf import LOGGER_NAME,BPF_OBJ_DIR
@@ -151,7 +151,7 @@ class EventManager(object):
         self.tp.start(compile_only=True)
 
     def file_read(self, event_file, callback):
-        eb = EventBuffer(file_path=event_file, persist=True)
+        eb = TraceBuffer(file_path=event_file, persist=True)
         event_nb = eb.length()
         for pos in range(0, event_nb):
             event = eb.read(pos)
