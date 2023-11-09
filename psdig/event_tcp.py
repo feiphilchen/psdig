@@ -29,7 +29,7 @@ class EventTcpRecvRst(object):
                "pid": event["pid"],
                "uid": event["uid"],
                "detail": detail,
-               "ok": True
+               "level": "INFO"
             }
             self.em.event_send(args)
 
@@ -55,7 +55,7 @@ class EventTcpSendRst(object):
                "pid": event["pid"],
                "uid": event["uid"],
                "detail": detail,
-               "ok": True
+               "level": "INFO"
             }
             self.em.event_send(args)
 

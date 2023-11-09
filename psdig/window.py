@@ -349,18 +349,18 @@ class MainWin(CurseWin):
             return "%.6f" % (timestamp - self.first_ts)
 
     def event_format_add(self, event):
-        result = "OK" if event['ok'] else "ERR"
+        level = event['level']
         ts = event['timestamp']
         relative_ts = self.get_relative_timestamp(ts)
         row = self.format_str.format(str(event['id']), relative_ts, event['comm'], \
-           str(event['pid']), str(event['uid']), event['name'], result, event['detail'])
+           str(event['pid']), str(event['uid']), event['name'], level, event['detail'])
         padding_width = "{:<%d}" % self.pad_width
         row = padding_width.format(row)
         pad_row = self.pad_start + self.pad_count
         if self.select_index == pad_row:
             self.pad.addstr(self.pad_count, 0, row, self.hl_color)
             self.pad_count += 1
-        elif event['ok']:
+        elif level != "ERROR":
             self.pad.addstr(self.pad_count, 0, row)
             self.pad_count += 1
         else:
@@ -411,7 +411,7 @@ class MainWin(CurseWin):
     def display(self):
         super().clear()
         super().display()
-        header = self.format_str.format("NO.", "TIME", "COMMAND", "PID", "UID", "EVENT", "RESULT", "DETAIL")
+        header = self.format_str.format("NO.", "TIME", "COMMAND", "PID", "UID", "NAME", "LEVEL", "DETAIL")
         curse_win = super().curse_handle()
         padding_width = "{:<%d}" % self.pad_width
         header = padding_width.format(header)

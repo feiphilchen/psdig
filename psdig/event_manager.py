@@ -13,7 +13,7 @@ from .tracepoint import TracePoint
 from .event_tcp import EventTcpRecvRst,EventTcpSendRst
 from .event_buffer import EventBuffer
 from .syscall import Syscall
-from .event_syscall import predefined_syscall_events
+from .predefined_traces import predefined_traces
 from .conf import LOGGER_NAME,BPF_OBJ_DIR
 
 predefined_events = [
@@ -49,7 +49,7 @@ class EventManager(object):
             self.event_objs.append(event_obj)
 
     def init_event_syscall(self):
-        for evt in predefined_syscall_events:
+        for evt in predefined_traces:
             event_name = evt['event']
             syscall_name = evt['syscall']
             self.event_register(event_name)
@@ -85,8 +85,12 @@ class EventManager(object):
             else:
                 detail = ""
             event_name = event_def['event']
-            result_check = lambda ret: eval(event_def['result'])
-            syscall_ok = result_check(ret)
+            level_lambda = event_def.get('level_lambda')
+            if level_lambda:
+                level_check = lambda ret: eval(level_lambda)
+                level = level_check(ret)
+            else:
+                level = event_def.get('level', 'INFO')
             extend = {}
             syscall_info = "%d/%s" % (metadata['syscall_nr'], name)
             extend['syscall'] = syscall_info
@@ -109,7 +113,7 @@ class EventManager(object):
                "pid":  metadata["pid"],
                "uid":  metadata["uid"],
                "detail": detail,
-               "ok": syscall_ok,
+               "level": level,
                "extend":extend
             }
             self.event_send(event)
