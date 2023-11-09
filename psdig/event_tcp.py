@@ -11,7 +11,7 @@ class EventTcpRecvRst(object):
     def __init__(self, event_mgr):
         self.event_name = "tcp-recv-rst"
         self.em = event_mgr
-        self.em.event_register(self.event_name)
+        self.em.trace_register(self.event_name)
         self.em.event_watch("tcp/tcp_receive_reset", self.tcp_receive_rst)
 
     def tcp_receive_rst(self, event):
@@ -31,13 +31,13 @@ class EventTcpRecvRst(object):
                "detail": detail,
                "level": "INFO"
             }
-            self.em.event_send(args)
+            self.em.trace_send(args)
 
 class EventTcpSendRst(object):
     def __init__(self, event_mgr):
         self.event_name = "tcp-send-rst"
         self.em = event_mgr
-        self.em.event_register(self.event_name)
+        self.em.trace_register(self.event_name)
         self.em.event_watch("tcp/tcp_send_reset", self.tcp_send_rst)
 
     def tcp_send_rst(self, event):
@@ -57,5 +57,5 @@ class EventTcpSendRst(object):
                "detail": detail,
                "level": "INFO"
             }
-            self.em.event_send(args)
+            self.em.trace_send(args)
 

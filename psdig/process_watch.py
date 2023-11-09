@@ -11,7 +11,7 @@ import time
 from curses import wrapper
 from curses.textpad import Textbox,rectangle
 import threading
-from .event_manager import EventManager
+from .trace_manager import TraceManager
 from .window import FilterWin,StatusWin,MainWin,TagWin,ExtendWin
 from .trace_buffer import TraceBuffer
 from .conf import LOGGER_NAME
@@ -41,7 +41,7 @@ class PsWatch(object):
         curses.init_pair(5, curses.COLOR_WHITE, curses.COLOR_YELLOW)
         curses.init_pair(6, curses.COLOR_WHITE, curses.COLOR_BLUE)
         curses.init_pair(7, curses.COLOR_WHITE, curses.COLOR_GREEN)
-        self.event_mgr = EventManager(pid_filter=pid_filter, uid_filter=uid_filter)
+        self.trace_mgr = TraceManager(pid_filter=pid_filter, uid_filter=uid_filter)
         self.running = False
         self.ext_display = False
         self.mutex = threading.Lock()
@@ -154,7 +154,7 @@ class PsWatch(object):
 
     def watch(self):
         try:
-            self.event_mgr.collect(self.process_watched_event)
+            self.trace_mgr.collect(self.process_watched_event)
         except:
             pass
         finally:
@@ -166,13 +166,13 @@ class PsWatch(object):
 
     def stop_watch_thread(self):
         if self.watch_thread:
-            self.event_mgr.stop()
+            self.trace_mgr.stop()
             self.watch_thread.join()
             self.watch_thread = None
 
     def get_message(self):
         message = None
-        loading,loaded = self.event_mgr.loading_status()
+        loading,loaded = self.trace_mgr.loading_status()
         if loading > 0 and loading != loaded:
             percent = int((loaded/loading) * 100)
             return f"Loading events collector, {percent}%"   
@@ -185,7 +185,7 @@ class PsWatch(object):
         while self.stats_running:
             if not self.filter_editing:
                 with self.mutex:
-                    tag_stats = self.event_mgr.get_stats()
+                    tag_stats = self.trace_mgr.get_stats()
                     self.tag_win.stats_update(tag_stats)
                     main_stats = self.main_win.get_stats()
                     main_stats['message'] = self.get_message()
@@ -242,7 +242,7 @@ class PsWatch(object):
                 self.ext_display = False
 
     def load_events(self, event_file):
-        self.event_mgr.file_read(event_file, self.process_event_from_file)
+        self.trace_mgr.file_read(event_file, self.process_event_from_file)
         self.main_win.event_update(None, True)
 
     def run(self):

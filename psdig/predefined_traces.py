@@ -1,152 +1,164 @@
 predefined_traces = [
    {
-       "event":"open",
-       "syscall":"openat",
+       "name":"open",
+       "trigger":"syscall:openat",
        "detail_fmt": "{args[filename]} mode={args[mode]} flags={args[flags]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"open",
-       "syscall":"open",
+       "name":"open",
+       "trigger":"syscall:open",
        "detail_fmt": "{args[filename]} mode={args[mode]} flags={args[flags]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"unlink",
-       "syscall":"unlink",
+       "name":"unlink",
+       "trigger":"syscall:unlink",
        "detail_fmt": "{args[pathname]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"unlink",
-       "syscall":"unlinkat",
+       "name":"unlink",
+       "trigger":"syscall:unlinkat",
        "detail_fmt": "{args[pathname]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"unlink",
-       "syscall":"unlinkat",
+       "name":"unlink",
+       "trigger":"syscall:unlinkat",
        "detail_fmt": "{args[pathname]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"truncate",
-       "syscall":"truncate",
+       "name":"truncate",
+       "trigger":"syscall:truncate",
        "detail_fmt": "{args[pathname]} length={args[length]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {   
-       "event":"chown",
-       "syscall":"chown",
+       "name":"chown",
+       "trigger":"syscall:chown",
        "detail_fmt": "{args[filename]} uid={args[user]} gid={args[group]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"chown",
-       "syscall":"fchownat",
+       "name":"chown",
+       "trigger":"syscall:fchownat",
        "detail_fmt": "{args[filename]} uid={args[user]} gid={args[group]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"chmod",
-       "syscall":"chmod",
+       "name":"chmod",
+       "trigger":"syscall:chmod",
        "detail_fmt": "{args[filename]} mode={args[mode]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"chmod",
-       "syscall":"fchmodat",
+       "name":"chmod",
+       "trigger":"syscall:fchmodat",
        "detail_fmt": "{args[filename]} mode={args[mode]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {    
-       "event":"rmdir",
-       "syscall":"rmdir",
+       "name":"rmdir",
+       "trigger":"syscall:rmdir",
        "detail_fmt": "{args[pathname]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"mkdir",
-       "syscall":"mkdir",
+       "name":"mkdir",
+       "trigger":"syscall:mkdir",
        "detail_fmt": "{args[pathname]} mode={args[mode]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"mkdir",
-       "syscall":"mkdirat",
+       "name":"mkdir",
+       "trigger":"syscall:mkdirat",
        "detail_fmt": "{args[pathname]} mode={args[mode]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"symlink",
-       "syscall":"symlink",
+       "name":"symlink",
+       "trigger":"syscall:symlink",
        "detail_fmt": "oldname={args[oldname]} newname={args[newname]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"symlink",
-       "syscall":"symlinkat",
+       "name":"symlink",
+       "trigger":"syscall:symlinkat",
        "detail_fmt": "oldname={args[oldname]} newname={args[newname]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"kill",
-       "syscall":"kill",
+       "name":"kill",
+       "trigger":"syscall:kill",
        "detail_fmt": "pid={args[pid]} signal={args[sig]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"exec",
-       "syscall":"execve",
+       "name":"exec",
+       "trigger":"syscall:execve",
        "detail_lambda": "' '.join(args['argv'])",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"setuid",
-       "syscall":"setuid",
+       "name":"setuid",
+       "trigger":"syscall:setuid",
        "detail_fmt": "uid={args[uid]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"sethostname",
-       "syscall":"sethostname",
+       "name":"sethostname",
+       "trigger":"syscall:sethostname",
        "detail_fmt": "hostname={args[name]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"listen",
-       "syscall":"listen",
+       "name":"listen",
+       "trigger":"syscall:listen",
        "detail_fmt": "fd={args[fd]} backlog={args[backlog]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"connect",
-       "syscall":"connect",
+       "name":"connect",
+       "trigger":"syscall:connect",
        "detail_fmt": "address={args[uservaddr]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"accept",
-       "syscall":"accept",
+       "name":"accept",
+       "trigger":"syscall:accept",
        "detail_fmt": "address={args[upeer_sockaddr]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"bind",
-       "syscall":"bind",
+       "name":"bind",
+       "trigger":"syscall:bind",
        "detail_fmt": "address={args[umyaddr]} ret={ret}",
        "level_lambda": "'INFO' if ret >= 0 else 'ERROR'"
    },
    {
-       "event":"mount",
-       "syscall":"mount",
+       "name":"mount",
+       "trigger":"syscall:mount",
        "detail_fmt": "dev_name={args[dev_name]} dir_name={args[dir_name]} type={args[type]} ret={ret}",
        "level_lambda": "'INFO' if ret == 0 else 'ERROR'"
    },
    {
-       "event":"umount",
-       "syscall":"umount",
+       "name":"umount",
+       "trigger":"syscall:umount",
        "detail_fmt": "name={args[name]} flags={args[flags]} ret={ret}",
        "level_lambda": "'INFO' if ret == 0 else 'ERROR'"
+   },
+   {
+       "name":"tcp-recv-rst",
+       "trigger":"event:tcp/tcp_receive_reset",
+       "detail_lambda": "'saddr=%s sport=%d daddr=%s dport=%d' % (inet_ntoa(args['saddr']), args['sport'], inet_ntoa(args['daddr']), args['dport'])",
+       "level": "WARNING"
+   },
+   {
+       "name":"tcp-send-rst",
+       "trigger":"event:tcp/tcp_send_reset",
+       "detail_lambda": "'saddr=%s sport=%d daddr=%s dport=%d' % (inet_ntoa(args['saddr']), args['sport'], inet_ntoa(args['daddr']), args['dport'])",
+       "level": "WARNING"
    }
 ]

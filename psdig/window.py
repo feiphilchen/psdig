@@ -193,6 +193,7 @@ class MainWin(CurseWin):
         self.format_str = '{:8s} {:16s} {:16s} {:8s} {:8s} {:16s} {:8s} {:32s}'
         self.pad = curses.newpad(self.pad_height, self.pad_width)
         self.error_color = curses.color_pair(4)
+        self.warn_color = curses.color_pair(4)
         self.hl_color = curses.color_pair(5)
         self.hdr_color = curses.color_pair(7)
         self.select_index = None
@@ -360,11 +361,14 @@ class MainWin(CurseWin):
         if self.select_index == pad_row:
             self.pad.addstr(self.pad_count, 0, row, self.hl_color)
             self.pad_count += 1
-        elif level != "ERROR":
-            self.pad.addstr(self.pad_count, 0, row)
+        elif level == "ERROR":
+            self.pad.addstr(self.pad_count, 0, row, self.error_color)
+            self.pad_count += 1
+        elif level == "WARNING":
+            self.pad.addstr(self.pad_count, 0, row, self.warn_color)
             self.pad_count += 1
         else:
-            self.pad.addstr(self.pad_count, 0, row, self.error_color)
+            self.pad.addstr(self.pad_count, 0, row)
             self.pad_count += 1
 
     def select_row(self, dir_up):

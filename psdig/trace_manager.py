@@ -13,50 +13,59 @@ from .tracepoint import TracePoint
 from .event_tcp import EventTcpRecvRst,EventTcpSendRst
 from .trace_buffer import TraceBuffer
 from .syscall import Syscall
+from .event import Event
 from .predefined_traces import predefined_traces
 from .conf import LOGGER_NAME,BPF_OBJ_DIR
+from .lambda_helper import *
 
-predefined_events = [
-    EventTcpRecvRst,
-    EventTcpSendRst
+predefined_trace_class = [
 ]
 
-class EventManager(object):
+class TraceManager(object):
     def __init__(self, pid_filter=[], uid_filter=[]):
         self.set_logger()
         self.tp = TracePoint(pid_filter=pid_filter, uid_filter=uid_filter, obj_dir=BPF_OBJ_DIR)
         self.syscall = Syscall(self.tp)
+        self.event = Event(self.tp)
         self.stats = {}
         self.callback = None
-        self.event_objs = []
-        self.init_event_syscall()
-        self.init_event_class()
+        self.trace_objs = []
+        self.init_predefined_traces()
+        self.init_trace_class()
         self.pi_cache = {}
-        self.evt_id = 0
+        self.trace_id = 0
 
     def set_logger(self):
         self.logger_name = LOGGER_NAME
         self.logger = logging.getLogger(self.logger_name)
 
-    def init_event_class(self):
-        for cls in predefined_events:
+    def init_trace_class(self):
+        for cls in predefined_trace_class:
             try:
-                event_obj = cls(self)
+                trace_obj = cls(self)
             except:
                 self.logger.error(traceback.format_exc())
             else:
-                self.logger.info("added event:%s" % event_obj.event_name)
-            self.event_objs.append(event_obj)
+                self.logger.info("added event:%s" % trace_obj.event_name)
+            self.trace_objs.append(trace_obj)
 
-    def init_event_syscall(self):
-        for evt in predefined_traces:
-            event_name = evt['event']
-            syscall_name = evt['syscall']
-            self.event_register(event_name)
-            self.syscall.add(syscall_name, self.syscall_event_handler, evt)
+    def init_predefined_traces(self):
+        for ent in predefined_traces:
+            name = ent['name']
+            trigger = ent['trigger']
+            trigger_type = trigger.split(':', 1)[0]
+            trigger_value = trigger.split(':', 1)[1]
+            if trigger_type == 'syscall':
+                self.trace_register(name)
+                syscall_name = trigger_value
+                self.syscall.add(syscall_name, self.syscall_event_handler, ent)
+            elif trigger_type == 'event':
+                self.trace_register(name)
+                event_name = trigger_value
+                self.event.add(event_name, self.raw_event_handler, ent)
 
-    def get_process_info(self, pid, cmd):
-        key = f"{pid}/{cmd}"
+    def get_process_info(self, pid):
+        key = f"{pid}"
         if key in self.pi_cache:
             return self.pi_cache[key]
         ps = psutil.Process(pid)
@@ -84,11 +93,11 @@ class EventManager(object):
                 detail = detail_func(name, metadata, args, ret)
             else:
                 detail = ""
-            event_name = event_def['event']
+            trace_name = event_def['name']
             level_lambda = event_def.get('level_lambda')
             if level_lambda:
-                level_check = lambda ret: eval(level_lambda)
-                level = level_check(ret)
+                level_check = lambda metadata,args,ret: eval(level_lambda)
+                level = level_check(metadata, args, ret)
             else:
                 level = event_def.get('level', 'INFO')
             extend = {}
@@ -101,14 +110,14 @@ class EventManager(object):
             extend['cpu id'] = metadata['cpuid']
             extend['process'] = "%d/%s" % (metadata["pid"], metadata["comm"])
             try:
-                elf,parent_proc = self.get_process_info(metadata["pid"], metadata["comm"])
+                elf,parent_proc = self.get_process_info(metadata["pid"])
             except:
                 pass
             else:
                 extend['elf'] = elf
                 extend['parent processes'] = parent_proc
-            event = {
-               "name": event_name,
+            trace = {
+               "name": trace_name,
                "comm": metadata["comm"],
                "pid":  metadata["pid"],
                "uid":  metadata["uid"],
@@ -116,16 +125,64 @@ class EventManager(object):
                "level": level,
                "extend":extend
             }
-            self.event_send(event)
+            self.trace_send(trace)
         except:
             self.logger.error(f'error processing syscall:{name} ' + \
                 f'args={args} metadata={metadata} ret={ret}')
             self.logger.error(traceback.format_exc())
 
-    def event_register(self, event_name):
-        self.stats[event_name] = 0
+    def raw_event_handler(self, name, metadata, args, ctx):
+        try:
+            event_def = ctx
+            detail_fmt = event_def.get('detail_fmt')
+            detail_lambda = event_def.get('detail_lambda')
+            if detail_fmt:
+                detail = detail_fmt.format(name=name, metadata=metadata, args=args)
+            elif detail_lambda:
+                detail_func = lambda name,metadata,args:eval(detail_lambda)
+                detail = detail_func(name, metadata, args)
+            else:
+                detail = ""
+            trace_name = event_def['name']
+            level_lambda = event_def.get('level_lambda')
+            if level_lambda:
+                level_check = lambda metadata,args: eval(level_lambda)
+                level = level_check(metadata,args)
+            else:
+                level = event_def.get('level', 'INFO')
+            extend = {}
+            extend['event'] = name
+            arg_list = [f"{k}={args[k]}" for k in args]
+            extend['arguments'] = "\n".join(arg_list)
+            extend['cpu id'] = metadata['cpuid']
+            extend['process'] = "%d/%s" % (metadata["pid"], metadata["comm"])
+            try:
+                elf,parent_proc = self.get_process_info(metadata["pid"])
+            except:
+                pass
+            else:
+                extend['elf'] = elf
+                extend['parent processes'] = parent_proc
+            trace = {
+               "name": trace_name,
+               "comm": metadata["comm"],
+               "pid":  metadata["pid"],
+               "uid":  metadata["uid"],
+               "detail": detail,
+               "level": level,
+               "extend":extend
+            }
+            self.trace_send(trace)
+        except:
+            self.logger.error(f'error processing event:{name} ' + \
+                f'args={args} metadata={metadata}')
+            self.logger.error(traceback.format_exc())
 
-    def event_send(self, args):
+
+    def trace_register(self, trace_name):
+        self.stats[trace_name] = 0
+
+    def trace_send(self, args):
         name = args['name']
         if 'extend' not in args:
             args['extend'] = {}
@@ -134,9 +191,9 @@ class EventManager(object):
         else:
             self.stats[name] = 1
         if self.callback:
-            args['id'] = self.evt_id
+            args['id'] = self.trace_id
             self.callback(args)
-        self.evt_id += 1
+        self.trace_id += 1
         
     def event_watch(self, event, callback):
         self.tp.add_event_watch(event, callback)

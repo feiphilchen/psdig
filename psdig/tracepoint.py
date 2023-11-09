@@ -51,7 +51,8 @@ class TracePoint(object):
         if not os.path.exists(self.obj_dir):
             os.makedirs(self.obj_dir)
 
-    def add_event_watch(self, event, handler):
+    def add_event_watch(self, event, func, arg=None):
+        handler = func,arg
         if event in self.event_handlers and self.event_handlers[event] != None:
             self.event_handlers[event].append(handler)
         else:
@@ -131,7 +132,11 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
                 return
         if event in self.event_handlers:
             for handler in self.event_handlers[event]:
-                handler(event_obj)
+                func,arg = handler
+                if arg == None:
+                    func(event_obj)
+                else:
+                    func(event_obj, arg)
 
     def loading_status(self):
         return self.loading,self.loaded
