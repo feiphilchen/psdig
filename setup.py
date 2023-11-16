@@ -62,13 +62,14 @@ setup(
     license = 'GNU General Public License version 3.0 (GPLv3)',
     keywords = "events,ebpf,trace",
     url = "https://github.com/feiphilchen/psdig",
-    packages=['psdig', 'psdig/trace_event'],
+    packages=['psdig', 'psdig/trace_event', 'psdig/trace_uprobe'],
     long_description=read('README.md'),
     scripts=['bin/psdig'],
     install_requires=[
         "click",
         "psutil",
-        "tabulate"
+        "tabulate",
+        "pyelftools==0.30"
     ],
     zip_safe=False,
     include_package_data=True,
