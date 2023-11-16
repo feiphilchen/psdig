@@ -204,8 +204,11 @@ trace_send (void *ctx, trace_t * trace)
 #define uprobe_enter_finish() \
    trace_send(ctx, t);
 
-#define uprobe_ret_start(id)
-#define uprobe_ret_finish()
+#define uprobe_ret_start(id) \
+   trace_t    * t; \
+   trace_init(t, id);
+#define uprobe_ret_finish() \
+   trace_send(ctx, t);
 
 #if 0
 SEC("uprobe/uprobe_enter")

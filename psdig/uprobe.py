@@ -163,6 +163,21 @@ class Uprobe(object):
             insts.append(inst)
         return insts
 
+    def get_ret_read_insts(self, type_list):
+        insts = []
+        if len(type_list) == 0:
+            return insts
+        name = 'ret'
+        size = type_list[0]['size']
+        if self.arg_is_str(type_list):
+            inst = f'read_str(t, {name}, "{name}")'
+        elif self.arg_is_ptr(type_list):
+            inst = f'read_ptr(t, &{name}, "{name}")'
+        else:
+            inst = f'read_int(t, &{name}, {size}, "{name}")'
+        insts.append(inst)
+        return insts
+
     def build_bpf_c(self, probe):
         elf_path = probe['elf']
         func_name = probe['function']
@@ -201,16 +216,21 @@ int BPF_KPROBE(%s)
 }
 """ % (enter_args, enter_id, inst_str)
             content += uprobe_enter_str
+        insts = self.get_ret_read_insts(function['ret'])
+        num_insts = len(insts)
+        insts = [f"trace_add_obj(t, {num_insts})"] + insts
+        inst_str = ";\n    ".join(insts)
         if uprobe_ret:
             uprobe_ret_str ="""
 SEC("uretprobe/uprobed_exit")
 int BPF_KRETPROBE(%s)
 {
-    uprobe_ret_start();
+    uprobe_ret_start(%d);
+    %s;
     uprobe_ret_finish();
     return 0;
 }
-""" % (exit_arg, ret_id)
+""" % (exit_arg, ret_id, inst_str)
             content += uprobe_ret_str
         bpf_c_file = os.path.join(self.obj_dir, f"{func_name}.{enter_id}_{ret_id}.bpf.c")
         with open(bpf_c_file, 'w') as fp:
