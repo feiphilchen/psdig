@@ -13,16 +13,13 @@ from .dwarf import Dwarf
 from .conf import LOGGER_NAME
 
 class Uprobe(object):
-    def __init__(self, pid_filter=[], uid_filter=[], obj_dir='/var/tmp'):
+    def __init__(self, pid_filter=[], uid_filter=[]):
         self.set_logger()
         self.probes = []
-        self.obj_dir = obj_dir
-        self.trace_uprobe_elf = os.path.join(self.obj_dir, "trace_uprobe")
-        self.trace_uprobe_c = os.path.join(self.obj_dir, "trace_uprobe.c")
         self.proc = None
         self.pid_filter = pid_filter
         self.uid_filter = uid_filter
-        self.init_obj_dir()
+        self.pid = os.getpid()
         self.event_bucket = {}
         self.event_mutex = threading.Lock()
         self.loading = 0
@@ -32,7 +29,6 @@ class Uprobe(object):
         self.callout_thread = None
         self.collect_thread_running = False
         self.collect_thread = None
-
 
     def set_logger(self):
         self.logger_name = LOGGER_NAME
@@ -46,13 +42,21 @@ class Uprobe(object):
         id_str = hashlib.md5(probe_str.encode('utf-8')).hexdigest()[0:8]
         return int(id_str, 16)
 
-    def add(self, elf_path, function, enter, callback, arg=None):
+    def add(self, probe_conf, callback, arg=None):
+        enter_bool = {
+            "enter":True,
+            "ret":False
+        }
+        elf_path = probe_conf.split(':')[0]
+        function = probe_conf.split(':')[1]
+        enter_str = probe_conf.split(':')[2]
+        enter = enter_bool[enter_str]
         probe_id = self.probe_id(elf_path, function, enter)
         if enter:
-            name = f"enter:{function}"
+            name = f"uprobe:enter"
         else:
-            name = f"ret:{function}"
-        handler = name,callback,arg
+            name = f"uprobe:ret"
+        handler = name,function,callback,arg
         if probe_id in self.probe_handlers and self.probe_handlers[probe_id] != None:
             self.probe_handlers[probe_id].append(handler)
         else:
@@ -70,7 +74,10 @@ class Uprobe(object):
             probe = {"function": function, "elf": elf_path, "ret_id": probe_id}
         self.probes.append(probe)
 
-    def init_obj_dir(self):
+    def init_obj_dir(self, obj_dir):
+        self.obj_dir = obj_dir
+        self.trace_uprobe_elf = os.path.join(self.obj_dir, "trace_uprobe")
+        self.trace_uprobe_c = os.path.join(self.obj_dir, "trace_uprobe.c")
         if not os.path.exists(self.obj_dir):
             os.makedirs(self.obj_dir)
 
@@ -288,11 +295,11 @@ int BPF_KRETPROBE(%s)
         if uprobe_id in self.probe_handlers:
             metadata,args = self.parse_uprobe_trace(event_obj)
             for handler in self.probe_handlers[uprobe_id]:
-                name,func,ctx = handler
+                name,func,callback,ctx = handler
                 if ctx == None:
-                    func(name, metadata, args)
+                    callback(name, metadata, func, args)
                 else:
-                    func(name, metadata, args, ctx)
+                    callback(name, metadata, func, args, ctx)
 
     def events_callout(self, events):
         events.sort(key=lambda x: x['ktime_ns'], reverse=False)
@@ -372,7 +379,8 @@ int BPF_KRETPROBE(%s)
         self.collect_thread = threading.Thread(target = self.collect, args = (), daemon=True)
         self.collect_thread.start()
 
-    def start(self, compile_only=False, async_collect=False):
+    def start(self, compile_only=False, async_collect=False, obj_dir="/var/tmp"):
+        self.init_obj_dir(obj_dir)
         try:
             self.build_uprobe_objs()
         except:
@@ -386,6 +394,8 @@ int BPF_KRETPROBE(%s)
         self.start_callout_thread()
         if not async_collect:
             self.collect()
+        else:
+            self.start_collect_thread()
 
     def stop(self):
         self.logger.info('uprobe is being stopped ...')

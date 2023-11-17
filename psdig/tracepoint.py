@@ -19,23 +19,17 @@ class TracePoint(object):
     def __init__(self, pid_filter=[], 
                        uid_filter=[], 
                        ignore_self=True, 
-                       obj_dir='/var/tmp/psdig',
                        obj_cache=True):
         self.event_handlers = {}
         self.set_logger()
-        self.obj_dir = obj_dir
         self.obj_cache = obj_cache
-        self.trace_event_elf = os.path.join(self.obj_dir, "trace_event")
-        self.trace_event_c = os.path.join(self.obj_dir, "trace_event.c")
         self.trace_bpf_o = []
-        self.schema_h = os.path.join(self.obj_dir, "event_schema.h")
         self.schema = EventSchema()
         self.proc = None
         self.pid_filter = pid_filter
         self.uid_filter = uid_filter
         self.ignore_self = ignore_self
         self.pid = os.getpid()
-        self.init_obj_dir()
         self.callout_thread_running = False
         self.callout_thread = None
         self.collect_thread_running = False
@@ -49,7 +43,11 @@ class TracePoint(object):
         self.logger_name = LOGGER_NAME
         self.logger = logging.getLogger(self.logger_name)
 
-    def init_obj_dir(self):
+    def init_obj_dir(self, obj_dir):
+        self.obj_dir = obj_dir
+        self.trace_event_elf = os.path.join(self.obj_dir, "trace_event")
+        self.trace_event_c = os.path.join(self.obj_dir, "trace_event.c")
+        self.schema_h = os.path.join(self.obj_dir, "event_schema.h")
         if not os.path.exists(self.obj_dir):
             os.makedirs(self.obj_dir)
 
@@ -131,6 +129,8 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
             if self.pid == event_obj['pid']:
                 return
             if event_obj['comm'] == 'trace_event':
+                return
+            if event_obj['comm'] == 'trace_uprobe':
                 return
         if event in self.event_handlers:
             for handler in self.event_handlers[event]:
@@ -223,7 +223,8 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
         self.collect_thread = threading.Thread(target = self.collect, args = (), daemon=True)
         self.collect_thread.start()
 
-    def start(self, compile_only=False, async_collect=False):
+    def start(self, compile_only=False, async_collect=False, obj_dir="/var/tmp"):
+        self.init_obj_dir(obj_dir)
         try:
             self.build_trace_objs()
         except:

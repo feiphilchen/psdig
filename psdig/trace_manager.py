@@ -9,11 +9,13 @@ import time
 import logging
 import traceback
 import psutil
+import tempfile
 from .tracepoint import TracePoint
 from .event_tcp import EventTcpRecvRst,EventTcpSendRst
 from .trace_buffer import TraceBuffer
 from .syscall import Syscall
 from .event import Event
+from .uprobe import Uprobe
 from .predefined_traces import predefined_traces
 from .conf import LOGGER_NAME,BPF_OBJ_DIR
 from .lambda_helper import *
@@ -24,7 +26,8 @@ predefined_trace_class = [
 class TraceManager(object):
     def __init__(self, pid_filter=[], uid_filter=[]):
         self.set_logger()
-        self.tp = TracePoint(pid_filter=pid_filter, uid_filter=uid_filter, obj_dir=BPF_OBJ_DIR)
+        self.tp = TracePoint(pid_filter=pid_filter, uid_filter=uid_filter)
+        self.uprobe = Uprobe(pid_filter=pid_filter, uid_filter=uid_filter)
         self.syscall = Syscall(self.tp)
         self.event = Event(self.tp)
         self.stats = {}
@@ -64,6 +67,10 @@ class TraceManager(object):
                 self.trace_register(name)
                 event_name = trigger_value
                 self.event.add(event_name, self.raw_event_handler, ent)
+            elif trigger_type == 'uprobe':
+                self.trace_register(name)
+                probe = trigger_value
+                self.uprobe.add(probe, self.uprobe_handler, ent)
 
     def get_process_info(self, pid):
         key = f"{pid}"
@@ -179,6 +186,46 @@ class TraceManager(object):
                 f'args={args} metadata={metadata}')
             self.logger.error(traceback.format_exc())
 
+    def uprobe_handler(self, name, metadata, function, args, ctx):
+        try:
+            event_def = ctx
+            detail_fmt = event_def.get('detail_fmt')
+            detail_lambda = event_def.get('detail_lambda')
+            if detail_fmt:
+                detail = detail_fmt.format(name=name, metadata=metadata, function=function, args=args)
+            elif detail_lambda:
+                detail_func = lambda name,metadata,function,args:eval(detail_lambda)
+                detail = detail_func(name, metadata, function, args)
+            else:
+                detail = ""
+            trace_name = event_def['name']
+            level_lambda = event_def.get('level_lambda')
+            if level_lambda:
+                level_check = lambda name,metadata,function,args: eval(level_lambda)
+                level = level_check(name, metadata,function, args)
+            else:
+                level = event_def.get('level', 'INFO')
+            extend = {}
+            extend['event'] = name
+            extend['function'] = function
+            arg_list = [f"{k}={args[k]}" for k in args]
+            extend['arguments'] = "\n".join(arg_list)
+            extend['cpu id'] = metadata['cpuid']
+            extend['process'] = "%d/%s" % (metadata["pid"], metadata["comm"])
+            trace = {
+               "name": trace_name,
+               "comm": metadata["comm"],
+               "pid":  metadata["pid"],
+               "uid":  metadata["uid"],
+               "detail": detail,
+               "level": level,
+               "extend":extend
+            }
+            self.trace_send(trace)
+        except:
+            self.logger.error(f'error processing uprobe:{name} ' + \
+                f'args={args} metadata={metadata}')
+            self.logger.error(traceback.format_exc())
 
     def trace_register(self, trace_name):
         self.stats[trace_name] = 0
@@ -202,14 +249,17 @@ class TraceManager(object):
     def collect(self, callback):
         self.callback = callback
         self.logger.info("tracepoint start to run")
-        self.tp.start(async_collect=True)
-        self.collecting = True
-        while self.collecting:
-            time.sleep(1)
+        self.logger.info("uprobe start to run")
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            self.uprobe.start(obj_dir=tmpdirname, async_collect=True)
+            self.tp.start(obj_dir=BPF_OBJ_DIR, async_collect=True)
+            self.collecting = True
+            while self.collecting:
+                time.sleep(1)
 
     def compile(self):
         self.logger.info("tracepoint start to compile objects ...")
-        self.tp.start(compile_only=True)
+        self.tp.start(obj_dir=BPF_OBJ_DIR, compile_only=True)
 
     def file_read(self, event_file, callback):
         eb = TraceBuffer(file_path=event_file, persist=True)

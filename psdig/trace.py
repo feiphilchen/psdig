@@ -26,7 +26,7 @@ def syscall_print_lambda(name, metadata, args, ret, ctx):
 def syscall_trace(fmt, lambda_, pid, uid):
     """Trace syscall"""
     with tempfile.TemporaryDirectory() as tmpdirname:
-        tracepoint = TracePoint(obj_dir=tmpdirname, pid_filter=pid, uid_filter=uid)
+        tracepoint = TracePoint(pid_filter=pid, uid_filter=uid)
         syscall_obj = Syscall(tracepoint)
         for f in fmt:
             name,format_str = f
@@ -35,7 +35,7 @@ def syscall_trace(fmt, lambda_, pid, uid):
             name,lambda_str = l
             lambda_f = lambda name,metadata,args,ret:eval(lambda_str)
             syscall_obj.add(name, syscall_print_lambda, lambda_f)
-        tracepoint.start()
+        tracepoint.start(obj_dir=tmpdirname)
 
 def event_print_fmt(name, metadata, args, ctx):
     fmt = ctx
@@ -53,7 +53,7 @@ def event_print_lambda(name, metadata, args, ctx):
 def event_trace(fmt, lambda_, pid, uid):
     """Trace event"""
     with tempfile.TemporaryDirectory() as tmpdirname:
-        tracepoint = TracePoint(obj_dir=tmpdirname, pid_filter=pid, uid_filter=uid)
+        tracepoint = TracePoint(pid_filter=pid, uid_filter=uid)
         event_obj = Event(tracepoint)
         for f in fmt:
             name,format_str = f
@@ -62,16 +62,16 @@ def event_trace(fmt, lambda_, pid, uid):
             name,lambda_str = l
             lambda_f = lambda name,metadata,args:eval(lambda_str)
             event_obj.add(name, event_print_lambda, lambda_f)
-        tracepoint.start()
+        tracepoint.start(obj_dir=tmpdirname)
 
 
-def uprobe_print_fmt(name, metadata, args, ctx):
+def uprobe_print_fmt(name, metadata, function, args, ctx):
     fmt = ctx
-    print(fmt.format(name=name, metadata=metadata, args=args))
+    print(fmt.format(name=name, metadata=metadata, function=function, args=args))
 
-def uprobe_print_lambda(name, metadata, args, ctx):
+def uprobe_print_lambda(name, metadata, function, args, ctx):
     lambda_f = ctx
-    print(lambda_f(name, metadata, args))
+    print(lambda_f(name, metadata, function, args))
 
 @click.command()
 @click.option('--fmt', '-f', type=(str, str), multiple=True, help="<uprobe> <fmt>")
@@ -80,27 +80,15 @@ def uprobe_print_lambda(name, metadata, args, ctx):
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
 def uprobe_trace(fmt, lambda_, pid, uid):
     """Trace uprobe"""
-    enter_bool = {
-        "enter":True,
-        "ret":False
-    }
     with tempfile.TemporaryDirectory() as tmpdirname:
-        uprobe = Uprobe(obj_dir=tmpdirname, pid_filter=pid, uid_filter=uid)
+        uprobe = Uprobe(pid_filter=pid, uid_filter=uid)
         for f in fmt:
             p,format_str = f
-            elf = p.split(':')[0]
-            function = p.split(':')[1]
-            enter_str = p.split(':')[2]
-            enter = enter_bool[enter_str]
-            uprobe.add(elf, function, enter, uprobe_print_fmt, format_str)
+            uprobe.add(p, uprobe_print_fmt, format_str)
         for l in lambda_:
             p,lambda_str = l
-            elf = p.split(':')[0]
-            function = p.split(':')[1]
-            enter_str = p.split(':')[2]
-            enter = enter_bool[enter_str]
-            lambda_f = lambda name,metadata,args:eval(lambda_str)
-            uprobe.add(elf, function, uprobe_print_lambda, lambda_f)
-        uprobe.start()
+            lambda_f = lambda name,metadata,function,args:eval(lambda_str)
+            uprobe.add(p, uprobe_print_lambda, lambda_f)
+        uprobe.start(obj_dir=tmpdirname)
 
 
