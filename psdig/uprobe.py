@@ -389,6 +389,9 @@ int BPF_KRETPROBE(%s)
         if compile_only:
             return
         time.sleep(1)
+        if len(self.probes) == 0:
+            self.logger.info('no uprobes')
+            return
         self.logger.info('starting uprobe ...')
         self.logger.info('running now')
         self.start_callout_thread()

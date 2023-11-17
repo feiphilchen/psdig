@@ -24,7 +24,9 @@ predefined_trace_class = [
 ]
 
 class TraceManager(object):
-    def __init__(self, pid_filter=[], uid_filter=[]):
+    def __init__(self, pid_filter=[], 
+                      uid_filter=[],
+                      trace_def=None):
         self.set_logger()
         self.tp = TracePoint(pid_filter=pid_filter, uid_filter=uid_filter)
         self.uprobe = Uprobe(pid_filter=pid_filter, uid_filter=uid_filter)
@@ -33,7 +35,7 @@ class TraceManager(object):
         self.stats = {}
         self.callback = None
         self.trace_objs = []
-        self.init_predefined_traces()
+        self.init_traces(trace_def)
         self.init_trace_class()
         self.pi_cache = {}
         self.trace_id = 0
@@ -53,8 +55,17 @@ class TraceManager(object):
                 self.logger.info("added event:%s" % trace_obj.event_name)
             self.trace_objs.append(trace_obj)
 
-    def init_predefined_traces(self):
-        for ent in predefined_traces:
+    def load_trace_def(self, trace_def):
+        with open(trace_def, 'r') as fd:
+            trace_def_str = fd.read()
+        return json.loads(trace_def_str)
+
+    def init_traces(self, trace_def):
+        if trace_def == None:
+            trace_definition = predefined_traces
+        else:
+            trace_definition = self.load_trace_def(trace_def)
+        for ent in trace_definition:
             name = ent['name']
             trigger = ent['trigger']
             trigger_type = trigger.split(':', 1)[0]

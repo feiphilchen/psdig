@@ -22,7 +22,8 @@ class PsWatch(object):
                uid_filter=[], 
                event_file=None,
                load_from=None,
-               log_file=None):
+               log_file=None,
+               trace_def=None):
         self.set_logger(log_file)
         self.win_list = []
         self.stdscr = stdscr
@@ -41,7 +42,7 @@ class PsWatch(object):
         curses.init_pair(5, curses.COLOR_WHITE, curses.COLOR_YELLOW)
         curses.init_pair(6, curses.COLOR_WHITE, curses.COLOR_BLUE)
         curses.init_pair(7, curses.COLOR_WHITE, curses.COLOR_GREEN)
-        self.trace_mgr = TraceManager(pid_filter=pid_filter, uid_filter=uid_filter)
+        self.trace_mgr = TraceManager(pid_filter=pid_filter, uid_filter=uid_filter, trace_def=trace_def)
         self.running = False
         self.ext_display = False
         self.mutex = threading.Lock()
