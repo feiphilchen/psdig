@@ -52,7 +52,6 @@ void read_trace_pipe(void)
     }
 }
 
-#if 1
 /* set rlimit (required for every app) */
 static void bump_memlock_rlimit(void)
 {
@@ -66,7 +65,6 @@ static void bump_memlock_rlimit(void)
         exit(1);
     }
 }
-#endif
 
 void debug(const char *fmt, ...)
 {
@@ -295,12 +293,12 @@ event_trace_thread (void * obj)
 
     bo = bpf_object__open((char *)obj);
     if (bo == NULL) {
-        perror("error opening object 11\n");
+        perror("error opening object\n");
         return NULL;
     }
     ret = bpf_object__load(bo);
     if (ret < 0) {
-        perror("error loading object  22\n");
+        perror("error loading object\n");
         return NULL;
     }
     bpf_object__for_each_program(prog, bo) {

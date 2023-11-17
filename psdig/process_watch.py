@@ -13,7 +13,6 @@ from curses.textpad import Textbox,rectangle
 import threading
 from .trace_manager import TraceManager
 from .window import FilterWin,StatusWin,MainWin,TagWin,ExtendWin
-from .trace_buffer import TraceBuffer
 from .conf import LOGGER_NAME
 
 class PsWatch(object):

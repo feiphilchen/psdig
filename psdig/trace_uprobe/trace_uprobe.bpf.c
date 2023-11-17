@@ -210,26 +210,3 @@ trace_send (void *ctx, trace_t * trace)
 #define uprobe_ret_finish() \
    trace_send(ctx, t);
 
-#if 0
-SEC("uprobe/uprobe_enter")
-int BPF_KPROBE(uprobe_enter, void * ptr, __u32 iu, void * str)
-{
-    uprobe_enter_start()
-
-    trace_add_obj(t, 3);
-    read_ptr(t, &ptr, "ptr");
-    read_int(t, &iu, 4, "iu");
-    read_str(t, str, "str");
-
-    uprobe_enter_finish()
-    return 0;
-}
-
-SEC("uretprobe/uprobed_exit")
-int BPF_KRETPROBE(uprobe_exit, __u64 ret)
-{
-    uprobe_ret_start()
-    uprobe_ret_finish()
-    return 0;
-}
-#endif
