@@ -129,6 +129,11 @@ class Dwarf(object):
             name = dietype.attributes.get('DW_AT_name').value.decode()
             type_list = [{"type": "struct", "size": size, "name":name}]
             return type_list
+        elif dietype.tag == "DW_TAG_union_type":
+            size = dietype.attributes.get('DW_AT_byte_size').value
+            name = dietype.attributes.get('DW_AT_name').value.decode()
+            type_list = [{"type": "union", "size": size, "name":name}]
+            return type_list
         elif dietype.tag == "DW_TAG_typedef":
             typedef_dietype = cu.get_DIE_from_refaddr(dietype.attributes["DW_AT_type"].value)
             return self.parse_var_type(cu, typedef_dietype)
