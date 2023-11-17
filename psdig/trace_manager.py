@@ -34,6 +34,7 @@ class TraceManager(object):
         self.init_trace_class()
         self.pi_cache = {}
         self.trace_id = 0
+        self.collecting = False
 
     def set_logger(self):
         self.logger_name = LOGGER_NAME
@@ -201,7 +202,10 @@ class TraceManager(object):
     def collect(self, callback):
         self.callback = callback
         self.logger.info("tracepoint start to run")
-        self.tp.start()
+        self.tp.start(async_collect=True)
+        self.collecting = True
+        while self.collecting:
+            time.sleep(1)
 
     def compile(self):
         self.logger.info("tracepoint start to compile objects ...")
@@ -222,6 +226,7 @@ class TraceManager(object):
 
     def stop(self):
         self.tp.stop()
+        self.collecting = False
 
     def get_stats(self):
         return self.stats

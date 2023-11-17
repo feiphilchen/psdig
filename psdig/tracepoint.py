@@ -38,6 +38,8 @@ class TracePoint(object):
         self.init_obj_dir()
         self.callout_thread_running = False
         self.callout_thread = None
+        self.collect_thread_running = False
+        self.collect_thread = None
         self.event_bucket = {}
         self.event_mutex = threading.Lock()
         self.loading = 0
@@ -174,13 +176,9 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
             self.event_bucket[bucket_key]['last_updated'] = time_now
             self.event_bucket[bucket_key]['events'].append(event_obj)
 
-    def start(self, compile_only=False):
-        try:
-            self.build_trace_objs()
-        except:
-            self.logger.error('error building trace objects')
-            self.logger.error(traceback.format_exc())
-        time.sleep(1)
+    def collect(self):
+        json_str = None
+        self.collect_thread_running = True
         cmd = [self.trace_event_elf]
         for obj in self.trace_bpf_o:
             cmd.append("-o")
@@ -192,15 +190,9 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
             cmd.append("-u")
             cmd.append(str(uid))
         cmd_str = " ".join(cmd)
-        self.logger.info('starting event trace ...')
         self.logger.info(f'{cmd_str}')
         self.proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-        if compile_only:
-            return
-        self.logger.info('running now')
-        self.start_callout_thread()
-        json_str = None
-        while True:
+        while self.collect_thread_running:
             line = self.proc.stdout.readline()
             if not line:
                 break
@@ -226,8 +218,32 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
             self.callout_thread = None
         self.proc = None
 
+    def start_collect_thread(self):
+        self.collect_thread_running = True
+        self.collect_thread = threading.Thread(target = self.collect, args = (), daemon=True)
+        self.collect_thread.start()
+
+    def start(self, compile_only=False, async_collect=False):
+        try:
+            self.build_trace_objs()
+        except:
+            self.logger.error('error building trace objects')
+            self.logger.error(traceback.format_exc())
+        time.sleep(1)
+        self.logger.info('starting event trace ...')
+        if compile_only:
+            return
+        self.logger.info('running now')
+        self.start_callout_thread()
+        if not async_collect:
+            self.collect()
+        else:
+            self.start_collect_thread()
+
     def stop(self):
         self.logger.info('trace collect is being stopped ...')
+        self.collect_thread_running = False
+        self.callout_thread_running = False
         if self.proc != None:
             self.proc.terminate()
 

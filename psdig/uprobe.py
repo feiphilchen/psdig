@@ -28,6 +28,11 @@ class Uprobe(object):
         self.loading = 0
         self.loaded = 0
         self.probe_handlers = {}
+        self.callout_thread_running = False
+        self.callout_thread = None
+        self.collect_thread_running = False
+        self.collect_thread = None
+
 
     def set_logger(self):
         self.logger_name = LOGGER_NAME
@@ -322,15 +327,8 @@ int BPF_KRETPROBE(%s)
             self.event_bucket[bucket_key]['last_updated'] = time_now
             self.event_bucket[bucket_key]['events'].append(event_obj)
 
-    def start(self, compile_only=False):
-        try:
-            self.build_uprobe_objs()
-        except:
-            self.logger.error('error building uprobe objects')
-            self.logger.error(traceback.format_exc())
-        if compile_only:
-            return
-        time.sleep(1)
+    def collect(self):
+        json_str = None
         cmd = [self.trace_uprobe_elf]
         for obj in self.uprobe_bpf_o:
             cmd.append("-o")
@@ -342,12 +340,8 @@ int BPF_KRETPROBE(%s)
             cmd.append("-u")
             cmd.append(str(uid))
         cmd_str = " ".join(cmd)
-        self.logger.info('starting uprobe ...')
         self.logger.info(f'{cmd_str}')
         self.proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-        self.logger.info('running now')
-        self.start_callout_thread()
-        json_str = None
         while True:
             line = self.proc.stdout.readline()
             if not line:
@@ -373,8 +367,30 @@ int BPF_KRETPROBE(%s)
             self.callout_thread = None
         self.proc = None
 
+    def start_collect_thread(self):
+        self.collect_thread_running = True
+        self.collect_thread = threading.Thread(target = self.collect, args = (), daemon=True)
+        self.collect_thread.start()
+
+    def start(self, compile_only=False, async_collect=False):
+        try:
+            self.build_uprobe_objs()
+        except:
+            self.logger.error('error building uprobe objects')
+            self.logger.error(traceback.format_exc())
+        if compile_only:
+            return
+        time.sleep(1)
+        self.logger.info('starting uprobe ...')
+        self.logger.info('running now')
+        self.start_callout_thread()
+        if not async_collect:
+            self.collect()
+
     def stop(self):
         self.logger.info('uprobe is being stopped ...')
+        self.collect_thread_running = False
+        self.callout_thread_running = False
         if self.proc != None:
             self.proc.terminate()
 
