@@ -48,6 +48,7 @@ class Uprobe(object):
             "ret":False
         }
         elf_path = probe_conf.split(':')[0]
+        elf_path = os.path.abspath(elf_path)
         function = probe_conf.split(':')[1]
         enter_str = probe_conf.split(':')[2]
         enter = enter_bool[enter_str]
