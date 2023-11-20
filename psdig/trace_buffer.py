@@ -4,9 +4,8 @@ from .database import TraceDB
 from .conf import LOGGER_NAME
 
 class TraceBuffer(object):
-    def __init__(self, file_path=None, persist=False):
-        self.trace_db = TraceDB(file_path, persist=persist)
-        self.persist = persist
+    def __init__(self, file_path=None):
+        self.trace_db = TraceDB(file_path)
         self.rb = []
         self.rb_limit = 4096
         self.rb_start = 0
@@ -65,7 +64,9 @@ class TraceBuffer(object):
         self.write_buffer_flush()
         return self.trace_db.filter(filter_text)
 
+    def close(self):
+        self.write_buffer_flush()
+
     def __del__(self):
-        if self.persist:
-            self.write_buffer_flush()
-        del self.trace_db
+        pass
+

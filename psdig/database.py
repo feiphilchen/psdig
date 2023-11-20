@@ -8,12 +8,11 @@ import json
 from .conf import LOGGER_NAME
 
 class TraceDB(object):
-    def __init__(self, name=None, persist=False):
+    def __init__(self, name=None):
         if name:
             self.db_name = name
         else:
             self.db_name = self.get_default_db()
-        self.persist = persist
         self.set_logger()
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -131,5 +130,5 @@ class TraceDB(object):
         return result
 
     def __del__(self):
-        if not self.persist and os.path.exists(self.db_name):
-            os.unlink(self.db_name)
+        pass
+

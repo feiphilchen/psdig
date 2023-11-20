@@ -3,7 +3,6 @@
 import os
 import sys
 import re
-import json
 import subprocess
 import time
 import logging
@@ -26,8 +25,10 @@ predefined_trace_class = [
 class TraceManager(object):
     def __init__(self, pid_filter=[], 
                       uid_filter=[],
-                      trace_def=None):
+                      trace_def=None,
+                      tmp_dir='/var/tmp'):
         self.set_logger()
+        self.tmp_dir = tmp_dir
         self.tp = TracePoint(pid_filter=pid_filter, uid_filter=uid_filter)
         self.uprobe = Uprobe(pid_filter=pid_filter, uid_filter=uid_filter)
         self.syscall = Syscall(self.tp)
@@ -55,16 +56,11 @@ class TraceManager(object):
                 self.logger.info("added event:%s" % trace_obj.event_name)
             self.trace_objs.append(trace_obj)
 
-    def load_trace_def(self, trace_def):
-        with open(trace_def, 'r') as fd:
-            trace_def_str = fd.read()
-        return json.loads(trace_def_str)
-
     def init_traces(self, trace_def):
         if trace_def == None:
             trace_definition = predefined_traces
         else:
-            trace_definition = self.load_trace_def(trace_def)
+            trace_definition = trace_def
         for ent in trace_definition:
             name = ent['name']
             trigger = ent['trigger']
@@ -261,12 +257,11 @@ class TraceManager(object):
         self.callback = callback
         self.logger.info("tracepoint start to run")
         self.logger.info("uprobe start to run")
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            self.uprobe.start(obj_dir=tmpdirname, async_collect=True)
-            self.tp.start(obj_dir=BPF_OBJ_DIR, async_collect=True)
-            self.collecting = True
-            while self.collecting:
-                time.sleep(1)
+        self.uprobe.start(obj_dir=self.tmp_dir, async_collect=True)
+        self.tp.start(obj_dir=BPF_OBJ_DIR, async_collect=True)
+        self.collecting = True
+        while self.collecting:
+            time.sleep(1)
 
     def compile(self):
         self.logger.info("tracepoint start to compile objects ...")

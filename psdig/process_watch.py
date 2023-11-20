@@ -5,6 +5,7 @@ import time
 import curses
 import logging
 import re
+import json
 import traceback
 from datetime import datetime
 import time
@@ -22,7 +23,8 @@ class PsWatch(object):
                event_file=None,
                load_from=None,
                log_file=None,
-               trace_def=None):
+               conf_file=None,
+               tmp_dir="/var/tmp"):
         self.set_logger(log_file)
         self.win_list = []
         self.stdscr = stdscr
@@ -33,7 +35,11 @@ class PsWatch(object):
         self.filter_editing = False
         self.stats_running = False
         self.event_file = event_file
+        self.tmp_dir = tmp_dir
         self.load_from = load_from
+        self.conf = {}
+        self.conf_file = conf_file
+        self.load_conf()
         curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_RED)
         curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
         curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)
@@ -41,11 +47,19 @@ class PsWatch(object):
         curses.init_pair(5, curses.COLOR_WHITE, curses.COLOR_YELLOW)
         curses.init_pair(6, curses.COLOR_WHITE, curses.COLOR_BLUE)
         curses.init_pair(7, curses.COLOR_WHITE, curses.COLOR_GREEN)
-        self.trace_mgr = TraceManager(pid_filter=pid_filter, uid_filter=uid_filter, trace_def=trace_def)
+        trace_def = self.conf.get("traces")
+        self.trace_mgr = TraceManager(pid_filter=pid_filter, uid_filter=uid_filter, trace_def=trace_def, tmp_dir=tmp_dir)
         self.running = False
         self.ext_display = False
         self.mutex = threading.Lock()
         self.init_windows()
+
+    def load_conf(self):
+        if self.conf_file == None:
+            return
+        with open(self.conf_file, 'r') as fd:
+            json_str = fd.read()
+        self.conf = json.loads(json_str)
 
     def set_logger(self, logfile):
         self.logger_name = LOGGER_NAME
@@ -82,7 +96,7 @@ class PsWatch(object):
         self.filter_win = FilterWin(self.stdscr, filter_win_width, filter_win_height, filter_win_x, filter_win_y, "Filter")
         self.win_list.append(self.filter_win)
         self.main_win = MainWin(self.stdscr, main_win_width, main_win_height, \
-                  main_win_x, main_win_y, "Traces", event_file=self.event_file)
+                  main_win_x, main_win_y, "Traces", event_file=self.event_file, tmp_dir=self.tmp_dir)
         self.win_list.append(self.main_win)
         self.tag_win = TagWin(self.stdscr, tag_win_width, tag_win_height, tag_win_x, tag_win_y, "Statistics")
         self.win_list.append(self.tag_win)
@@ -273,6 +287,5 @@ class PsWatch(object):
         self.stop_stats_thread()
         self.running = False
         if self.main_win:
-            del self.main_win
-            self.main_win = None
+            self.main_win.close()
 

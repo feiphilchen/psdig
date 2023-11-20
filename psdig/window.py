@@ -168,14 +168,15 @@ class StatusWin(CurseWin):
         curse_win.refresh()
 
 class MainWin(CurseWin):
-    def __init__(self, stdscr, width, height, x = 0, y = 0, title=None, event_file=None):
+    def __init__(self, stdscr, width, height, x = 0, y = 0, title=None, event_file=None, tmp_dir="/var/tmp"):
         super().__init__(stdscr, width, height, x, y, title, text_mode=True)
         self.set_logger()
-        self.trace_buffer = TraceBuffer()
+        self.tmp_dir = tmp_dir
+        self.trace_buffer = TraceBuffer(self.filtered_trace_buffer())
         if event_file:
-            self.all_traces = TraceBuffer(event_file, persist=True)
+            self.all_traces = TraceBuffer(event_file)
         else:
-            self.all_traces = TraceBuffer()
+            self.all_traces = TraceBuffer(self.all_trace_buffer())
         self.width = width
         self.height = height
         self.x = x
@@ -198,6 +199,12 @@ class MainWin(CurseWin):
         self.hdr_color = curses.color_pair(7)
         self.select_index = None
         self.first_ts = None
+
+    def filtered_trace_buffer(self):
+        return os.path.join(self.tmp_dir, "filtered_trace.db")
+
+    def all_trace_buffer(self):
+        return os.path.join(self.tmp_dir, "all_trace.db")
 
     def set_logger(self):
         self.logger_name = LOGGER_NAME
@@ -422,9 +429,12 @@ class MainWin(CurseWin):
         curse_win.addstr(0, 0, header, curses.A_BOLD |self.hdr_color)
         curse_win.refresh()
 
+    def close(self):
+        self.trace_buffer.close()
+        self.all_traces.close()
+
     def __del__(self):
-        del self.trace_buffer
-        del self.all_traces
+        pass
 
 class ExtendWin(CurseWin):
     def __init__(self, stdscr, width, height, x = 0, y = 0, title=None):
