@@ -265,7 +265,11 @@ class PsWatch(object):
         if self.load_from == None:
             self.start_watch_thread()
         else:
-            self.load_events(self.load_from)
+            self.logger.info("load traces from %s" % self.load_from)
+            try:
+                self.load_events(self.load_from)
+            except:
+                self.logger.error(traceback.format_exc())
         self.start_stats_thread()
         while self.running:
             try:

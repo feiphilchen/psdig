@@ -268,7 +268,7 @@ class TraceManager(object):
         self.tp.start(obj_dir=BPF_OBJ_DIR, compile_only=True)
 
     def file_read(self, event_file, callback):
-        eb = TraceBuffer(file_path=event_file, persist=True)
+        eb = TraceBuffer(file_path=event_file)
         event_nb = eb.length()
         for pos in range(0, event_nb):
             event = eb.read(pos)
