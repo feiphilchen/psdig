@@ -5,6 +5,7 @@ import sys
 import re
 import click
 import logging
+import time
 from .tracepoint import TracePoint
 from .conf import LOGGER_NAME
 
@@ -15,6 +16,7 @@ class Syscall(object):
         self.callback = {}
         self.callback_arg = {}
         self.tracepoint = tracepoint
+        self.boot_ts = float("%.6f" % (time.time() - time.monotonic()))
 
     def set_logger(self):
         self.logger_name = LOGGER_NAME
@@ -27,6 +29,10 @@ class Syscall(object):
         self.tracepoint.add_event_watch(exit_event, self.syscall_exit)
         self.callback[syscall] = callback
         self.callback_arg[syscall] = arg
+
+    def kernel_ns_to_timestamp(self, ktime_ns):
+        elapsed =  float("%.6f" % (ktime_ns/1000000000))
+        return self.boot_ts + elapsed
 
     def syscall_enter(self, event):
         cpuid = event['cpuid']
@@ -52,6 +58,7 @@ class Syscall(object):
         syscall_nr = event['parameters']['__syscall_nr']
         ret = event['parameters']['ret']
         ktime_ns = event['ktime_ns']
+        timestamp = self.kernel_ns_to_timestamp(ktime_ns)
         if cpuid in self.syscall_hash and syscall_nr in self.syscall_hash[cpuid]:
             try:
                 event = self.syscall_hash[cpuid][syscall_nr].pop(0)
@@ -60,6 +67,7 @@ class Syscall(object):
             metadata = {}
             metadata['syscall_nr'] = syscall_nr
             metadata['cpuid'] = cpuid
+            metadata['timestamp'] = timestamp
             metadata['latency'] = ktime_ns - event['ktime_ns']
             #if  ktime_ns - event['ktime_ns'] < 0:
             #    self.logger.error(f"error latentcy: {ktime_ns} {event['ktime_ns']}")

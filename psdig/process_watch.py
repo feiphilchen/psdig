@@ -32,6 +32,7 @@ class PsWatch(object):
         self.watch_thread = None
         self.stats_thread = None
         self.event_scroll = True
+        self.headless = False
         self.filter_editing = False
         self.stats_running = False
         self.event_file = event_file
@@ -40,19 +41,11 @@ class PsWatch(object):
         self.conf = {}
         self.conf_file = conf_file
         self.load_conf()
-        curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_RED)
-        curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
-        curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)
-        curses.init_pair(4, curses.COLOR_WHITE, curses.COLOR_RED)
-        curses.init_pair(5, curses.COLOR_WHITE, curses.COLOR_YELLOW)
-        curses.init_pair(6, curses.COLOR_WHITE, curses.COLOR_BLUE)
-        curses.init_pair(7, curses.COLOR_WHITE, curses.COLOR_GREEN)
         trace_def = self.conf.get("traces")
         self.trace_mgr = TraceManager(pid_filter=pid_filter, uid_filter=uid_filter, trace_def=trace_def, tmp_dir=tmp_dir)
         self.running = False
         self.ext_display = False
         self.mutex = threading.Lock()
-        self.init_windows()
 
     def load_conf(self):
         if self.conf_file == None:
@@ -66,7 +59,7 @@ class PsWatch(object):
         self.logger = logging.getLogger(self.logger_name)
         if not logfile:
             logfile = "/dev/null"
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(logging.INFO)
         # create file handler which logs even debug messages
         fh = logging.FileHandler(logfile)
         fh.setLevel(logging.DEBUG)
@@ -105,11 +98,22 @@ class PsWatch(object):
         ext_win_x = main_win_x + int((main_win_width - ext_win_width)/2)
         ext_win_y = main_win_y + int((main_win_height - ext_win_height)/2)
         self.ext_win = ExtendWin(self.stdscr, ext_win_width, ext_win_height, ext_win_x, ext_win_y, "Event Details")
-
+    
     def display_windows(self):
         #self.stdscr.clear()
         for win in self.win_list:
             win.display()
+
+    def gui_init(self):
+        curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_RED)
+        curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+        curses.init_pair(4, curses.COLOR_WHITE, curses.COLOR_RED)
+        curses.init_pair(5, curses.COLOR_WHITE, curses.COLOR_YELLOW)
+        curses.init_pair(6, curses.COLOR_WHITE, curses.COLOR_BLUE)
+        curses.init_pair(7, curses.COLOR_WHITE, curses.COLOR_GREEN)
+        self.init_windows()
+        self.display_windows()
 
     def focus_next(self):
         if self.focus_pos == None:
@@ -147,7 +151,7 @@ class PsWatch(object):
         w.display()
 
     def process_watched_event(self, event):
-        event['timestamp'] = time.time()
+        #event['timestamp'] = time.time()
         if self.filter_editing or not self.event_scroll:
             refresh = False
         else:
@@ -157,6 +161,13 @@ class PsWatch(object):
                 self.main_win.event_update(event, refresh)
             except:
                 self.logger.error(traceback.format_exc())
+
+    def process_watched_event_headless(self, event):
+        boot_ts = "%.6f" % (time.time() - time.monotonic())
+        dt = datetime.fromtimestamp(event['timestamp'])
+        dt_str = dt.strftime('%H:%M:%S.%f')
+        print(f"{dt_str} >> {event['name']} [{event['level']}]: ({event['comm']} pid={event['pid']} uid={event['uid']}) " + \
+             f">> {event['detail']}")
 
     def process_event_from_file(self, event):
         refresh = False
@@ -168,7 +179,10 @@ class PsWatch(object):
 
     def watch(self):
         try:
-            self.trace_mgr.collect(self.process_watched_event)
+            if not self.headless:
+                self.trace_mgr.collect(self.process_watched_event)
+            else:
+                self.trace_mgr.collect(self.process_watched_event_headless)
         except:
             pass
         finally:
@@ -261,6 +275,7 @@ class PsWatch(object):
 
     def run(self):
         self.running = True
+        self.gui_init()
         self.display_windows()
         if self.load_from == None:
             self.start_watch_thread()
@@ -286,10 +301,17 @@ class PsWatch(object):
                     except:
                         self.logger.error(traceback.format_exc())
 
+    def run_headless(self):
+        self.running = True
+        self.headless = True
+        self.start_watch_thread()
+        while self.running:
+            time.sleep(0.2)
+
     def stop(self):
         self.stop_watch_thread()
         self.stop_stats_thread()
         self.running = False
-        if self.main_win:
+        if not self.headless and self.main_win:
             self.main_win.close()
 

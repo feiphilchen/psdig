@@ -116,7 +116,7 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
         self.copy_from_pkg('trace_event/trace_event.c', dst_file)
         self.trace_bpf_o = []
         for event in events:
-            self.logger.info('building event %s' % str(event))
+            self.logger.debug('building event %s' % str(event))
             self.build_bpf_o(event)
             self.loaded += 1
         cmd = f"gcc {self.trace_event_c} -g -I/usr/local/share/psdig/usr/include -L/usr/local/share/psdig/usr/lib64/ -l:libbpf.a -ljson-c -lelf -lz -lpthread -o {self.trace_event_elf}"
@@ -190,7 +190,7 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
             cmd.append("-u")
             cmd.append(str(uid))
         cmd_str = " ".join(cmd)
-        self.logger.info(f'{cmd_str}')
+        self.logger.debug(f'{cmd_str}')
         self.proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         while self.collect_thread_running:
             line = self.proc.stdout.readline()

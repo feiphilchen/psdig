@@ -148,6 +148,7 @@ class TraceManager(object):
                "comm": metadata["comm"],
                "pid":  metadata["pid"],
                "uid":  metadata["uid"],
+               "timestamp":  metadata["timestamp"],
                "detail": detail,
                "level": level,
                "extend":extend
@@ -207,6 +208,7 @@ class TraceManager(object):
                "comm": metadata["comm"],
                "pid":  metadata["pid"],
                "uid":  metadata["uid"],
+               "timestamp":  metadata["timestamp"],
                "detail": detail,
                "level": level,
                "extend":extend
@@ -232,7 +234,10 @@ class TraceManager(object):
                         detail_func = lambda name,metadata,function,args:eval(detail_lambda)
                         detail = detail_func(name, metadata, function, args)
             if detail == None:
-                default_lambda = "','.join([ f'{key}={val}' for key,val in args.items()])"
+                if name == "uretprobe":
+                    default_lambda = "function + '()' + ','.join([ f'={val}' for key,val in args.items()])"
+                else:
+                    default_lambda = "function + '(' + ','.join([ f'{key}={val}' for key,val in args.items()]) + ')'"
                 detail_func =  lambda name,metadata,function,args:eval(default_lambda)
                 detail = detail_func(name, metadata, function, args)
             level_def = event_def.get('level')
@@ -260,6 +265,7 @@ class TraceManager(object):
                "comm": metadata["comm"],
                "pid":  metadata["pid"],
                "uid":  metadata["uid"],
+               "timestamp":  metadata["timestamp"],
                "detail": detail,
                "level": level,
                "extend":extend

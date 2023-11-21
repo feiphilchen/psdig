@@ -23,10 +23,25 @@ def watch_start(stdscr, pid, uid, output, log, trace_conf):
     global pswatch
     with tempfile.TemporaryDirectory() as tmpdirname:
         pswatch = PsWatch(stdscr, pid_filter=pid, uid_filter=uid, \
-           event_file=output, log_file=log, conf_file=trace_conf, tmp_dir=tmpdirname)
+           event_file=output, log_file=log, conf_file=trace_conf, \
+           tmp_dir=tmpdirname)
         signal.signal(signal.SIGINT, watch_interrupt)
         try:
             pswatch.run()
+        except:
+            pass
+        finally:
+            pswatch.stop()
+
+def watch_headless(pid, uid, output, log, trace_conf):
+    global pswatch
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        pswatch = PsWatch(None, pid_filter=pid, uid_filter=uid, \
+           event_file=output, log_file=log, conf_file=trace_conf, \
+           tmp_dir=tmpdirname)
+        signal.signal(signal.SIGINT, watch_interrupt)
+        try:
+            pswatch.run_headless()
         except:
             pass
         finally:
@@ -48,10 +63,14 @@ def event_load(stdscr, input_file, log):
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
 @click.option('--output', '-o', help='Save traces to the file')
 @click.option('--log', '-l', help='Log all messages to logfile')
+@click.option('--headless', is_flag=True, help='Run without curse windows')
 @click.option('--conf', '-c', help='Trace configuation file')
-def watch(pid, uid, output, log, conf):
+def watch(pid, uid, output, log, headless, conf):
     """Watch process traces and save to file"""
-    wrapper(watch_start, pid, uid, output, log, conf)
+    if not headless:
+        wrapper(watch_start, pid, uid, output, log, conf)
+    else:
+        watch_headless(pid, uid, output, log, conf)
 
 @click.command()
 @click.option('--input', '-i', required=True, help='Load events from the file')

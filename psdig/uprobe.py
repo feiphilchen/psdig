@@ -29,10 +29,15 @@ class Uprobe(object):
         self.callout_thread = None
         self.collect_thread_running = False
         self.collect_thread = None
+        self.boot_ts = float("%.6f" % (time.time() - time.monotonic()))
 
     def set_logger(self):
         self.logger_name = LOGGER_NAME
         self.logger = logging.getLogger(self.logger_name)
+
+    def kernel_ns_to_timestamp(self, ktime_ns):
+        elapsed =  float("%.6f" % (ktime_ns/1000000000))
+        return self.boot_ts + elapsed
 
     def probe_id(self, elf_path, function, enter):
         if enter:
@@ -54,9 +59,9 @@ class Uprobe(object):
         enter = enter_bool[enter_str]
         probe_id = self.probe_id(elf_path, function, enter)
         if enter:
-            name = f"uprobe:enter"
+            name = f"uprobe"
         else:
-            name = f"uprobe:ret"
+            name = f"uretprobe"
         handler = name,function,callback,arg
         if probe_id in self.probe_handlers and self.probe_handlers[probe_id] != None:
             self.probe_handlers[probe_id].append(handler)
@@ -284,6 +289,8 @@ int BPF_KRETPROBE(%s)
 
     def parse_uprobe_trace(self, event_obj):
         metadata = event_obj.copy()
+        ktime_ns = event_obj['ktime_ns']
+        metadata['timestamp'] = self.kernel_ns_to_timestamp(ktime_ns)
         if 'parameters' in event_obj:
             args = event_obj['parameters']
             del metadata['parameters']
@@ -348,7 +355,7 @@ int BPF_KRETPROBE(%s)
             cmd.append("-u")
             cmd.append(str(uid))
         cmd_str = " ".join(cmd)
-        self.logger.info(f'{cmd_str}')
+        self.logger.debug(f'{cmd_str}')
         self.proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         while True:
             line = self.proc.stdout.readline()
