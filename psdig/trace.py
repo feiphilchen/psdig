@@ -118,8 +118,9 @@ default_uprobe_fmt="lambda:f'{function}: ' + ','.join([f'{k}={v}' for k,v in arg
 @click.option('--filter', '-f', type=str, help="Filter string")
 @click.option('--pid', '-p', type=int, multiple=True, help='Pid filter')
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
+@click.option('--sym', '-s', type=click.Path(exists=True), help='Symbol file')
 @click.argument('probe')
-def uprobe_trace(output, filter, pid, uid, probe):
+def uprobe_trace(output, filter, pid, uid, sym, probe):
     """Trace uprobe"""
     with tempfile.TemporaryDirectory() as tmpdirname:
         uprobe = Uprobe(pid_filter=pid, uid_filter=uid)
@@ -131,9 +132,9 @@ def uprobe_trace(output, filter, pid, uid, probe):
             lambda_str = output.split(':', 1)[1]
             lambda_f = lambda name,metadata,function,args:eval(lambda_str)
             ctx = lambda_f,filter_f
-            uprobe.add(probe, uprobe_print_lambda, ctx)
+            uprobe.add(probe, uprobe_print_lambda, ctx, sym)
         else:
             ctx = output,filter_f
-            uprobe.add(probe, uprobe_print_fmt, ctx)
+            uprobe.add(probe, uprobe_print_fmt, ctx, sym)
         uprobe.start(obj_dir=tmpdirname)
 

@@ -13,7 +13,7 @@ from .dwarf import Dwarf
 from .conf import LOGGER_NAME
 
 class Uprobe(object):
-    def __init__(self, pid_filter=[], uid_filter=[]):
+    def __init__(self, pid_filter=[], uid_filter=[], symbols={}, ignore_self=True):
         self.set_logger()
         self.probes = []
         self.proc = None
@@ -25,6 +25,9 @@ class Uprobe(object):
         self.loading = 0
         self.loaded = 0
         self.probe_handlers = {}
+        self.symbols = symbols
+        self.ignore_self = ignore_self
+        self.pid = os.getpid()
         self.callout_thread_running = False
         self.callout_thread = None
         self.collect_thread_running = False
@@ -47,7 +50,7 @@ class Uprobe(object):
         id_str = hashlib.md5(probe_str.encode('utf-8')).hexdigest()[0:8]
         return int(id_str, 16)
 
-    def add(self, probe_conf, callback, arg=None):
+    def add(self, probe_conf, callback, arg=None, sym=None):
         enter_bool = {
             "enter":True,
             "ret":False
@@ -62,6 +65,8 @@ class Uprobe(object):
             name = f"uprobe"
         else:
             name = f"uretprobe"
+        if sym:
+            self.symbols[elf_path] = sym
         handler = name,function,callback,arg
         if probe_id in self.probe_handlers and self.probe_handlers[probe_id] != None:
             self.probe_handlers[probe_id].append(handler)
@@ -211,7 +216,11 @@ class Uprobe(object):
         else:
             uprobe_ret = False
             ret_id = 0
-        dwarf = Dwarf(elf_path)
+        if self.symbols and elf_path in self.symbols:
+            sym = self.symbols[elf_path]
+        else:
+            sym = elf_path
+        dwarf = Dwarf(sym)
         function = dwarf.resolve_function(func_name)
         if function == None:
             return None,None
@@ -300,6 +309,11 @@ int BPF_KRETPROBE(%s)
 
     def call_probe_handlers(self, event_obj):
         uprobe_id = event_obj['id']
+        if self.ignore_self:
+            if self.pid == event_obj['pid']:
+                return
+            if event_obj['comm'] == 'trace_uprobe':
+                return
         if uprobe_id in self.probe_handlers:
             metadata,args = self.parse_uprobe_trace(event_obj)
             for handler in self.probe_handlers[uprobe_id]:
