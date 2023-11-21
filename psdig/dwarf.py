@@ -14,13 +14,14 @@ class Dwarf(object):
         with open(filename, 'rb') as f:
             elffile = ELFFile(f)
             if not elffile.has_dwarf_info():
-                print('  file has no DWARF info')
                 return None
             self.dwarfinfo = elffile.get_dwarf_info()
 
     def resolve_function(self, funcname):
+        result = None
         for CU in self.dwarfinfo.iter_CUs():
             top_DIE = CU.get_top_DIE()
+            #print(CU.cu_die_offset)
             #print('    Top DIE with tag=%s' % top_DIE.tag)
             result = self.die_walk(CU, top_DIE, funcname)
             if result != None:
@@ -29,7 +30,8 @@ class Dwarf(object):
 
     def die_walk(self, cu, die, funcname):
         if die.tag == 'DW_TAG_subprogram':
-            if die.attributes.get('DW_AT_name').value.decode() == funcname:
+            die_name = die.attributes.get('DW_AT_name')
+            if die_name and die_name.value.decode() == funcname:
                 addr = die.attributes.get('DW_AT_low_pc').value
                 args = self.resolve_args(cu, die)
                 ret = self.resolve_return(cu, die)
@@ -41,13 +43,13 @@ class Dwarf(object):
         return None
 
     def resolve_ptr_addr(self, cu, ptr_dietype, mb):
-        dietype = cu.get_DIE_from_refaddr(ptr_dietype.attributes["DW_AT_type"].value)
+        dietype = cu.get_DIE_from_refaddr(cu.cu_offset + ptr_dietype.attributes["DW_AT_type"].value)
         if dietype.has_children:
             for child in dietype.iter_children():
                 name = child.attributes.get('DW_AT_name').value.decode()
                 if name == mb:
                     offset = child.attributes.get('DW_AT_data_member_location').value
-                    mb_dietype = cu.get_DIE_from_refaddr(child.attributes["DW_AT_type"].value)
+                    mb_dietype = cu.get_DIE_from_refaddr(cu.cu_offset + child.attributes["DW_AT_type"].value)
                     inst = {"inst": "ptr_addr", "args":[offset]}
                     return inst,mb_dietype
         return None,None
@@ -58,14 +60,14 @@ class Dwarf(object):
                 name = child.attributes.get('DW_AT_name').value.decode()
                 if name == mb:
                     offset = child.attributes.get('DW_AT_data_member_location').value
-                    mb_dietype = cu.get_DIE_from_refaddr(child.attributes["DW_AT_type"].value)
+                    mb_dietype = cu.get_DIE_from_refaddr(cu.cu_offset + child.attributes["DW_AT_type"].value)
                     inst = {"inst": "addr", "args":[offset]}
                     return inst,mb_dietype
         return None,None
 
     def is_string(self, cu, dietype):
         if dietype.tag == "DW_TAG_pointer_type":
-            next_dietype = cu.get_DIE_from_refaddr(dietype.attributes["DW_AT_type"].value)
+            next_dietype = cu.get_DIE_from_refaddr(cu.cu_offset + dietype.attributes["DW_AT_type"].value)
             if next_dietype.attributes.get('DW_AT_name').value.decode() == 'char':
                 return True
         return False
@@ -78,8 +80,7 @@ class Dwarf(object):
             params = re.split(r"(->|\.)", statement)
             v = params.pop(0)
             instructions = []
-            dietype = cu.get_DIE_from_refaddr(arg_dies[v].attributes["DW_AT_type"].value)
-            #print(dietype)
+            dietype = cu.get_DIE_from_refaddr(cu.cu_offset + arg_dies[v].attributes["DW_AT_type"].value)
             inst = {"inst":"base", "args":[v]}
             instructions.append(inst)
             while len(params) > 0:
@@ -102,7 +103,6 @@ class Dwarf(object):
                 inst = {"inst":"read_bytes", "args":[size]}
             instructions.append(inst)
             var_insts[name] = instructions
-        #print(instructions)
         return var_insts
 
     def parse_var_type(self, cu, dietype):
@@ -110,7 +110,7 @@ class Dwarf(object):
             size = dietype.attributes.get('DW_AT_byte_size').value
             type_list = [{"type": "ptr", "size": size}]
             if 'DW_AT_type' in dietype.attributes:
-                parent_dietype = cu.get_DIE_from_refaddr(dietype.attributes["DW_AT_type"].value)
+                parent_dietype = cu.get_DIE_from_refaddr(cu.cu_offset + dietype.attributes["DW_AT_type"].value)
                 parent_type_list = self.parse_var_type(cu, parent_dietype)
                 return type_list + parent_type_list
             else:
@@ -135,7 +135,7 @@ class Dwarf(object):
             type_list = [{"type": "union", "size": size, "name":name}]
             return type_list
         elif dietype.tag == "DW_TAG_typedef":
-            typedef_dietype = cu.get_DIE_from_refaddr(dietype.attributes["DW_AT_type"].value)
+            typedef_dietype = cu.get_DIE_from_refaddr(cu.cu_offset + dietype.attributes["DW_AT_type"].value)
             return self.parse_var_type(cu, typedef_dietype)
 
     def resolve_args(self, cu, die):
@@ -145,7 +145,7 @@ class Dwarf(object):
             if child.tag == 'DW_TAG_formal_parameter':
                 arg = {}
                 name = child.attributes.get('DW_AT_name').value.decode()
-                dietype = cu.get_DIE_from_refaddr(child.attributes["DW_AT_type"].value)
+                dietype = cu.get_DIE_from_refaddr(cu.cu_offset + child.attributes["DW_AT_type"].value)
                 argtype = self.parse_var_type(cu, dietype)
                 arg['name'] = name
                 arg['type'] = argtype
@@ -155,7 +155,7 @@ class Dwarf(object):
     def resolve_return(self, cu, die):
         if "DW_AT_type" not in die.attributes:
             return []
-        dietype = cu.get_DIE_from_refaddr(die.attributes["DW_AT_type"].value)
+        dietype = cu.get_DIE_from_refaddr(cu.cu_offset + die.attributes["DW_AT_type"].value)
         type_list = self.parse_var_type(cu, dietype)
         return type_list
 
