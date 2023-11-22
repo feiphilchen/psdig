@@ -219,7 +219,7 @@ class TraceManager(object):
                 f'args={args} metadata={metadata}')
             self.logger.error(traceback.format_exc())
 
-    def uprobe_handler(self, name, metadata, function, args, ctx):
+    def uprobe_handler(self, function, metadata, args, ret, ctx):
         try:
             event_def = ctx
             detail_def = event_def.get('detail')
@@ -227,19 +227,16 @@ class TraceManager(object):
             if detail_def:
                 if isinstance(detail_def, str):
                     detail_fmt = detail_def
-                    detail = detail_fmt.format(name=name, metadata=metadata, function=function, args=args)
+                    detail = detail_fmt.format(metadata=metadata, function=function, args=args, ret=ret)
                 elif isinstance(detail_def, dict):
                     detail_lambda = detail_def.get('lambda')
                     if detail_lambda:
-                        detail_func = lambda name,metadata,function,args:eval(detail_lambda)
-                        detail = detail_func(name, metadata, function, args)
+                        detail_func = lambda function,metadata,args,ret:eval(detail_lambda)
+                        detail = detail_func(function, metadata, args, ret)
             if detail == None:
-                if name == "uretprobe":
-                    default_lambda = "function + '()' + ','.join([ f'={val}' for key,val in args.items()])"
-                else:
-                    default_lambda = "function + '(' + ','.join([ f'{key}={val}' for key,val in args.items()]) + ')'"
-                detail_func =  lambda name,metadata,function,args:eval(default_lambda)
-                detail = detail_func(name, metadata, function, args)
+                default_lambda = "function_format(function, args, ret)"
+                detail_func =  lambda function,metadata,args,ret:eval(default_lambda)
+                detail = detail_func(function, metadata, args, ret)
             level_def = event_def.get('level')
             level = None
             if level_def:
@@ -248,16 +245,18 @@ class TraceManager(object):
                 elif isinstance(level_def, dict):
                     level_lambda = level_def.get('lambda')
                     if level_lambda:
-                        level_check = lambda name,metadata,function,args: eval(level_lambda)
-                        level = level_check(name, metadata, function, args)
+                        level_check = lambda function,metadata,args,ret: eval(level_lambda)
+                        level = level_check(function, metadata, args, ret)
             if level == None:
                 level = 'INFO'
             trace_name = event_def.get('name')
             extend = {}
-            extend['event'] = name
             extend['function'] = function
-            arg_list = [f"{k}={args[k]}" for k in args]
-            extend['arguments'] = "\n".join(arg_list)
+            if args:
+                arg_list = [f"{k}={args[k]}" for k in args]
+                extend['arguments'] = "\n".join(arg_list)
+            if ret:
+                extend['return'] = ret
             extend['cpu id'] = metadata['cpuid']
             extend['process'] = "%d/%s" % (metadata["pid"], metadata["comm"])
             trace = {
@@ -272,8 +271,8 @@ class TraceManager(object):
             }
             self.trace_send(trace)
         except:
-            self.logger.error(f'error processing uprobe:{name} ' + \
-                f'args={args} metadata={metadata}')
+            self.logger.error(f'error processing uprobe:{function} ' + \
+                f'args={args} ret={ret} metadata={metadata}')
             self.logger.error(traceback.format_exc())
 
     def trace_register(self, trace_name):
