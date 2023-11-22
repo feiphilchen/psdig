@@ -6,16 +6,45 @@ import logging
 import traceback
 import pkgutil
 import threading
+import binascii
 from elftools.elf.elffile import ELFFile
 from .conf import LOGGER_NAME
 
 class Dwarf(object):
     def __init__(self, filename):
+        self.dwarf_open(filename)
+
+    def dwarf_open(self, filename):
         with open(filename, 'rb') as f:
             elffile = ELFFile(f)
+            debug_link = self.debug_link(elffile)
+            if debug_link:
+                self.dwarf_open(debug_link)
+                return
             if not elffile.has_dwarf_info():
                 return None
             self.dwarfinfo = elffile.get_dwarf_info()
+
+    def debug_link(self, elffile):
+        debug_link = None
+        build_id = None
+        for section in elffile.iter_sections():
+            if section.name == ".gnu_debuglink":
+                data = section.data()
+                fdata = data[0:data.find(b"\x00")]
+                debug_link = fdata
+            elif section.name == ".note.gnu.build-id":
+                data = section.data()
+                hash = data[16:]
+                value = binascii.hexlify(hash).decode("ascii")
+                build_id = value
+        debug_prefixes = ["/usr/lib/debug/.build-id/"]
+        if build_id and debug_link:
+            for prefix in debug_prefixes:
+                path = os.path.join(prefix, build_id[0:2], build_id[2:] + ".debug")
+                if os.path.isfile(path):
+                    return path
+        return None
 
     def resolve_function(self, funcname):
         result = None

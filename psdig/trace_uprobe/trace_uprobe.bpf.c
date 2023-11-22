@@ -42,6 +42,58 @@ struct bpf_map_def SEC("maps") trace_uid_filter = {
     .max_entries = 64
 };
 
+struct bpf_map_def SEC("maps") exclude_pid_filter = {
+    .type = BPF_MAP_TYPE_HASH,
+    .key_size = sizeof(int),
+    .value_size = sizeof(int),
+    .max_entries = 64
+};
+
+static int
+check_pid_filter(unsigned int pid)
+{
+    int filter_type = TRACE_FILTER_TYPE_PID;
+    int * count, * filter;
+
+    filter = bpf_map_lookup_elem(&exclude_pid_filter, &pid);
+    if (filter != NULL) {
+        return 1;
+    }
+    count = bpf_map_lookup_elem(&trace_filter_count, &filter_type);
+    if (count == NULL) {
+        return 0;
+    }
+    if (*count == 0) {
+        return 0;
+    }
+    filter = bpf_map_lookup_elem(&trace_pid_filter, &pid);
+    if (filter == NULL) {
+        return 1;
+    }
+    return 0;
+}
+
+static int
+check_uid_filter(unsigned int uid)
+{
+    int filter_type = TRACE_FILTER_TYPE_UID;
+    int * count, * filter;
+
+    count = bpf_map_lookup_elem(&trace_filter_count, &filter_type);
+    if (count == NULL) {
+        return 0;
+    }
+    if (*count == 0) {
+        return 0;
+    }
+    filter = bpf_map_lookup_elem(&trace_uid_filter, &uid);
+    if (filter == NULL) {
+        return 1;
+    }
+    return 0;
+}
+
+
 static inline int
 trace_add_str (trace_t * t, char * str)
 {
@@ -166,6 +218,7 @@ __trace_init (__u32 id)
 {
     trace_t    * trace;
     int          zero = 0;
+    int          filter_out;
 
     trace = bpf_map_lookup_elem(&trace_heap, &zero);
     if (trace == NULL) {
@@ -178,6 +231,14 @@ __trace_init (__u32 id)
     trace->hdr.ktime_ns = bpf_ktime_get_ns();
     bpf_get_current_comm(trace->hdr.comm, sizeof(trace->hdr.comm));
     trace->hdr.len = sizeof(struct trace_header);
+    filter_out = check_pid_filter(trace->hdr.pid);
+    if (filter_out > 0) {
+        return NULL;
+    }
+    filter_out = check_uid_filter(trace->hdr.uid);
+    if (filter_out > 0) {
+        return NULL;
+    }
     return trace;
 }
 

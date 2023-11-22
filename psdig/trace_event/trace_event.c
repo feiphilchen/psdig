@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <pthread.h>
+#include <sys/types.h>
 #include <json-c/json.h>
 #include <sys/resource.h>
 #include <arpa/inet.h>
@@ -25,8 +26,10 @@
 char * trace_objs[MAX_TRACE_OBJ];
 unsigned int pid_filter[MAX_PID_FILTER];
 unsigned int uid_filter[MAX_UID_FILTER];
+unsigned int pid_exclude[MAX_PID_FILTER];
 unsigned int pid_filter_count = 0;
 unsigned int uid_filter_count = 0;
+unsigned int pid_exclude_count = 0;
 unsigned int trace_obj_count = 0;
 struct event_schema event_schemas [] = EVT_SCHEMA_LIST;
 
@@ -211,6 +214,27 @@ init_pid_filter (struct bpf_object * bo)
     unsigned int pos;
     int         updated, filter_count_fd, filter_fd;
     unsigned int filter_type = EVENT_FILTER_TYPE_PID;
+    pid_t       pid;
+
+    filter_fd = bpf_object__find_map_fd_by_name(bo, "exclude_pid_filter");
+    if (filter_fd < 0) {
+         fprintf(stderr, "ERROR: bpf_object__find_map_fd_by_name failed\n");
+         return -EINVAL;
+    }
+    for (pos = 0; pos < pid_exclude_count; pos++) {
+        updated = bpf_map_update_elem(filter_fd, &pid_exclude[pos], &pid_exclude[pos], BPF_ANY);
+        if (updated < 0) {
+             fprintf(stderr, "failed to update pid to exclude: id=%u, %s\n",
+                 pid_exclude[pos], strerror(errno));
+             return -EINVAL;
+        }
+    }
+    pid = getpid();
+    updated = bpf_map_update_elem(filter_fd, &pid, &pid, BPF_ANY);
+    if (updated < 0) {
+         fprintf(stderr, "failed to update self pid to exclude: id=%u, %s\n",
+              pid, strerror(errno));
+    }
 
     filter_count_fd = bpf_object__find_map_fd_by_name(bo, "event_filter_count");
     if (filter_count_fd < 0) {
@@ -336,6 +360,7 @@ usage(const char *prgname)
     printf("%s [options]\n"
            "  -o: <trace-obj> Trace object file\n"
            "  -p: <pid>       Pid filter\n"
+           "  -x: <pid>       Pid excluded\n"
            "  -u: <uid>       Uid filter\n"
            "  -h:             Show help message and exit\n",
                prgname);
@@ -346,6 +371,7 @@ static const char short_options[] =
         "h"  /* help */
         "u:" /* uid filter*/
         "p:" /* pid filter */
+        "x:" /* pid excluded */
         "o:" /* trace object file*/
         ;
 
@@ -374,6 +400,12 @@ parse_args (int argc, char **argv)
                 if (pid_filter_count < MAX_PID_FILTER) {
                     pid_filter[pid_filter_count] = atoi(optarg);
                     pid_filter_count++;
+                }
+                break;
+            case 'x':
+                if (pid_exclude_count < MAX_PID_FILTER) {
+                    pid_exclude[pid_exclude_count] = atoi(optarg);
+                    pid_exclude_count++;
                 }
                 break;
             case 'o':

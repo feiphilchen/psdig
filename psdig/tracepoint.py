@@ -125,13 +125,6 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
 
     def call_event_handlers(self, event_obj):
         event = event_obj['event']
-        if self.ignore_self:
-            if self.pid == event_obj['pid']:
-                return
-            if event_obj['comm'] == 'trace_event':
-                return
-            if event_obj['comm'] == 'trace_uprobe':
-                return
         if event in self.event_handlers:
             for handler in self.event_handlers[event]:
                 func,arg = handler
@@ -189,6 +182,8 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
         for uid in self.uid_filter:
             cmd.append("-u")
             cmd.append(str(uid))
+        cmd.append('-x')
+        cmd.append(str(self.pid))
         cmd_str = " ".join(cmd)
         self.logger.debug(f'{cmd_str}')
         self.proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)

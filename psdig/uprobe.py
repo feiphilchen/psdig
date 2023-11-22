@@ -62,9 +62,9 @@ class Uprobe(object):
         enter = enter_bool[enter_str]
         probe_id = self.probe_id(elf_path, function, enter)
         if enter:
-            name = f"uprobe"
+            name = "uprobe"
         else:
-            name = f"uretprobe"
+            name = "uretprobe"
         if sym:
             self.symbols[elf_path] = sym
         handler = name,function,callback,arg
@@ -309,19 +309,18 @@ int BPF_KRETPROBE(%s)
 
     def call_probe_handlers(self, event_obj):
         uprobe_id = event_obj['id']
-        if self.ignore_self:
-            if self.pid == event_obj['pid']:
-                return
-            if event_obj['comm'] == 'trace_uprobe':
-                return
         if uprobe_id in self.probe_handlers:
             metadata,args = self.parse_uprobe_trace(event_obj)
             for handler in self.probe_handlers[uprobe_id]:
                 name,func,callback,ctx = handler
+                ret = None
+                if name == 'uretprobe':
+                    ret = args.get('ret')
+                    args = None
                 if ctx == None:
-                    callback(name, metadata, func, args)
+                    callback(func, metadata, args, ret)
                 else:
-                    callback(name, metadata, func, args, ctx)
+                    callback(func, metadata, args, ret, ctx)
 
     def events_callout(self, events):
         events.sort(key=lambda x: x['ktime_ns'], reverse=False)
@@ -368,6 +367,8 @@ int BPF_KRETPROBE(%s)
         for uid in self.uid_filter:
             cmd.append("-u")
             cmd.append(str(uid))
+        cmd.append('-x')
+        cmd.append(str(self.pid))
         cmd_str = " ".join(cmd)
         self.logger.debug(f'{cmd_str}')
         self.proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)

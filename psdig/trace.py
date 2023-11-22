@@ -11,7 +11,7 @@ from .uprobe import Uprobe
 from .lambda_helper import *
 import tempfile
 
-default_syscall_fmt="lambda:f'{name}(' + ','.join([f'{k}={v}' for k,v in args.items()]) + f')={ret}'"
+default_syscall_fmt="lambda:function_format(name, args, ret)"
 def syscall_print_fmt(name, metadata, args, ret, ctx):
     fmt,filter_f = ctx
     if filter_f:
@@ -19,6 +19,7 @@ def syscall_print_fmt(name, metadata, args, ret, ctx):
         if not filter_ret:
             return
     print(fmt.format(name=name, metadata=metadata, args=args, ret=ret))
+
 
 def syscall_print_lambda(name, metadata, args, ret, ctx):
     lambda_f,filter_f = ctx
@@ -30,7 +31,7 @@ def syscall_print_lambda(name, metadata, args, ret, ctx):
 
 @click.command()
 @click.option('--output', '-o', type=str, default=default_syscall_fmt, help="Format string")
-@click.option('--filter', '-F', type=str, help="Filter string")
+@click.option('--filter', '-f', type=str, help="Filter string")
 @click.option('--pid', '-p', type=int, multiple=True, help='Pid filter')
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
 @click.argument('syscall')
@@ -72,7 +73,7 @@ def event_print_lambda(name, metadata, args, ctx):
 
 @click.command()
 @click.option('--output', '-o', type=str, default=default_event_fmt,help="Format string")
-@click.option('--filter', '-F', type=str, help="Filter string")
+@click.option('--filter', '-f', type=str, help="Filter string")
 @click.option('--pid', '-p', type=int, multiple=True, help='Pid filter')
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
 @click.argument('event')
@@ -95,24 +96,23 @@ def event_trace(output, filter, pid, uid, event):
             event_obj.add(event, event_print_fmt, ctx)
         tracepoint.start(obj_dir=tmpdirname)
 
-
-def uprobe_print_fmt(name, metadata, function, args, ctx):
+def uprobe_print_fmt(function, metadata, args, ret, ctx):
     fmt,filter_f = ctx
     if filter_f:
-        filter_ret = filter_f(name, metadata, function, args)
+        filter_ret = filter_f(function, metadata, args, ret)
         if not filter_ret:
             return
-    print(fmt.format(name=name, metadata=metadata, function=function, args=args))
+    print(fmt.format(metadata=metadata, function=function, args=args, ret=ret))
 
-def uprobe_print_lambda(name, metadata, function, args, ctx):
+def uprobe_print_lambda(function, metadata, args, ret, ctx):
     lambda_f,filter_f = ctx
     if filter_f:
-        filter_ret = filter_f(name, metadata, function, args)
+        filter_ret = filter_f(function, metadata, args, ret)
         if not filter_ret:
             return
-    print(lambda_f(name, metadata, function, args))
+    print(lambda_f(function, metadata, args, ret))
 
-default_uprobe_fmt="lambda:f'{function}: ' + ','.join([f'{k}={v}' for k,v in args.items()])"
+default_uprobe_fmt="lambda:function_format(function, args, ret)"
 @click.command()
 @click.option('--output', '-o', type=str, default=default_uprobe_fmt, help="Output format")
 @click.option('--filter', '-f', type=str, help="Filter string")
@@ -125,12 +125,12 @@ def uprobe_trace(output, filter, pid, uid, sym, probe):
     with tempfile.TemporaryDirectory() as tmpdirname:
         uprobe = Uprobe(pid_filter=pid, uid_filter=uid)
         if filter:
-            filter_f = lambda name,metadata,function,args:eval(filter)
+            filter_f = lambda function,metadata,args,ret:eval(filter)
         else:
             filter_f = None
         if output.strip().startswith('lambda:'):
             lambda_str = output.split(':', 1)[1]
-            lambda_f = lambda name,metadata,function,args:eval(lambda_str)
+            lambda_f = lambda function,metadata,args,ret:eval(lambda_str)
             ctx = lambda_f,filter_f
             uprobe.add(probe, uprobe_print_lambda, ctx, sym)
         else:

@@ -56,6 +56,13 @@ struct bpf_map_def SEC("maps") event_uid_filter = {
     .max_entries = 64
 };
 
+struct bpf_map_def SEC("maps") exclude_pid_filter = {
+    .type = BPF_MAP_TYPE_HASH,
+    .key_size = sizeof(int),
+    .value_size = sizeof(int),
+    .max_entries = 64
+};
+
 static inline int
 read_event_field_bytes (void                 * ctx, 
                         struct event_field   * field,
@@ -159,6 +166,10 @@ check_pid_filter(unsigned int pid)
     int filter_type = EVENT_FILTER_TYPE_PID;
     int * count, * filter;
 
+    filter = bpf_map_lookup_elem(&exclude_pid_filter, &pid);
+    if (filter != NULL) {
+        return 1;
+    }
     count = bpf_map_lookup_elem(&event_filter_count, &filter_type);
     if (count == NULL) {
         return 0;
