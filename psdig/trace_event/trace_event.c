@@ -96,6 +96,64 @@ void bytes_to_str(uint8_t * bytes, uint32_t bytes_len, char * buf)
     return ;
 }
 
+static  int
+event_read_int (void                * ptr, 
+                unsigned int          ulen,
+                struct json_object   * jobj,
+                char           * field_name)
+{
+    int8_t   i8;
+    int16_t  i16;
+    int32_t  i32;
+    int64_t  i64;
+
+    if (ulen == 1) {
+        memcpy(&i8, ptr, ulen);
+        json_object_object_add(jobj, field_name, json_object_new_int64((int64_t)i8));
+    } else if (ulen == 2) {
+        memcpy(&i16, ptr, ulen);
+        json_object_object_add(jobj, field_name, json_object_new_int64((int64_t)i16));
+    } else if (ulen == 4) {
+        memcpy(&i32, ptr, ulen);
+        json_object_object_add(jobj, field_name, json_object_new_int64((int64_t)i32));
+    } else if (ulen == 8) {
+        memcpy(&i64, ptr, ulen);
+        json_object_object_add(jobj, field_name, json_object_new_int64((int64_t)i64));
+    } else {
+        return -EINVAL;
+    }
+    return 0;
+}
+
+static  int
+event_read_uint (void                * ptr,
+                 unsigned int          ulen,
+                 struct json_object   * jobj,
+                 char           * field_name)
+{
+    uint8_t   u8;
+    uint16_t  u16;
+    uint32_t  u32;
+    uint64_t  u64;
+
+    if (ulen == 1) {
+        memcpy(&u8, ptr, ulen);
+        json_object_object_add(jobj, field_name, json_object_new_uint64((uint64_t)u8));
+    } else if (ulen == 2) {
+        memcpy(&u16, ptr, ulen);
+        json_object_object_add(jobj, field_name, json_object_new_uint64((uint64_t)u16));
+    } else if (ulen == 4) {
+        memcpy(&u32, ptr, ulen);
+        json_object_object_add(jobj, field_name, json_object_new_uint64((uint64_t)u32));
+    } else if (ulen == 8) {
+        memcpy(&u64, ptr, ulen);
+        json_object_object_add(jobj, field_name, json_object_new_uint64((uint64_t)u64));
+    } else {
+        return -EINVAL;
+    }
+    return 0;
+}
+
 void print_bpf_output(void *ctx, 
                       int cpu,
                       void *data, 
@@ -133,11 +191,12 @@ void print_bpf_output(void *ctx,
     for (pos = 0; pos < schema->field_nr; pos++) {
         field = &schema->fields[pos];
         if (field->type == EVENT_FIELD_TYPE_INT) {
-            result = 0;
-            memcpy(&result, ptr, field->size);
+            event_read_int(ptr, field->size, jparams,  field->name);
             ptr += field->size;
-            json_object_object_add(jparams, field->name, json_object_new_int64((int64_t)result));
-        } if (field->type == EVENT_FIELD_TYPE_BYTES) {
+        } else if (field->type == EVENT_FIELD_TYPE_UINT) {
+            event_read_uint(ptr, field->size, jparams,  field->name);
+            ptr += field->size;
+        } else if (field->type == EVENT_FIELD_TYPE_BYTES) {
             if (field->size <= EVENT_FIELD_MAX_BYTES_LEN) {
                 bytes_to_str(ptr, field->size, bytes_str);
                 json_object_object_add(jparams, field->name, json_object_new_string(bytes_str));

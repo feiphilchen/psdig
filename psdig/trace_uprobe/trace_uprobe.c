@@ -150,16 +150,16 @@ trace_read_uint (trace_data_t * data,
     ulen = data->len;
     if (ulen == 1) {
         memcpy(&u8, data->value, ulen);
-        json_object_object_add(jobj, field_name, json_object_new_uint64((int64_t)u8));
+        json_object_object_add(jobj, field_name, json_object_new_uint64((uint64_t)u8));
     } else if (ulen == 2) {
         memcpy(&u16, data->value, ulen);
-        json_object_object_add(jobj, field_name, json_object_new_uint64((int64_t)u16));
+        json_object_object_add(jobj, field_name, json_object_new_uint64((uint64_t)u16));
     } else if (ulen == 4) {
         memcpy(&u32, data->value, ulen);
-        json_object_object_add(jobj, field_name, json_object_new_uint64((int64_t)u32));
+        json_object_object_add(jobj, field_name, json_object_new_uint64((uint64_t)u32));
     } else if (ulen == 8) {
         memcpy(&u64, data->value, ulen);
-        json_object_object_add(jobj, field_name, json_object_new_uint64((int64_t)u64));
+        json_object_object_add(jobj, field_name, json_object_new_uint64((uint64_t)u64));
     } else {
         return -EINVAL;
     }
