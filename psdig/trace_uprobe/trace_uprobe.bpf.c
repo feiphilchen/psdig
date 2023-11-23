@@ -193,6 +193,18 @@ read_int (trace_t * t, void * addr, __u32 size, char * field)
 }
 
 static inline int
+read_uint (trace_t * t, void * addr, __u32 size, char * field)
+{
+    if (trace_add_str(t, field) < 0) {
+        return -1;
+    }
+    if (trace_add(t, addr, size, TRACE_DATA_TYPE_UINT) < 0) {
+        return -1;
+    }
+    return 0;
+}
+
+static inline int
 __read_str (trace_t * t, char * str, char * field)
 {
     if (trace_add_str(t, field) < 0) {

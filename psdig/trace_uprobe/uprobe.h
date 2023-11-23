@@ -28,6 +28,7 @@ typedef enum {
 
 typedef enum {
    TRACE_DATA_TYPE_INT = 0,
+   TRACE_DATA_TYPE_UINT,
    TRACE_DATA_TYPE_STR,
    TRACE_DATA_TYPE_FLOAT,
    TRACE_DATA_TYPE_PTR,

@@ -137,8 +137,9 @@ trace_read_str (trace_data_t * data,
 }
 
 static  int
-trace_read_int (trace_data_t * data,
-                uint64_t      * u)
+trace_read_uint (trace_data_t * data,
+                struct json_object   * jobj,
+                char           * field_name)
 {
     unsigned int ulen;
     uint8_t   u8;
@@ -149,16 +150,46 @@ trace_read_int (trace_data_t * data,
     ulen = data->len;
     if (ulen == 1) {
         memcpy(&u8, data->value, ulen);
-        *u = u8;
+        json_object_object_add(jobj, field_name, json_object_new_uint64((int64_t)u8));
     } else if (ulen == 2) {
         memcpy(&u16, data->value, ulen);
-        *u = u16;
+        json_object_object_add(jobj, field_name, json_object_new_uint64((int64_t)u16));
     } else if (ulen == 4) {
         memcpy(&u32, data->value, ulen);
-        *u = u32;
+        json_object_object_add(jobj, field_name, json_object_new_uint64((int64_t)u32));
     } else if (ulen == 8) {
         memcpy(&u64, data->value, ulen);
-        *u = u64;
+        json_object_object_add(jobj, field_name, json_object_new_uint64((int64_t)u64));
+    } else {
+        return -EINVAL;
+    }
+    return data->len + sizeof(trace_data_t);
+}
+
+static  int
+trace_read_int (trace_data_t * data,
+               struct json_object   * jobj,
+               char           * field_name)
+{
+    unsigned int ulen;
+    int8_t   i8;
+    int16_t  i16;
+    int32_t  i32;
+    int64_t  i64;
+
+    ulen = data->len;
+    if (ulen == 1) {
+        memcpy(&i8, data->value, ulen);
+        json_object_object_add(jobj, field_name, json_object_new_int64((int64_t)i8));
+    } else if (ulen == 2) {
+        memcpy(&i16, data->value, ulen);
+        json_object_object_add(jobj, field_name, json_object_new_int64((int64_t)i16));
+    } else if (ulen == 4) {
+        memcpy(&i32, data->value, ulen);
+        json_object_object_add(jobj, field_name, json_object_new_int64((int64_t)i32));
+    } else if (ulen == 8) {
+        memcpy(&i64, data->value, ulen);
+        json_object_object_add(jobj, field_name, json_object_new_int64((int64_t)i64));
     } else {
         return -EINVAL;
     }
@@ -186,7 +217,6 @@ trace_read_obj (trace_data_t        * data,
 {
     void               * ptr;
     char                field_name[TRACE_DATA_MAX_STR_LEN];
-    uint64_t            uint_data;
     char                str_data[TRACE_DATA_MAX_STR_LEN];
     void               * ptr_data;
     char                ptr_data_str[32];
@@ -208,11 +238,16 @@ trace_read_obj (trace_data_t        * data,
         data = (trace_data_t *)ptr;
         switch (data->type) {
             case TRACE_DATA_TYPE_INT:
-                ret = trace_read_int(data, &uint_data);
+                ret = trace_read_int(data, jobj, field_name);
                 if (ret < 0) {
                     return -EINVAL;
                 }
-                json_object_object_add(jobj, field_name, json_object_new_int64((int64_t)uint_data));
+                break;
+            case TRACE_DATA_TYPE_UINT:
+                ret = trace_read_uint(data, jobj, field_name);
+                if (ret < 0) {
+                    return -EINVAL;
+                }
                 break;
             case TRACE_DATA_TYPE_PTR:
                 ret = trace_read_ptr(data, &ptr_data);
