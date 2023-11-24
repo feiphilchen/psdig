@@ -65,19 +65,21 @@ class TraceManager(object):
             name = ent['name']
             trigger = ent['trigger']
             trigger_type = trigger.split(':', 1)[0]
-            trigger_value = trigger.split(':', 1)[1]
             if trigger_type == 'syscall':
                 self.trace_register(name)
-                syscall_name = trigger_value
+                syscall_name = trigger.split(':', 1)[1]
                 self.syscall.add(syscall_name, self.syscall_event_handler, ent)
             elif trigger_type == 'event':
                 self.trace_register(name)
-                event_name = trigger_value
+                event_name = trigger.split(':', 1)[1]
                 self.event.add(event_name, self.raw_event_handler, ent)
             elif trigger_type == 'uprobe':
                 self.trace_register(name)
-                probe = trigger_value
-                self.uprobe.add(probe, self.uprobe_handler, ent)
+                elf = ent.get('elf')
+                function = ent.get('function')
+                ret = ent.get('return', False)
+                sym = ent.get('sym')
+                self.uprobe.add(elf, function, self.uprobe_handler, not ret, ent, sym)
 
     def get_process_info(self, pid):
         key = f"{pid}"

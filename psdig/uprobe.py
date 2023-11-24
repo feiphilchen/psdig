@@ -229,7 +229,6 @@ class Uprobe(object):
             sym = elf_path
         dwarf = Dwarf(sym)
         functions = dwarf.resolve_function(func_name)
-        print(functions)
         result = []
         for func in functions:
             bpf_c_file,addr = self.__build_bpf_c(func, enter_id, ret_id)

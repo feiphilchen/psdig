@@ -116,26 +116,24 @@ class Dwarf(object):
             result['addr'] = low_pc.value
         args = self.resolve_args(cu, die)
         result['args'] = args
-        ret = self.resolve_return(cu, die)
-        result['ret'] = ret
         return result
 
     def get_function_name(self, cu, die):
         name = die.attributes.get('DW_AT_name')
         if name:
             parent = die.get_parent()
-            return name.value.decode(),parent
+            return name.value.decode(),parent,die
         spec = die.attributes.get('DW_AT_specification')
         if spec == None:
-            return None,None
+            return None,None,None
         spec_die = cu.get_DIE_from_refaddr(cu.cu_offset + spec.value)
         if spec_die == None:
-            return None,None
+            return None,None,None
         die_name = spec_die.attributes.get('DW_AT_name')
         if die_name == None:
-            return None,None
+            return None,None,None
         parent = spec_die.get_parent()
-        return die_name.value.decode(),parent
+        return die_name.value.decode(),parent,spec_die
 
     def resolve_function_parent(self, parent):
         class_name = None
@@ -176,12 +174,13 @@ class Dwarf(object):
             top_DIE = CU.get_top_DIE()
             for child in top_DIE.iter_children():
                 if child.tag == 'DW_TAG_subprogram':
-                    funcname,parent = self.get_function_name(CU, child)
+                    funcname,parent,decl = self.get_function_name(CU, child)
                     if funcname == function:
                         result = self.__resolve_function(CU, child)
                         func_ns,func_class = self.resolve_function_parent(parent)
                         if func_ns == namespace and func_class == class_name:
                             result['function'] = self.fuction_full_name(function, class_name, namespace)
+                            result['ret'] =  self.resolve_return(CU, decl)
                             funcs.append(result)
         return funcs
 
