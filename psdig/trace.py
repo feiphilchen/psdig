@@ -119,8 +119,10 @@ default_uprobe_fmt="lambda:function_format(function, args, ret)"
 @click.option('--pid', '-p', type=int, multiple=True, help='Pid filter')
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
 @click.option('--sym', '-s', type=click.Path(exists=True), help='Symbol file')
-@click.argument('probe')
-def uprobe_trace(output, filter, pid, uid, sym, probe):
+@click.option('--uretprobe', '-r', is_flag=True, help='Trace function return')
+@click.argument('elf')
+@click.argument('function')
+def uprobe_trace(output, filter, pid, uid, sym, uretprobe, elf, function):
     """Trace uprobe"""
     with tempfile.TemporaryDirectory() as tmpdirname:
         uprobe = Uprobe(pid_filter=pid, uid_filter=uid)
@@ -132,9 +134,9 @@ def uprobe_trace(output, filter, pid, uid, sym, probe):
             lambda_str = output.split(':', 1)[1]
             lambda_f = lambda function,metadata,args,ret:eval(lambda_str)
             ctx = lambda_f,filter_f
-            uprobe.add(probe, uprobe_print_lambda, ctx, sym)
+            uprobe.add(elf, function, uprobe_print_lambda, not uretprobe, ctx, sym)
         else:
             ctx = output,filter_f
-            uprobe.add(probe, uprobe_print_fmt, ctx, sym)
+            uprobe.add(elf, function, uprobe_print_fmt, not uretprobe, ctx, sym)
         uprobe.start(obj_dir=tmpdirname)
 

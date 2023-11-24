@@ -50,16 +50,8 @@ class Uprobe(object):
         id_str = hashlib.md5(probe_str.encode('utf-8')).hexdigest()[0:8]
         return int(id_str, 16)
 
-    def add(self, probe_conf, callback, arg=None, sym=None):
-        enter_bool = {
-            "enter":True,
-            "ret":False
-        }
-        elf_path = probe_conf.split(':')[0]
+    def add(self, elf_path, function, callback, enter=True, arg=None, sym=None):
         elf_path = os.path.abspath(elf_path)
-        function = probe_conf.split(':')[1]
-        enter_str = probe_conf.split(':')[2]
-        enter = enter_bool[enter_str]
         probe_id = self.probe_id(elf_path, function, enter)
         if enter:
             name = "uprobe"
@@ -122,7 +114,10 @@ class Uprobe(object):
                     decl.insert(0, uint_type)
                     base = True
             if not base:
-                decl.insert(0, 'void')
+                if len(decl) > 0:
+                    decl.insert(0, 'void')
+                else:
+                    decl = ["void", "*"]
             decl.append(name)
             decl_str = " ".join(decl)
             decls.append(decl_str)
@@ -171,6 +166,13 @@ class Uprobe(object):
             return False
         return True
 
+    def arg_is_class(self, type_list):
+        if len(type_list) == 0:
+            return False
+        if type_list[0]['type'] != 'class':
+            return False
+        return True
+
     def arg_is_unsigned(self, type_list):
         if len(type_list) == 0:
             return False
@@ -190,7 +192,7 @@ class Uprobe(object):
             size = arg['type'][0]['size']
             if self.arg_is_str(arg['type']):
                 inst = f'read_str(t, {name}, "{name}")'
-            elif self.arg_is_ptr(arg['type']):
+            elif self.arg_is_ptr(arg['type']) or self.arg_is_class(arg['type']):
                 inst = f'read_ptr(t, &{name}, "{name}")'
             elif self.arg_is_unsigned(arg['type']):
                 inst = f'read_uint(t, &{name}, {size}, "{name}")'
@@ -209,7 +211,7 @@ class Uprobe(object):
             inst = f'read_str(t, {name}, "{name}")'
         elif self.arg_is_ptr(type_list):
             inst = f'read_ptr(t, &{name}, "{name}")'
-        elif self.arg_is_unsigned(arg['type']):
+        elif self.arg_is_unsigned(type_list):
             inst = f'read_uint(t, &{name}, {size}, "{name}")'
         else:
             inst = f'read_int(t, &{name}, {size}, "{name}")'
@@ -221,6 +223,20 @@ class Uprobe(object):
         func_name = probe['function']
         enter_id = probe.get('enter_id')
         ret_id = probe.get('ret_id')
+        if self.symbols and elf_path in self.symbols:
+            sym = self.symbols[elf_path]
+        else:
+            sym = elf_path
+        dwarf = Dwarf(sym)
+        functions = dwarf.resolve_function(func_name)
+        print(functions)
+        result = []
+        for func in functions:
+            bpf_c_file,addr = self.__build_bpf_c(func, enter_id, ret_id)
+            result.append((bpf_c_file,addr))
+        return result
+
+    def __build_bpf_c(self, function, enter_id, ret_id):
         if enter_id:
             uprobe_enter = True
         else:
@@ -231,14 +247,7 @@ class Uprobe(object):
         else:
             uprobe_ret = False
             ret_id = 0
-        if self.symbols and elf_path in self.symbols:
-            sym = self.symbols[elf_path]
-        else:
-            sym = elf_path
-        dwarf = Dwarf(sym)
-        function = dwarf.resolve_function(func_name)
-        if function == None:
-            return None,None
+        func_name = function['function']
         enter_args = self.get_enter_arg_decl(function['args'])
         exit_arg = self.get_return_arg_decl(function['ret'])
         insts = self.get_arg_read_insts(function['args'])
@@ -274,21 +283,21 @@ int BPF_KRETPROBE(%s)
 }
 """ % (exit_arg, ret_id, inst_str)
             content += uprobe_ret_str
-        bpf_c_file = os.path.join(self.obj_dir, f"{func_name}.{enter_id}_{ret_id}.bpf.c")
+        func_addr = function['addr']
+        bpf_c_file = os.path.join(self.obj_dir, f"{func_name}_{func_addr}_{enter_id}_{ret_id}.bpf.c")
         with open(bpf_c_file, 'w') as fp:
             fp.write(content)
-        return bpf_c_file,function['addr']
+        return bpf_c_file,func_addr
 
     def build_bpf_o(self, probe):
         elf = probe['elf']
-        function = probe['function']
-        enter_id = probe.get('enter_id', 0)
-        ret_id = probe.get('ret_id', 0)
-        bpf_o = os.path.join(self.obj_dir, f"{function}.{enter_id}_{ret_id}.bpf.o")
-        bpf_c,offset = self.build_bpf_c(probe)
-        cmd = f"clang -I/usr/local/share/psdig/usr/include -O2 -D__TARGET_ARCH_x86 -target bpf -c {bpf_c} -o {bpf_o}"
-        subprocess.run(cmd, shell=True)
-        self.uprobe_bpf_o.append(f"{bpf_o},{offset},{elf}")
+        result = self.build_bpf_c(probe)
+        for bpf_c,offset in result:
+            bname = os.path.basename(bpf_c)
+            bpf_o = os.path.join(self.obj_dir, f"{bname}.o")
+            cmd = f"clang -I/usr/local/share/psdig/usr/include -O2 -D__TARGET_ARCH_x86 -target bpf -c {bpf_c} -o {bpf_o}"
+            subprocess.run(cmd, shell=True)
+            self.uprobe_bpf_o.append(f"{bpf_o},{offset},{elf}")
 
     def copy_from_pkg(self, src, dst):
         data = pkgutil.get_data(__package__, src)
