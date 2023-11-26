@@ -23,6 +23,7 @@ struct event_header {
    unsigned int  id;
    unsigned int  len;
    unsigned int  pid;
+   unsigned int  tid;
    unsigned int  uid;
    unsigned int  gid;
    __u64         ktime_ns;

@@ -220,6 +220,7 @@ read_event (void                * ctx,
         return 0;
     }
     evt->hdr.pid = bpf_get_current_pid_tgid() >>32;
+    evt->hdr.tid = bpf_get_current_pid_tgid() & 0xffffffff;
     evt->hdr.gid = bpf_get_current_uid_gid() >> 32;
     evt->hdr.uid = bpf_get_current_uid_gid() & 0xffffffff;
     evt->hdr.ktime_ns = bpf_ktime_get_ns();

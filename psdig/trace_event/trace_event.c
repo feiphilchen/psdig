@@ -183,6 +183,7 @@ void print_bpf_output(void *ctx,
     json_object_object_add(jobj, "event", json_object_new_string(schema->name));
     json_object_object_add(jobj, "comm", json_object_new_string(evt->comm));
     json_object_object_add(jobj, "pid", json_object_new_int64(evt->pid));
+    json_object_object_add(jobj, "tid", json_object_new_int64(evt->tid));
     json_object_object_add(jobj, "uid", json_object_new_int64(evt->uid));
     json_object_object_add(jobj, "gid", json_object_new_int64(evt->gid));
     json_object_object_add(jobj, "cpuid", json_object_new_int64(cpu));

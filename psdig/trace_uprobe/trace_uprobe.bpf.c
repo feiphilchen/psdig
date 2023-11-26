@@ -238,6 +238,7 @@ __trace_init (__u32 id)
     }
     trace->hdr.id = id;
     trace->hdr.pid = bpf_get_current_pid_tgid() >>32;
+    trace->hdr.tid = bpf_get_current_pid_tgid() & 0xffffffff;
     trace->hdr.gid = bpf_get_current_uid_gid() >> 32;
     trace->hdr.uid = bpf_get_current_uid_gid() & 0xffffffff;
     trace->hdr.ktime_ns = bpf_ktime_get_ns();
