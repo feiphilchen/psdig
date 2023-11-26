@@ -112,7 +112,7 @@ def uprobe_print_lambda(function, metadata, args, ret, ctx):
             return
     print(lambda_f(function, metadata, args, ret))
 
-default_uprobe_fmt="lambda:function_format(function, args, ret)"
+default_uprobe_fmt="lambda:uprobe_format(function, args, ret, metadata)"
 @click.command()
 @click.option('--output', '-o', type=str, default=default_uprobe_fmt, help="Output format")
 @click.option('--filter', '-f', type=str, help="Filter string")

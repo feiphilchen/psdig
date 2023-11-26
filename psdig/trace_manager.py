@@ -236,7 +236,7 @@ class TraceManager(object):
                         detail_func = lambda function,metadata,args,ret:eval(detail_lambda)
                         detail = detail_func(function, metadata, args, ret)
             if detail == None:
-                default_lambda = "function_format(function, args, ret)"
+                default_lambda = "uprobe_format(function, args, ret, metadata)"
                 detail_func =  lambda function,metadata,args,ret:eval(default_lambda)
                 detail = detail_func(function, metadata, args, ret)
             level_def = event_def.get('level')
@@ -253,7 +253,9 @@ class TraceManager(object):
                 level = 'INFO'
             trace_name = event_def.get('name')
             extend = {}
-            extend['function'] = function
+            extend['function'] = function['name']
+            extend['elf'] = function['elf']
+            extend['address'] = function['addr']
             if args:
                 arg_list = [f"{k}={args[k]}" for k in args]
                 extend['arguments'] = "\n".join(arg_list)
