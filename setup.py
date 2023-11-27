@@ -64,7 +64,6 @@ setup(
     url = "https://github.com/feiphilchen/psdig",
     packages=['psdig', 'psdig/trace_event', 'psdig/trace_uprobe'],
     long_description=read('README.md'),
-    scripts=['bin/psdig'],
     install_requires=[
         "click",
         "psutil",
@@ -87,5 +86,10 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
-    ]
+    ],
+    entry_points={
+        'console_scripts': [
+            'psdig = psdig.cli:cli',
+        ],
+    }
 )
