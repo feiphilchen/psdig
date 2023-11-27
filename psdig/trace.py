@@ -29,12 +29,22 @@ def syscall_print_lambda(name, metadata, args, ret, ctx):
             return
     print(lambda_f(name, metadata, args, ret))
 
+def complete_syscall(ctx, param, incomplete):
+    syscalls = Syscall.get_all()
+    return [s for s in syscalls if s.startswith(incomplete)]
+
+def validate_syscall(ctx, param, value):
+    syscalls = Syscall.get_all()
+    if value not in syscalls:
+        raise click.BadParameter(f'{value} is not a valid syscall')
+    return value
+
 @click.command()
 @click.option('--output', '-o', type=str, default=default_syscall_fmt, help="Format string")
 @click.option('--filter', '-f', type=str, help="Filter string")
 @click.option('--pid', '-p', type=int, multiple=True, help='Pid filter')
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
-@click.argument('syscall')
+@click.argument('syscall', shell_complete=complete_syscall, callback=validate_syscall)
 def syscall_trace(output, filter, pid, uid, syscall):
     """Trace syscall"""
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -71,12 +81,22 @@ def event_print_lambda(name, metadata, args, ctx):
             return
     print(lambda_f(name, metadata, args))
 
+def complete_event(ctx, param, incomplete):
+    events = Event.get_all()
+    return [e for e in events if e.startswith(incomplete)]
+
+def validate_event(ctx, param, value):
+    events = Event.get_all()
+    if value not in events:
+        raise click.BadParameter(f'{value} is not a valid event')
+    return value
+
 @click.command()
 @click.option('--output', '-o', type=str, default=default_event_fmt,help="Format string")
 @click.option('--filter', '-f', type=str, help="Filter string")
 @click.option('--pid', '-p', type=int, multiple=True, help='Pid filter')
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
-@click.argument('event')
+@click.argument('event', shell_complete=complete_event, callback=validate_event)
 def event_trace(output, filter, pid, uid, event):
     """Trace event"""
     with tempfile.TemporaryDirectory() as tmpdirname:

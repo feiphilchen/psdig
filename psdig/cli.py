@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import os
 import sys
 import time
@@ -96,6 +95,4 @@ cli.add_command(trace,'trace')
 trace.add_command(syscall_trace, 'syscall')
 trace.add_command(event_trace, 'event')
 trace.add_command(uprobe_trace, 'uprobe')
-if __name__ == '__main__':
-    cli()
 

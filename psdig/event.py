@@ -6,8 +6,9 @@ import re
 import click
 import logging
 import time
+import glob
 from .tracepoint import TracePoint
-from .conf import LOGGER_NAME
+from .conf import LOGGER_NAME,TRACEFS
 
 class Event(object):
     def __init__(self, tracepoint):
@@ -20,6 +21,19 @@ class Event(object):
     def set_logger(self):
         self.logger_name = LOGGER_NAME
         self.logger = logging.getLogger(self.logger_name)
+
+    @classmethod
+    def get_all(cls):
+        search = os.path.join(TRACEFS, '**/format')
+        format_files = glob.glob(search, recursive=True)
+        events = []
+        for fl in format_files:
+            dirname = os.path.dirname(fl)
+            event = dirname.replace(TRACEFS, '')
+            if event.startswith('/'):
+                event = event[1:]
+            events.append(event)
+        return sorted(events)
 
     def add(self, event_name, callback, arg):
         self.tracepoint.add_event_watch(event_name, self.event_handler)

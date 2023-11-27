@@ -4,8 +4,8 @@ import os
 import sys
 import re
 import json
+from .conf import TRACEFS
 
-TRACEFS="/sys/kernel/debug/tracing/events"
 class EventSchema(object):
     def __init__(self):
         self.event_fields = {}

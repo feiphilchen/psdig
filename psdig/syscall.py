@@ -6,8 +6,9 @@ import re
 import click
 import logging
 import time
+import glob
 from .tracepoint import TracePoint
-from .conf import LOGGER_NAME
+from .conf import LOGGER_NAME,TRACEFS
 
 class Syscall(object):
     syscall_not_return = ["exit", "exit_group"]
@@ -23,6 +24,17 @@ class Syscall(object):
     def set_logger(self):
         self.logger_name = LOGGER_NAME
         self.logger = logging.getLogger(self.logger_name)
+
+    @classmethod
+    def get_all(cls):
+        path = os.path.join(TRACEFS, "syscalls/sys_enter*")
+        syscalls = []
+        for syscall_enter in glob.glob(path):
+            event_name = os.path.basename(syscall_enter)
+            hit = re.match('sys_enter_(.*)$', event_name)
+            syscall = hit.group(1)
+            syscalls.append(syscall)
+        return sorted(syscalls)
 
     def add(self, syscall, callback, arg):
         enter_event = f"syscalls/sys_enter_{syscall}"
