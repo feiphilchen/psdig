@@ -65,7 +65,7 @@ def syscall_trace(output, filter, pid, uid, syscall):
             syscall_obj.add(syscall, syscall_print_fmt, ctx)
         tracepoint.start(obj_dir=tmpdirname)
 
-default_event_fmt="lambda:f'{name}: ' + ','.join([f'{k}={v}' for k,v in args.items()])"
+default_event_fmt="lambda:time_str(metadata['timestamp']) + f' {name}: ' + ','.join([f'{k}={v}' for k,v in args.items()])"
 def event_print_fmt(name, metadata, args, ctx):
     fmt,filter_f = ctx
     if filter_f:
