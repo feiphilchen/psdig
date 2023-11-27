@@ -66,26 +66,49 @@ class Dwarf(object):
             type_list = [{"type": "enum", "size": size}]
             return type_list
         elif dietype.tag == "DW_TAG_structure_type":
-            size = dietype.attributes.get('DW_AT_byte_size').value
-            name = dietype.attributes.get('DW_AT_name').value.decode()
-            type_list = [{"type": "struct", "size": size, "name":name}]
-            return type_list
+            obj = {"type": "struct"}
+            if 'DW_AT_byte_size' in  dietype.attributes:
+                obj['size'] = dietype.attributes.get('DW_AT_byte_size').value
+            if 'DW_AT_name' in dietype.attributes:
+                obj['name'] = dietype.attributes.get('DW_AT_name').value.decode()
+            return [obj]
         elif dietype.tag == "DW_TAG_union_type":
             size = dietype.attributes.get('DW_AT_byte_size').value
-            name = dietype.attributes.get('DW_AT_name').value.decode()
-            type_list = [{"type": "union", "size": size, "name":name}]
+            if dietype.attributes.get('DW_AT_name'):
+                name = dietype.attributes.get('DW_AT_name').value.decode()
+                type_list = [{"type": "union", "size": size, "name":name}]
+            else:
+                type_list = [{"type": "union", "size": size}]
             return type_list
         elif dietype.tag == "DW_TAG_class_type":
             size = dietype.attributes.get('DW_AT_byte_size').value
-            name = dietype.attributes.get('DW_AT_name').value.decode()
-            type_list = [{"type": "class", "size": size, "name":name}]
+            if dietype.attributes.get('DW_AT_name'):
+                name = dietype.attributes.get('DW_AT_name').value.decode()
+                type_list = [{"type": "class", "size": size, "name":name}]
+            else:
+                type_list = [{"type": "class", "size": size}]
             return type_list
         elif dietype.tag == "DW_TAG_typedef":
             typedef_dietype = cu.get_DIE_from_refaddr(cu.cu_offset + dietype.attributes["DW_AT_type"].value)
             return self.parse_var_type(cu, typedef_dietype)
         elif dietype.tag == "DW_TAG_const_type":
-            const_dietype = cu.get_DIE_from_refaddr(cu.cu_offset + dietype.attributes["DW_AT_type"].value)
-            return self.parse_var_type(cu, const_dietype)
+            if "DW_AT_type" in dietype.attributes:
+                const_dietype = cu.get_DIE_from_refaddr(cu.cu_offset + dietype.attributes["DW_AT_type"].value)
+                return self.parse_var_type(cu, const_dietype)
+            else:
+                return [{"type": "const", "size": 1}]
+        elif dietype.tag == "DW_TAG_subroutine_type":
+            if "DW_AT_type" in dietype.attributes:
+                subrouting_dietype = cu.get_DIE_from_refaddr(cu.cu_offset + dietype.attributes["DW_AT_type"].value)
+                return self.parse_var_type(cu, subrouting_dietype)
+            else:
+                return [{"type": "subrouting", "size": 1}]
+        elif dietype.tag == "DW_TAG_array_type":
+            array_dietype = cu.get_DIE_from_refaddr(cu.cu_offset + dietype.attributes["DW_AT_type"].value)
+            return self.parse_var_type(cu, array_dietype)
+        elif dietype.tag == "DW_TAG_volatile_type":
+            vol_dietype = cu.get_DIE_from_refaddr(cu.cu_offset + dietype.attributes["DW_AT_type"].value)
+            return self.parse_var_type(cu, vol_dietype)
 
     def resolve_args(self, cu, die):
         args = []
@@ -96,6 +119,8 @@ class Dwarf(object):
                 name = child.attributes.get('DW_AT_name')
                 if name:
                     arg['name'] = name.value.decode()
+                if "DW_AT_type" not in child.attributes:
+                    continue
                 dietype = cu.get_DIE_from_refaddr(cu.cu_offset + child.attributes["DW_AT_type"].value)
                 argtype = self.parse_var_type(cu, dietype)
                 arg['type'] = argtype
@@ -109,13 +134,14 @@ class Dwarf(object):
         type_list = self.parse_var_type(cu, dietype)
         return type_list
 
-    def __resolve_function(self, cu, die):
+    def __resolve_function(self, cu, die, resolve_args=True):
         result = {}
         low_pc = die.attributes.get('DW_AT_low_pc')
         if low_pc:
             result['addr'] = low_pc.value
-        args = self.resolve_args(cu, die)
-        result['args'] = args
+        if resolve_args:
+            args = self.resolve_args(cu, die)
+            result['args'] = args
         return result
 
     def get_function_name(self, cu, die):
@@ -138,7 +164,12 @@ class Dwarf(object):
     def resolve_function_parent(self, parent):
         class_name = None
         namespace = None
-        if parent.tag == 'DW_TAG_class_type':
+        if parent == None:
+            return namespace,class_name
+        if parent.tag == 'DW_TAG_namespace':
+            namespace = parent.attributes.get('DW_AT_name').value.decode()
+            return namespace,class_name
+        if parent.tag == 'DW_TAG_class_type' or parent.tag == 'DW_TAG_structure_type':
             class_name = parent.attributes.get('DW_AT_name').value.decode()
             parent = parent.get_parent()
             if parent.tag == 'DW_TAG_namespace':
@@ -177,10 +208,29 @@ class Dwarf(object):
                     funcname,parent,decl = self.get_function_name(CU, child)
                     if funcname == function:
                         result = self.__resolve_function(CU, child)
+                        if result == None or 'addr' not in result:
+                            continue
                         func_ns,func_class = self.resolve_function_parent(parent)
                         if func_ns == namespace and func_class == class_name:
                             result['function'] = self.fuction_full_name(function, class_name, namespace)
                             result['ret'] =  self.resolve_return(CU, decl)
                             funcs.append(result)
         return funcs
+
+    def all_functions(self):
+        functions = []
+        for CU in self.dwarfinfo.iter_CUs():
+            top_DIE = CU.get_top_DIE()
+            for child in top_DIE.iter_children():
+                if child.tag == 'DW_TAG_subprogram':
+                    funcname,parent,decl = self.get_function_name(CU, child)
+                    if funcname == None:
+                        continue
+                    result = self.__resolve_function(CU, child, resolve_args=False)
+                    if result == None or 'addr' not in result:
+                        continue
+                    func_ns,func_class = self.resolve_function_parent(parent)
+                    fullname = self.fuction_full_name(funcname,func_class,func_ns)
+                    functions.append(fullname)
+        return sorted(list(set(functions)))
 

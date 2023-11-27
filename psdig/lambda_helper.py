@@ -1,10 +1,19 @@
 import socket
+from datetime import datetime
 
 def inet_ntoa(addr_str):
     addr = bytes.fromhex(addr_str)
     return socket.inet_ntoa(addr)
 
-def function_format(name, args=None, ret=None, argmaxlen=64):
+def time_str(timestamp):
+    dt = datetime.fromtimestamp(timestamp)
+    dt_str = dt.strftime('%H:%M:%S.%f')
+    return dt_str
+
+def syscall_format(name, args=None, ret=None, metadata=None, argmaxlen=64):
+    comm = metadata['comm']
+    pid = metadata['pid']
+    ts = time_str(metadata['timestamp'])
     if args == None:
         arg_str = "()"
     else:
@@ -28,14 +37,17 @@ def function_format(name, args=None, ret=None, argmaxlen=64):
                 arg_str_list.append(val)
         arg_str = "(" + ", ".join(arg_str_list) + ")"
     if ret != None:
-        return f"{name}{arg_str} => {ret}"
+        return f"{ts} {comm}({pid}): {name}{arg_str} => {ret}"
     else:
-        return f"{name}{arg_str}"
+        return f"{ts} {comm}({pid}): {name}{arg_str}"
 
 def uprobe_format(function, args=None, ret=None, metadata=None, argmaxlen=64):
     name = function['name']
     elf = function['elf']
     addr = function['addr']
+    comm = metadata['comm']
+    pid = metadata['pid']
+    ts = time_str(metadata['timestamp'])
     if args == None:
         arg_str = "()"
     else:
@@ -60,7 +72,7 @@ def uprobe_format(function, args=None, ret=None, metadata=None, argmaxlen=64):
                 arg_str_list.append(val)
         arg_str = "(" + ", ".join(arg_str_list) + ")"
     if ret != None:
-        return f"{name}{arg_str} => {ret}"
+        return f"{ts} {comm}({pid}): {name}{arg_str} => {ret}"
     else:
-        return f"{name}{arg_str}"
+        return f"{ts} {comm}({pid}): {name}{arg_str}"
 
