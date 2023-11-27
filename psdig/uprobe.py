@@ -16,6 +16,7 @@ class Uprobe(object):
     def __init__(self, pid_filter=[], uid_filter=[], symbols={}, ignore_self=True):
         self.set_logger()
         self.probe_index = {}
+        self.functions = {}
         self.proc = None
         self.pid_filter = pid_filter
         self.uid_filter = uid_filter
@@ -98,6 +99,24 @@ class Uprobe(object):
             callback,arg = cb
             handler = name,function,callback,arg
             self._add_handler(probe_id, handler)
+        if elf not in self.functions:
+            self.functions[elf] = {}
+        self.functions[elf][addr] = instance
+
+    def get_function_arg_type(self, elf, addr, name):
+        function = self.functions.get(elf, {}).get(addr)
+        if function == None:
+            return None
+        for arg in function['args']:
+            if name == arg['name']:
+                return arg['type']
+        return None
+
+    def get_function_return_type(self, elf, addr):
+        function = self.functions.get(elf, {}).get(addr)
+        if function == None:
+            return None
+        return function['ret']
 
     def init_obj_dir(self, obj_dir):
         self.obj_dir = obj_dir
@@ -167,6 +186,12 @@ class Uprobe(object):
              return f"uprobe_exit,{decl_str}"
         else:
              return "uprobe_exit"
+
+    def function_arg_is_str(self, elf, addr, name):
+        type_list= self.get_function_arg_type(elf, addr, name)
+        if type_list == None:
+            return False
+        return self.arg_is_str(type_list)
 
     def arg_is_str(self, type_list):
         if len(type_list) != 2:

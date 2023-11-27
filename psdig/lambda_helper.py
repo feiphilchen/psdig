@@ -34,12 +34,15 @@ def function_format(name, args=None, ret=None, argmaxlen=64):
 
 def uprobe_format(function, args=None, ret=None, metadata=None, argmaxlen=64):
     name = function['name']
+    elf = function['elf']
+    addr = function['addr']
     if args == None:
         arg_str = "()"
     else:
         arg_str_list = []
         for k,v in args.items():
-            if isinstance(v, str):
+            is_str = metadata['uprobe'].function_arg_is_str(elf, addr, k)
+            if isinstance(v, str) and is_str:
                 val = v.encode("unicode_escape").decode("utf-8")
                 val = (val[:argmaxlen] + '..') if len(val) > argmaxlen else val
                 val = f"{k}=\"{val}\""
