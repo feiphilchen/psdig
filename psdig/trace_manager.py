@@ -134,7 +134,8 @@ class TraceManager(object):
             arg_list = [f"{k}={args[k]}" for k in args]
             extend['arguments'] = "\n".join(arg_list)
             extend['return code'] = ret
-            extend['latency(ns)'] = metadata['latency']
+            if 'latency' in metadata:
+                extend['latency(ns)'] = metadata['latency']
             extend['cpu id'] = metadata['cpuid']
             extend['process'] = "%d/%s" % (metadata["pid"], metadata["comm"])
             try:

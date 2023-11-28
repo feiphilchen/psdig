@@ -11,6 +11,12 @@ predefined_traces = [
        "detail": "{args[filename]} mode={args[mode]} flags={args[flags]} ret={ret}",
        "level": {"lambda": "'INFO' if ret >= 0 else 'ERROR'"}
    },
+   {   
+       "name":"close",
+       "trigger":"syscall:close",
+       "detail": "fd={args[fd]} ret={ret}",
+       "level": {"lambda": "'INFO' if ret == 0 else 'ERROR'"}
+   },
    {
        "name":"unlink",
        "trigger":"syscall:unlink",
@@ -100,6 +106,24 @@ predefined_traces = [
        "trigger":"syscall:execve",
        "detail": {"lambda":"' '.join(args['argv'])"},
        "level": {"lambda": "'INFO' if ret >= 0 else 'ERROR'"}
+   },
+   {
+       "name":"fork",
+       "trigger":"syscall:fork",
+       "detail": "pid={ret}",
+       "level": {"lambda": "'INFO' if ret >= 0 else 'ERROR'"}
+   },
+   {
+       "name":"exit",
+       "trigger":"syscall:exit",
+       "detail": "error_code={args[error_code]}",
+       "level": {"lambda": "'INFO' if args['error_code'] == 0 else 'ERROR'"}
+   },
+   {
+       "name":"exit",
+       "trigger":"syscall:exit_group",
+       "detail": "error_code={args[error_code]}",
+       "level": {"lambda": "'INFO' if args['error_code'] == 0 else 'ERROR'"}
    },
    {
        "name":"setuid",
