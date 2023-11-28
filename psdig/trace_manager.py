@@ -18,9 +18,6 @@ from .uprobe import Uprobe
 from .conf import LOGGER_NAME,BPF_OBJ_DIR
 from .lambda_helper import *
 
-predefined_trace_class = [
-]
-
 class TraceManager(object):
     def __init__(self, pid_filter=[], 
                       uid_filter=[],
@@ -36,7 +33,6 @@ class TraceManager(object):
         self.callback = None
         self.trace_objs = []
         self.init_traces(conf)
-        self.init_trace_class()
         self.pi_cache = {}
         self.trace_id = 0
         self.collecting = False
@@ -44,16 +40,6 @@ class TraceManager(object):
     def set_logger(self):
         self.logger_name = LOGGER_NAME
         self.logger = logging.getLogger(self.logger_name)
-
-    def init_trace_class(self):
-        for cls in predefined_trace_class:
-            try:
-                trace_obj = cls(self)
-            except:
-                self.logger.error(traceback.format_exc())
-            else:
-                self.logger.info("added event:%s" % trace_obj.event_name)
-            self.trace_objs.append(trace_obj)
 
     def init_traces(self, trace_conf):
         if trace_conf == None:
@@ -94,6 +80,7 @@ class TraceManager(object):
         try:
             syscall_trace = ctx
             trace_name = syscall_trace.name
+            syscall_trace.eval_processors(metadata, name, args, ret)
             detail = syscall_trace.eval_detail(metadata, name, args, ret)
             level = syscall_trace.eval_level(metadata, name, args, ret)
             extend = {}
@@ -133,6 +120,7 @@ class TraceManager(object):
         try:
             event_trace = ctx
             trace_name = event_trace.name
+            event_trace.eval_processors(metadata, name, args)
             detail = event_trace.eval_detail(metadata, name, args)
             level = event_trace.eval_level(metadata, name, args)
             extend = {}
@@ -167,6 +155,7 @@ class TraceManager(object):
     def uprobe_handler(self, function, metadata, args, ret, ctx):
         try:
             uprobe_trace = ctx
+            uprobe_trace.eval_processors(metadata, function, args, ret)
             detail = uprobe_trace.eval_detail(metadata, function, args, ret)
             level = uprobe_trace.eval_level(metadata, function, args, ret)
             trace_name = uprobe_trace.name

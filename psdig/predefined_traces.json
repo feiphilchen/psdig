@@ -9,7 +9,8 @@
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
             "detail": "{args[filename]} mode={args[mode]} flags={args[flags]} ret={ret}"
-         }
+         },
+         "processor": ["psdig.file_processor.FileResolve"]
       },
       {
          "name": "open",

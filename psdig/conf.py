@@ -3,6 +3,7 @@ import sys
 import logging
 import json
 import pkgutil
+from importlib import import_module
 from .lambda_helper import *
 
 LOGGER_NAME="psdig"
@@ -21,13 +22,16 @@ class TraceConf(object):
 
 class SyscallTraceConf(TraceConf):
     syscall = None
+    processors=None
     def __init__(self, name=None,
                        detail=None,
                        level=None,
                        filter=None,
-                       syscall=None): 
+                       syscall=None,
+                       processors=None): 
         super().__init__(name, level, detail, filter)
         self.syscall = syscall
+        self.processors = processors
 
     def eval_detail(self, metadata, name, args, ret):
         detail_def = self.detail
@@ -62,15 +66,25 @@ class SyscallTraceConf(TraceConf):
             level = 'INFO'
         return level
 
+    def eval_processors(self, metadata, name, args, ret):
+        if self.processors == None:
+            return
+        for p in self.processors:
+            if hasattr(p, "syscall"):
+                p.syscall(metadata, name, args, ret)
+
 class EventTraceConf(TraceConf):
     event = None
+    processors=None
     def __init__(self, name=None,
                        detail=None,
                        level=None,
                        filter=None,
-                       event=None):
+                       event=None,
+                       processors=None):
         super().__init__(name, level, detail, filter)
         self.event = event
+        self.processors = processors
 
     def eval_detail(self, metadata, name, args):
         detail_def = self.detail
@@ -105,21 +119,31 @@ class EventTraceConf(TraceConf):
             level = 'INFO'
         return level
 
+    def eval_processors(self, metadata, name, args):
+        if self.processors == None:
+            return
+        for p in self.processors:
+            if hasattr(p, "event"):
+                p.event(metadata, name, args)
+
 class UprobeTraceConf(TraceConf):
     elf = None
     function = None
     sym = None
+    processors=None
     def __init__(self, name=None,
                        detail=None,
                        level=None,
                        filter=None,
                        elf=None,
                        function=None,
-                       sym=None):
+                       sym=None,
+                       processors=None):
         super().__init__(name, level, detail, filter)
         self.elf = elf
         self.function = function
         self.sym = sym
+        self.processors = processors
 
     def eval_detail(self, metadata, function, args, ret):
         detail = None
@@ -154,6 +178,13 @@ class UprobeTraceConf(TraceConf):
             level = 'INFO'
         return level
 
+    def eval_processors(self, metadata, function, args, ret):
+        if self.processors == None:
+            return
+        for p in self.processors:
+            if hasattr(p, "uprobe"):
+                p.uprobe(metadata, function, args, ret)
+
 class TraceConfFile(object):
     trace_type = ["syscall", "event", "uprobe", "uretprobe"]
     def __init__(self, fd=None):
@@ -165,6 +196,7 @@ class TraceConfFile(object):
         self.syscall = []
         self.uprobe = []
         self.uretprobe = []
+        self.processors = {}
 
     def read_default_conf(self):
         content = pkgutil.get_data(__package__, "predefined_traces.json")
@@ -172,6 +204,23 @@ class TraceConfFile(object):
             return content.decode()
         else:
             return content
+
+    def load_processors(self, processors):
+        pobjs = []
+        for p in processors:
+            if p in self.processors:
+                pobjs.append(self.processors[p])
+                continue
+            try:
+                m,cls_name = p.rsplit('.', 1)
+                mod = import_module(m)
+                cls = getattr(mod, cls_name)
+                self.processors[p] = cls()
+            except:
+                raise ValueError(f"error loading processor {p}")
+            else:
+                pobjs.append(self.processors[p])
+        return pobjs
 
     def load(self):
         try:
@@ -191,17 +240,22 @@ class TraceConfFile(object):
             if param == None:
                 return f"no parameters specified for trace\n{conf_str}"
             try:
+                processors = conf.get('processor')
+                if processors != None:
+                    pobjs = self.load_processors(processors)
+                else:
+                    pobjs = None
                 if trace_type == "syscall":
-                    syscall = SyscallTraceConf(name=name, **param)
+                    syscall = SyscallTraceConf(name=name, processors=pobjs, **param)
                     self.syscall.append(syscall)
                 elif trace_type == "event":
-                    event = EventTraceConf(name=name, **param)
+                    event = EventTraceConf(name=name, processors=pobjs, **param)
                     self.event.append(event)
                 elif trace_type == "uprobe":
-                    uprobe = UprobeTraceConf(name=name, **param)
+                    uprobe = UprobeTraceConf(name=name, processors=pobjs, **param)
                     self.uprobe.append(uprobe)
                 elif trace_type == "uretprobe":
-                    uretprobe = UprobeTraceConf(name=name, **param)
+                    uretprobe = UprobeTraceConf(name=name, processors=pobjs, **param)
                     self.uretprobe.append(uretprobe)
             except ValueError as e:
                 return f"{e}\n{conf_str}"
