@@ -60,10 +60,10 @@ def event_load(stdscr, input_file, log):
 @click.command()
 @click.option('--pid', '-p', type=int, multiple=True, help='Pid filter')
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
-@click.option('--output', '-o', help='Save traces to the file')
-@click.option('--log', '-l', help='Log all messages to logfile')
+@click.option('--output', '-o', type=click.Path(), help='Save traces to the file')
+@click.option('--log', '-l', type=click.Path(), help='Log all messages to logfile')
 @click.option('--headless', is_flag=True, help='Run without curse windows')
-@click.option('--conf', '-c', help='Trace configuation file')
+@click.option('--conf', '-c', type=click.Path(exists=True), help='Trace configuation file')
 def watch(pid, uid, output, log, headless, conf):
     """Watch process traces and save to file"""
     if not headless:
@@ -72,8 +72,8 @@ def watch(pid, uid, output, log, headless, conf):
         watch_headless(pid, uid, output, log, conf)
 
 @click.command()
-@click.option('--input', '-i', required=True, help='Load events from the file')
-@click.option('--log', '-l', help='Log all messages to logfile')
+@click.option('--input', '-i', required=True, type=click.Path(exists=True), help='Load events from the file')
+@click.option('--log', '-l', type=click.Path(), help='Log all messages to logfile')
 def load(input, log):
     """Load traces from file"""
     wrapper(event_load,  input, log)
