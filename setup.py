@@ -30,21 +30,6 @@ def install_libbpf(os_id):
     cmd_str = "cd {} && BUILD_STATIC_ONLY=y DESTDIR=/usr/local/share/psdig make install".format(shlex.quote(libbpf_dir_src))
     ret = os.WEXITSTATUS(os.system(cmd_str))
 
-def install_clang(os_id):
-    rc = subprocess.call(['which', 'clang'], stdout=subprocess.DEVNULL)
-    if rc == 0:
-        print("clang is already installed")
-        return
-    print("installing clang/llvm")
-    if os_id == 'ubuntu':
-        rc = subprocess.call(['apt-get', 'install', '-y', 'clang'], stdout=subprocess.DEVNULL)
-
-def install_lib(os_id):
-    print("installing build library")
-    if os_id == 'ubuntu':
-        rc = subprocess.call(['apt-get', 'install', '-y', 'libjson-c-dev', 'libelf-dev', 'gcc-multilib'], \
-            stdout=subprocess.DEVNULL)
-
 class CustomInstall(install):
     def run(self):
         install.run(self)
@@ -73,7 +58,7 @@ setup(
     zip_safe=False,
     include_package_data=True,
     package_data={
-        "": ["*.c", "*.h"],
+        "": ["*.c", "*.h", "*.json"],
     },
     cmdclass={
         "install": CustomInstall

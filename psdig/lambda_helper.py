@@ -41,7 +41,7 @@ def syscall_format(name, args=None, ret=None, metadata=None, argmaxlen=64):
     else:
         return f"{ts} {comm}({pid}): {name}{arg_str}"
 
-def uprobe_format(function, args=None, ret=None, metadata=None, argmaxlen=64):
+def uprobe_format(function, args=None, ret=None, metadata=None, argmaxlen=64, brief=False):
     name = function['name']
     elf = function['elf']
     addr = function['addr']
@@ -71,8 +71,11 @@ def uprobe_format(function, args=None, ret=None, metadata=None, argmaxlen=64):
                 val = f"{k}={v}"
                 arg_str_list.append(val)
         arg_str = "(" + ", ".join(arg_str_list) + ")"
+    prefix = ""
+    if not brief:
+        prefix = f"{ts} {comm}({pid}): "
     if ret != None:
-        return f"{ts} {comm}({pid}): {name}{arg_str} => {ret}"
+        return f"{prefix}{name}{arg_str} => {ret}"
     else:
-        return f"{ts} {comm}({pid}): {name}{arg_str}"
+        return f"{prefix}{name}{arg_str}"
 

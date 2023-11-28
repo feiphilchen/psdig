@@ -1,0 +1,347 @@
+{
+   "traces": [
+      {
+         "name": "open",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "openat",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "{args[filename]} mode={args[mode]} flags={args[flags]} ret={ret}"
+         }
+      },
+      {
+         "name": "open",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "open",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "{args[filename]} mode={args[mode]} flags={args[flags]} ret={ret}"
+         }
+      },
+      {
+         "name": "close",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "close",
+            "level": {
+               "lambda": "'INFO' if ret == 0 else 'ERROR'"
+            },
+            "detail": "fd={args[fd]} ret={ret}"
+         }
+      },
+      {
+         "name": "unlink",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "unlink",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "{args[pathname]} ret={ret}"
+         }
+      },
+      {
+         "name": "unlink",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "unlinkat",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "{args[pathname]} ret={ret}"
+         }
+      },
+      {
+         "name": "unlink",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "unlinkat",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "{args[pathname]} ret={ret}"
+         }
+      },
+      {
+         "name": "truncate",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "truncate",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "{args[pathname]} length={args[length]} ret={ret}"
+         }
+      },
+      {
+         "name": "chown",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "chown",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "{args[filename]} uid={args[user]} gid={args[group]} ret={ret}"
+         }
+      },
+      {
+         "name": "chown",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "fchownat",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "{args[filename]} uid={args[user]} gid={args[group]} ret={ret}"
+         }
+      },
+      {
+         "name": "chmod",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "chmod",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "{args[filename]} mode={args[mode]} ret={ret}"
+         }
+      },
+      {
+         "name": "chmod",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "fchmodat",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "{args[filename]} mode={args[mode]} ret={ret}"
+         }
+      },
+      {
+         "name": "rmdir",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "rmdir",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "{args[pathname]} ret={ret}"
+         }
+      },
+      {
+         "name": "mkdir",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "mkdir",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "{args[pathname]} mode={args[mode]} ret={ret}"
+         }
+      },
+      {
+         "name": "mkdir",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "mkdirat",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "{args[pathname]} mode={args[mode]} ret={ret}"
+         }
+      },
+      {
+         "name": "symlink",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "symlink",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "oldname={args[oldname]} newname={args[newname]} ret={ret}"
+         }
+      },
+      {
+         "name": "symlink",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "symlinkat",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "oldname={args[oldname]} newname={args[newname]} ret={ret}"
+         }
+      },
+      {
+         "name": "kill",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "kill",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "pid={args[pid]} signal={args[sig]} ret={ret}"
+         }
+      },
+      {
+         "name": "exec",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "execve",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": {
+               "lambda": "' '.join(args['argv'])"
+            }
+         }
+      },
+      {
+         "name": "fork",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "fork",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "pid={ret}"
+         }
+      },
+      {
+         "name": "exit",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "exit",
+            "level": {
+               "lambda": "'INFO' if args['error_code'] == 0 else 'ERROR'"
+            },
+            "detail": "error_code={args[error_code]}"
+         }
+      },
+      {
+         "name": "exit",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "exit_group",
+            "level": {
+               "lambda": "'INFO' if args['error_code'] == 0 else 'ERROR'"
+            },
+            "detail": "error_code={args[error_code]}"
+         }
+      },
+      {
+         "name": "setuid",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "setuid",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "uid={args[uid]} ret={ret}"
+         }
+      },
+      {
+         "name": "sethostname",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sethostname",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "hostname={args[name]} ret={ret}"
+         }
+      },
+      {
+         "name": "listen",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "listen",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "fd={args[fd]} backlog={args[backlog]} ret={ret}"
+         }
+      },
+      {
+         "name": "connect",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "connect",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "address={args[uservaddr]} ret={ret}"
+         }
+      },
+      {
+         "name": "accept",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "accept",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "address={args[upeer_sockaddr]} ret={ret}"
+         }
+      },
+      {
+         "name": "bind",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "bind",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "address={args[umyaddr]} ret={ret}"
+         }
+      },
+      {
+         "name": "mount",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "mount",
+            "level": {
+               "lambda": "'INFO' if ret == 0 else 'ERROR'"
+            },
+            "detail": "dev_name={args[dev_name]} dir_name={args[dir_name]} type={args[type]} ret={ret}"
+         }
+      },
+      {
+         "name": "umount",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "umount",
+            "level": {
+               "lambda": "'INFO' if ret == 0 else 'ERROR'"
+            },
+            "detail": "name={args[name]} flags={args[flags]} ret={ret}"
+         }
+      },
+      {
+         "name": "tcp-recv-rst",
+         "type": "event",
+         "parameters": {
+            "event": "tcp/tcp_receive_reset",
+            "level": "WARNING",
+            "detail": {
+               "lambda": "'saddr=%s sport=%d daddr=%s dport=%d' % (inet_ntoa(args['saddr']), args['sport'], inet_ntoa(args['daddr']), args['dport'])"
+            }
+         }
+      },
+      {
+         "name": "tcp-send-rst",
+         "type": "event",
+         "parameters": {
+            "event": "tcp/tcp_send_reset",
+            "level": "WARNING",
+            "detail": {
+               "lambda": "'saddr=%s sport=%d daddr=%s dport=%d' % (inet_ntoa(args['saddr']), args['sport'], inet_ntoa(args['daddr']), args['dport'])"
+            }
+         }
+      }
+   ]
+}

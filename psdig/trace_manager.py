@@ -15,7 +15,6 @@ from .trace_buffer import TraceBuffer
 from .syscall import Syscall
 from .event import Event
 from .uprobe import Uprobe
-from .predefined_traces import predefined_traces
 from .conf import LOGGER_NAME,BPF_OBJ_DIR
 from .lambda_helper import *
 
@@ -25,7 +24,7 @@ predefined_trace_class = [
 class TraceManager(object):
     def __init__(self, pid_filter=[], 
                       uid_filter=[],
-                      trace_def=None,
+                      conf=None,
                       tmp_dir='/var/tmp'):
         self.set_logger()
         self.tmp_dir = tmp_dir
@@ -36,7 +35,7 @@ class TraceManager(object):
         self.stats = {}
         self.callback = None
         self.trace_objs = []
-        self.init_traces(trace_def)
+        self.init_traces(conf)
         self.init_trace_class()
         self.pi_cache = {}
         self.trace_id = 0
@@ -56,30 +55,23 @@ class TraceManager(object):
                 self.logger.info("added event:%s" % trace_obj.event_name)
             self.trace_objs.append(trace_obj)
 
-    def init_traces(self, trace_def):
-        if trace_def == None:
-            trace_definition = predefined_traces
-        else:
-            trace_definition = trace_def
-        for ent in trace_definition:
-            name = ent['name']
-            trigger = ent['trigger']
-            trigger_type = trigger.split(':', 1)[0]
-            if trigger_type == 'syscall':
-                self.trace_register(name)
-                syscall_name = trigger.split(':', 1)[1]
-                self.syscall.add(syscall_name, self.syscall_event_handler, ent)
-            elif trigger_type == 'event':
-                self.trace_register(name)
-                event_name = trigger.split(':', 1)[1]
-                self.event.add(event_name, self.raw_event_handler, ent)
-            elif trigger_type == 'uprobe':
-                self.trace_register(name)
-                elf = ent.get('elf')
-                function = ent.get('function')
-                ret = ent.get('return', False)
-                sym = ent.get('sym')
-                self.uprobe.add(elf, function, self.uprobe_handler, not ret, ent, sym)
+    def init_traces(self, trace_conf):
+        if trace_conf == None:
+            return
+        for syscall in trace_conf.iter_syscall():
+            self.trace_register(syscall.name)
+            self.syscall.add(syscall.syscall, self.syscall_event_handler, syscall) 
+        for event in trace_conf.iter_event():
+            self.trace_register(event.name)
+            self.event.add(event.event, self.raw_event_handler, event)
+        for uprobe in trace_conf.iter_uprobe():
+            self.trace_register(uprobe.name)
+            self.uprobe.add(uprobe.elf, uprobe.function, 
+                  self.uprobe_handler, True, uprobe, uprobe.sym)
+        for uretprobe in trace_conf.iter_uretprobe():
+            self.trace_register(uretprobe.name)
+            self.uprobe.add(uretprobe.elf, uretprobe.function, 
+               self.uprobe_handler, False, uretprobe, uretprobe.sym)
 
     def get_process_info(self, pid):
         key = f"{pid}"
@@ -100,34 +92,10 @@ class TraceManager(object):
 
     def syscall_event_handler(self, name, metadata, args, ret, ctx):
         try:
-            event_def = ctx
-            detail_def = event_def.get('detail')
-            detail = None
-            if detail_def:
-                if isinstance(detail_def, str):
-                    detail_fmt = detail_def
-                    detail = detail_fmt.format(name=name, metadata=metadata, args=args, ret=ret)
-                elif isinstance(detail_def, dict):
-                    detail_lambda = detail_def.get('lambda')
-                    if detail_lambda:
-                        detail_func = lambda name,metadata,args,ret:eval(detail_lambda)
-                        detail = detail_func(name, metadata, args, ret)
-            if detail == None:
-                default_lambda = "','.join([ f'{key}={val}' for key,val in args.items()])"
-                detail_func =  lambda name,metadata,args,ret:eval(default_lambda)
-                detail = detail_func(name, metadata, args, ret)
-            level_def = event_def.get('level')
-            level = None
-            if level_def:
-                if isinstance(level_def, str):
-                    level = level_def
-                elif isinstance(level_def, dict):
-                    level_lambda = level_def.get('lambda')
-                    if level_lambda:
-                        level_check = lambda name,metadata,args,ret: eval(level_lambda)
-                        level = level_check(name, metadata, args, ret)
-            if level == None:
-                level = 'INFO'
+            syscall_trace = ctx
+            trace_name = syscall_trace.name
+            detail = syscall_trace.eval_detail(metadata, name, args, ret)
+            level = syscall_trace.eval_level(metadata, name, args, ret)
             extend = {}
             syscall_info = "%d/%s" % (metadata['syscall_nr'], name)
             extend['syscall'] = syscall_info
@@ -145,7 +113,6 @@ class TraceManager(object):
             else:
                 extend['elf'] = elf
                 extend['parent processes'] = parent_proc
-            trace_name = event_def['name']
             trace = {
                "name": trace_name,
                "comm": metadata["comm"],
@@ -164,34 +131,10 @@ class TraceManager(object):
 
     def raw_event_handler(self, name, metadata, args, ctx):
         try:
-            event_def = ctx
-            detail_def = event_def.get('detail')
-            detail = None
-            if detail_def:
-                if isinstance(detail_def, str):
-                    detail_fmt = detail_def
-                    detail = detail_fmt.format(name=name, metadata=metadata, args=args)
-                elif isinstance(detail_def, dict):
-                    detail_lambda = detail_def.get('lambda')
-                    if detail_lambda:
-                        detail_func = lambda name,metadata,args:eval(detail_lambda)
-                        detail = detail_func(name, metadata, args)
-            if detail == None:
-                default_lambda = "','.join([ f'{key}={val}' for key,val in args.items()])"
-                detail_func =  lambda name,metadata,args:eval(default_lambda)
-                detail = detail_func(name, metadata, args)
-            level_def = event_def.get('level')
-            level = None
-            if level_def:
-                if isinstance(level_def, str):
-                    level = level_def
-                elif isinstance(level_def, dict):
-                    level_lambda = level_def.get('lambda')
-                    if level_lambda:
-                        level_check = lambda name,metadata,args: eval(level_lambda)
-                        level = level_check(name, metadata, args)
-            if level == None:
-                level = 'INFO'
+            event_trace = ctx
+            trace_name = event_trace.name
+            detail = event_trace.eval_detail(metadata, name, args)
+            level = event_trace.eval_level(metadata, name, args)
             extend = {}
             extend['event'] = name
             arg_list = [f"{k}={args[k]}" for k in args]
@@ -205,7 +148,6 @@ class TraceManager(object):
             else:
                 extend['elf'] = elf
                 extend['parent processes'] = parent_proc
-            trace_name = event_def['name']
             trace = {
                "name": trace_name,
                "comm": metadata["comm"],
@@ -224,35 +166,10 @@ class TraceManager(object):
 
     def uprobe_handler(self, function, metadata, args, ret, ctx):
         try:
-            event_def = ctx
-            detail_def = event_def.get('detail')
-            detail = None
-            if detail_def:
-                if isinstance(detail_def, str):
-                    detail_fmt = detail_def
-                    detail = detail_fmt.format(metadata=metadata, function=function, args=args, ret=ret)
-                elif isinstance(detail_def, dict):
-                    detail_lambda = detail_def.get('lambda')
-                    if detail_lambda:
-                        detail_func = lambda function,metadata,args,ret:eval(detail_lambda)
-                        detail = detail_func(function, metadata, args, ret)
-            if detail == None:
-                default_lambda = "uprobe_format(function, args, ret, metadata)"
-                detail_func =  lambda function,metadata,args,ret:eval(default_lambda)
-                detail = detail_func(function, metadata, args, ret)
-            level_def = event_def.get('level')
-            level = None
-            if level_def:
-                if isinstance(level_def, str):
-                    level = level_def
-                elif isinstance(level_def, dict):
-                    level_lambda = level_def.get('lambda')
-                    if level_lambda:
-                        level_check = lambda function,metadata,args,ret: eval(level_lambda)
-                        level = level_check(function, metadata, args, ret)
-            if level == None:
-                level = 'INFO'
-            trace_name = event_def.get('name')
+            uprobe_trace = ctx
+            detail = uprobe_trace.eval_detail(metadata, function, args, ret)
+            level = uprobe_trace.eval_level(metadata, function, args, ret)
+            trace_name = uprobe_trace.name
             extend = {}
             extend['function'] = function['name']
             extend['elf'] = function['elf']

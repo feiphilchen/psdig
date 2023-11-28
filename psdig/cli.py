@@ -8,6 +8,7 @@ import re
 import traceback
 from curses import wrapper
 from psdig import PsWatch,syscall_trace,event_trace,uprobe_trace
+from .conf import TraceConfFile
 import tempfile
 import signal
 
@@ -22,7 +23,7 @@ def watch_start(stdscr, pid, uid, output, log, trace_conf):
     global pswatch
     with tempfile.TemporaryDirectory() as tmpdirname:
         pswatch = PsWatch(stdscr, pid_filter=pid, uid_filter=uid, \
-           event_file=output, log_file=log, conf_file=trace_conf, \
+           event_file=output, log_file=log, conf=trace_conf, \
            tmp_dir=tmpdirname)
         signal.signal(signal.SIGINT, watch_interrupt)
         try:
@@ -57,13 +58,20 @@ def event_load(stdscr, input_file, log):
     finally:
         pswatch.stop()
 
+def validate_conf(ctx, param, value):
+    conf = TraceConfFile(value)
+    error = conf.load()
+    if error is not None:
+        raise click.BadParameter(error)
+    return conf
+
 @click.command()
 @click.option('--pid', '-p', type=int, multiple=True, help='Pid filter')
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
 @click.option('--output', '-o', type=click.Path(), help='Save traces to the file')
 @click.option('--log', '-l', type=click.Path(), help='Log all messages to logfile')
 @click.option('--headless', is_flag=True, help='Run without curse windows')
-@click.option('--conf', '-c', type=click.Path(exists=True), help='Configuation file')
+@click.option('--conf', '-c', type=click.File('r'), callback=validate_conf, help='Configuation file')
 def watch(pid, uid, output, log, headless, conf):
     """Watch file system, network and process activity"""
     if not headless:

@@ -13,6 +13,7 @@ from curses import wrapper
 from curses.textpad import Textbox,rectangle
 import threading
 from .trace_manager import TraceManager
+from .conf import TraceConfFile
 from .window import FilterWin,StatusWin,MainWin,TagWin,ExtendWin
 from .conf import LOGGER_NAME
 
@@ -23,7 +24,7 @@ class PsWatch(object):
                event_file=None,
                load_from=None,
                log_file=None,
-               conf_file=None,
+               conf=None,
                tmp_dir="/var/tmp"):
         self.set_logger(log_file)
         self.win_list = []
@@ -38,21 +39,14 @@ class PsWatch(object):
         self.event_file = event_file
         self.tmp_dir = tmp_dir
         self.load_from = load_from
-        self.conf = {}
-        self.conf_file = conf_file
-        self.load_conf()
-        trace_def = self.conf.get("traces")
-        self.trace_mgr = TraceManager(pid_filter=pid_filter, uid_filter=uid_filter, trace_def=trace_def, tmp_dir=tmp_dir)
+        if conf == None:
+            conf = TraceConfFile()
+            conf.load()
+        self.conf = conf
+        self.trace_mgr = TraceManager(pid_filter=pid_filter, uid_filter=uid_filter, conf=self.conf, tmp_dir=tmp_dir)
         self.running = False
         self.ext_display = False
         self.mutex = threading.Lock()
-
-    def load_conf(self):
-        if self.conf_file == None:
-            return
-        with open(self.conf_file, 'r') as fd:
-            json_str = fd.read()
-        self.conf = json.loads(json_str)
 
     def set_logger(self, logfile):
         self.logger_name = LOGGER_NAME
@@ -206,7 +200,9 @@ class PsWatch(object):
             return f"Loading events collector, {percent}%"   
         if self.load_from == None and not self.event_scroll:
             return "Scrolling is stopped, press <SPACE> to continue..."
-        return "Watching ..."
+        prefix = ['|', '/', '-', '\\']
+        phash = int(time.time())%4
+        return "Watching " + prefix[phash]
 
     def stats(self):
         self.stats_running =  True
