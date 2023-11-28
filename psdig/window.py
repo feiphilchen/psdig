@@ -199,6 +199,7 @@ class MainWin(CurseWin):
         self.hdr_color = curses.color_pair(7)
         self.select_index = None
         self.first_ts = None
+        self.pad_displaying = False
 
     def filtered_trace_buffer(self):
         return os.path.join(self.tmp_dir, "filtered_trace.db")
@@ -259,9 +260,16 @@ class MainWin(CurseWin):
             else:
                 self.trace_buffer.append(event)
         if refresh:
-            self.select_index = None
-            self.scroll_to_bottom()
-            self.pad_display()
+            if not self.pad_displaying:
+                self.pad_displaying = True
+                t = threading.Timer(0.1, self.pad_defered_display)
+                t.start()
+
+    def pad_defered_display(self):
+        self.select_index = None
+        self.scroll_to_bottom()
+        self.pad_display()
+        self.pad_displaying = False
 
     def scroll_to_bottom(self):
         self.display_end = self.trace_buffer.length()

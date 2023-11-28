@@ -63,9 +63,9 @@ def event_load(stdscr, input_file, log):
 @click.option('--output', '-o', type=click.Path(), help='Save traces to the file')
 @click.option('--log', '-l', type=click.Path(), help='Log all messages to logfile')
 @click.option('--headless', is_flag=True, help='Run without curse windows')
-@click.option('--conf', '-c', type=click.Path(exists=True), help='Trace configuation file')
+@click.option('--conf', '-c', type=click.Path(exists=True), help='Configuation file')
 def watch(pid, uid, output, log, headless, conf):
-    """Watch process traces and save to file"""
+    """Watch file system, network and process activity"""
     if not headless:
         wrapper(watch_start, pid, uid, output, log, conf)
     else:
@@ -81,12 +81,12 @@ def load(input, log):
 
 @click.group()
 def trace():
-    """Trace with specified formats"""
+    """Trace syscall/event/uprobe"""
     pass
 
 @click.group()
 def cli():
-    """Collect process syscall/tracepoint/uprobe traces"""
+    """Tool for monitoring system/process activity"""
     pass
 
 cli.add_command(watch, 'watch')
