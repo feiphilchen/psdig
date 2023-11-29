@@ -350,7 +350,7 @@ int BPF_KRETPROBE(%s)
         self.uprobe_bpf_o = []
         for elf in self.probe_index:
             for function in self.probe_index[elf]:
-                self.logger.info('building uprobe {elf}:{function}')
+                self.logger.info(f'building uprobe {elf}:{function}')
                 func_probe = self.probe_index[elf][function]
                 for instance in self.probe_index[elf][function]['instances']:
                     self.build_bpf_o(elf, function, instance, func_probe)

@@ -81,6 +81,9 @@ class TraceManager(object):
             syscall_trace = ctx
             trace_name = syscall_trace.name
             syscall_trace.eval_processors(metadata, name, args, ret)
+            valid = syscall_trace.eval_filter(metadata, name, args, ret)
+            if not valid:
+                return
             detail = syscall_trace.eval_detail(metadata, name, args, ret)
             level = syscall_trace.eval_level(metadata, name, args, ret)
             extend = {}
@@ -121,6 +124,9 @@ class TraceManager(object):
             event_trace = ctx
             trace_name = event_trace.name
             event_trace.eval_processors(metadata, name, args)
+            valid = event_trace.eval_filter(metadata, name, args)
+            if not valid:
+                return
             detail = event_trace.eval_detail(metadata, name, args)
             level = event_trace.eval_level(metadata, name, args)
             extend = {}
@@ -156,6 +162,9 @@ class TraceManager(object):
         try:
             uprobe_trace = ctx
             uprobe_trace.eval_processors(metadata, function, args, ret)
+            valid = uprobe_trace.eval_filter(metadata, function, args, ret)
+            if not valid:
+                return
             detail = uprobe_trace.eval_detail(metadata, function, args, ret)
             level = uprobe_trace.eval_level(metadata, function, args, ret)
             trace_name = uprobe_trace.name

@@ -8,17 +8,20 @@ from .lambda_helper import *
 from .dwarf import Dwarf
 from .syscall import Syscall
 from .event import Event
+from .conf import LOGGER_NAME
 
 class TraceConf(object):
     name = None
     level = None
     detail = None
+    filter = None
     level_enum = ["DEBUG", "INFO", "WARNING", "ERROR"]
     def __init__(self, name, level, detail, filter):
         self.name = name
         self.detail = detail
         self.level = level
         self.filter = filter
+        self.logger = logging.getLogger(LOGGER_NAME)
 
     def validate(self):
         if self.name == None:
@@ -31,6 +34,12 @@ class TraceConf(object):
             raise ValueError("level should be a string or dict")
         if self.filter and not isinstance(self.filter, bool) and not isinstance(self.filter, dict):
             raise ValueError("filter should be a boolean or dict")
+        if isinstance(self.detail, dict) and "lambda" not in self.detail:
+            raise ValueError("no lambda expression in detail")
+        if isinstance(self.level, dict) and "lambda" not in self.level:
+            raise ValueError("no lambda expression in level")
+        if isinstance(self.filter, dict) and "lambda" not in self.filter:
+            raise ValueError("no lambda expression in filter")
         if isinstance(self.level, str) and self.level not in self.level_enum:
             raise ValueError(f"level string should be one of {self.level_enum}")
 
@@ -87,6 +96,18 @@ class SyscallTraceConf(TraceConf):
         if level == None:
             level = 'INFO'
         return level
+
+    def eval_filter(self, metadata, name, args, ret):
+        filter_def = self.filter
+        if filter_def != None:
+            if isinstance(filter_def, bool):
+                return filter_def
+            elif isinstance(filter_def, dict):
+                filter_lambda = filter_def.get('lambda')
+                if filter_lambda:
+                    filter_check = lambda name,metadata,args,ret: eval(filter_lambda)
+                    return filter_check(name, metadata, args, ret)
+        return True
 
     def eval_processors(self, metadata, name, args, ret):
         if self.processors == None:
@@ -148,6 +169,18 @@ class EventTraceConf(TraceConf):
         if level == None:
             level = 'INFO'
         return level
+
+    def eval_filter(self, metadata, name, args):
+        filter_def = self.filter
+        if filter_def != None:
+            if isinstance(filter_def, bool):
+                return filter_def
+            elif isinstance(filter_def, dict):
+                filter_lambda = filter_def.get('lambda')
+                if filter_lambda:
+                    filter_check = lambda name,metadata,args: eval(filter_lambda)
+                    return filter_check(name, metadata, args)
+        return True
 
     def eval_processors(self, metadata, name, args):
         if self.processors == None:
@@ -224,6 +257,18 @@ class UprobeTraceConf(TraceConf):
         if level == None:
             level = 'INFO'
         return level
+
+    def eval_filter(self, metadata, function, args, ret):
+        filter_def = self.filter
+        if filter_def != None:
+            if isinstance(filter_def, bool):
+                return filter_def
+            elif isinstance(filter_def, dict):
+                filter_lambda = filter_def.get('lambda')
+                if filter_lambda:
+                    filter_check = lambda function,metadata,args,ret: eval(filter_lambda)
+                    return filter_check(function, metadata, args, ret)
+        return True
 
     def eval_processors(self, metadata, function, args, ret):
         if self.processors == None:
