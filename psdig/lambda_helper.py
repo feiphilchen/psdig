@@ -11,9 +11,6 @@ def time_str(timestamp):
     return dt_str
 
 def syscall_format(name, args=None, ret=None, metadata=None, argmaxlen=64):
-    comm = metadata['comm']
-    pid = metadata['pid']
-    ts = time_str(metadata['timestamp'])
     if args == None:
         arg_str = "()"
     else:
@@ -37,9 +34,9 @@ def syscall_format(name, args=None, ret=None, metadata=None, argmaxlen=64):
                 arg_str_list.append(val)
         arg_str = "(" + ", ".join(arg_str_list) + ")"
     if ret != None:
-        return f"{ts} {comm}({pid}): {name}{arg_str} => {ret}"
+        return f"{name}{arg_str} => {ret}"
     else:
-        return f"{ts} {comm}({pid}): {name}{arg_str}"
+        return f"{name}{arg_str}"
 
 def uprobe_format(function, args=None, ret=None, metadata=None, argmaxlen=64, brief=False):
     name = function['name']

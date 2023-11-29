@@ -31,8 +31,11 @@
             "level": {
                "lambda": "'INFO' if ret == 0 else 'ERROR'"
             },
-            "detail": "fd={args[fd]} ret={ret}"
-         }
+            "detail":{
+               "lambda":"('' if args.get('filename') == None else '%s ' % args.get('filename')) + 'fd=%s ' % args.get('fd')  + f'ret={ret}'"
+            }
+         },
+         "processor": ["psdig.file_processor.FileResolve"]
       },
       {
          "name": "unlink",

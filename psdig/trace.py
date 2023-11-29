@@ -12,7 +12,7 @@ from .lambda_helper import *
 from .dwarf import Dwarf
 import tempfile
 
-default_syscall_fmt="lambda:syscall_format(name, args, ret, metadata)"
+default_syscall_fmt="lambda:time_str(metadata['timestamp']) + ' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + syscall_format(name, args, ret, metadata)"
 def syscall_print_fmt(name, metadata, args, ret, ctx):
     fmt,filter_f = ctx
     if filter_f:

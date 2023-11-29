@@ -202,7 +202,7 @@ class PsWatch(object):
             return "Scrolling is stopped, press <SPACE> to continue..."
         prefix = ['|', '/', '-', '\\']
         phash = int(time.time())%4
-        return "Watching " + prefix[phash]
+        return "Watching ... " + prefix[phash]
 
     def stats(self):
         self.stats_running =  True
