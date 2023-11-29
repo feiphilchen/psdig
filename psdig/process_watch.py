@@ -13,7 +13,7 @@ from curses import wrapper
 from curses.textpad import Textbox,rectangle
 import threading
 from .trace_manager import TraceManager
-from .conf import TraceConfFile
+from .trace_conf import TraceConfFile
 from .window import FilterWin,StatusWin,MainWin,TagWin,ExtendWin
 from .conf import LOGGER_NAME
 

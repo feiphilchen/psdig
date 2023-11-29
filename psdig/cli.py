@@ -8,7 +8,7 @@ import re
 import traceback
 from curses import wrapper
 from psdig import PsWatch,syscall_trace,event_trace,uprobe_trace
-from .conf import TraceConfFile
+from .trace_conf import TraceConfFile
 import tempfile
 import signal
 
