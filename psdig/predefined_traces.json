@@ -10,7 +10,7 @@
             },
             "detail": "{args[filename]} mode={args[mode]} flags={args[flags]} ret={ret}"
          },
-         "processor": ["psdig.file_processor.FileResolve"]
+         "processor": ["psdig.file_processor.FdResolve"]
       },
       {
          "name": "open",
@@ -35,7 +35,7 @@
                "lambda":"('' if args.get('filename') == None else '%s ' % args.get('filename')) + 'fd=%s ' % args.get('fd')  + f'ret={ret}'"
             }
          },
-         "processor": ["psdig.file_processor.FileResolve"]
+         "processor": ["psdig.file_processor.FdResolve"]
       },
       {
          "name": "unlink",
