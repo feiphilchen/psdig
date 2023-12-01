@@ -5,17 +5,25 @@ class SockAddr(object):
     def __init__(self, sa):
         if sa['family'] == 2 or sa['family'] == 10:
             self.init_sockaddr_in(sa)
+        elif sa['family'] == 1:
+            self.init_sockaddr_un(sa)
 
     def init_sockaddr_in(self, sa):
         self.family = sa['family']
         self.addr = sa['addr']
         self.port = sa['port']
 
+    def init_sockaddr_un(self, sa):
+        self.family = sa['family']
+        self.path = sa['path']
+
     def __str__(self):
         if self.family == 2:
             return f"{self.addr}:{self.port}"
         elif self.family == 10:
             return f"[{self.addr}]:{self.port}"
+        elif self.family == 1:
+            return f"{self.path}"
 
 class Pointer(object):
     def __init__(self, ptr):

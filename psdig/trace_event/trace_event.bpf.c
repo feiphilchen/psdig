@@ -149,13 +149,13 @@ read_event_field_sockaddr (void                 * ctx,
                            event_t              * evt)
 {
     void                  * data;
-    struct event_sockaddr * sa;
+    event_sockaddr_t      * sa;
 
-    if (evt->hdr.len < sizeof(event_t) - sizeof(struct event_sockaddr)) {
+    if (evt->hdr.len < sizeof(event_t) - sizeof(event_sockaddr_t)) {
         data = evt->hdr.len + (void *)evt;
-        bpf_probe_read(&sa, sizeof(struct event_sockaddr *), ctx + field->offset);
-        bpf_probe_read(data, sizeof(struct event_sockaddr), (void *)sa);
-        evt->hdr.len += sizeof(struct event_sockaddr);
+        bpf_probe_read(&sa, sizeof(event_sockaddr_t *), ctx + field->offset);
+        bpf_probe_read(data, sizeof(event_sockaddr_t), (void *)sa);
+        evt->hdr.len += sizeof(event_sockaddr_t);
     }
     return 0;
 }

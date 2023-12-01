@@ -180,6 +180,15 @@ event_read_sockaddr_in6 (struct sockaddr_in6    * in,
 
 }
 
+static  int
+event_read_sockaddr_un (struct sockaddr_un    * un,
+                        struct json_object   * jobj)
+{
+    json_object_object_add(jobj, "family", json_object_new_uint64(un->sun_family));
+    json_object_object_add(jobj, "path", json_object_new_string(un->sun_path));
+    return 0;
+}
+
 void print_bpf_output(void *ctx, 
                       int cpu,
                       void *data, 
@@ -196,7 +205,7 @@ void print_bpf_output(void *ctx,
     int                   ret, str_num;
     struct json_object   *jobj, *jarray, *jparams, *jschema, *jsockaddr;
     const char          * json_str;
-    struct event_sockaddr sa;
+    event_sockaddr_t      sa;
     char                  addr_buf[INET6_ADDRSTRLEN];
     bool                  print = true;
 
@@ -255,21 +264,25 @@ void print_bpf_output(void *ctx,
             }
             json_object_object_add(jparams, field->name, jarray);
         } else if (field->type == EVENT_FIELD_TYPE_SOCKADDR) {
-            memcpy(&sa, ptr, sizeof(struct event_sockaddr));
+            memcpy(&sa, ptr, sizeof(event_sockaddr_t));
             //debug("family:0x%x\n", sa.sa_family);
-            if (sa.sa_family != AF_INET && sa.sa_family != AF_INET6) {
+            if (sa.raw.sa_family != AF_INET && 
+                sa.raw.sa_family != AF_INET6 &&
+                sa.raw.sa_family != AF_UNIX) {
                 print = false;
                 break;
             }
             jsockaddr = json_object_new_object();
-            if (sa.sa_family == AF_INET) {
+            if (sa.raw.sa_family == AF_INET) {
                 event_read_sockaddr_in((struct sockaddr_in *)&sa, jsockaddr);
-            } else if (sa.sa_family == AF_INET6) {
+            } else if (sa.raw.sa_family == AF_INET6) {
                 event_read_sockaddr_in6((struct sockaddr_in6 *)&sa, jsockaddr);
+            } else if (sa.raw.sa_family == AF_UNIX) {
+                event_read_sockaddr_un((struct sockaddr_un *)&sa, jsockaddr);
             }
             json_object_object_add(jparams, field->name, jsockaddr);
             json_object_object_add(jschema, field->name, json_object_new_string("sockaddr"));
-            ptr += sizeof(struct event_sockaddr);
+            ptr += sizeof(event_sockaddr_t);
         }
     }
     json_str = json_object_to_json_string_ext(jobj, JSON_C_TO_STRING_PRETTY);

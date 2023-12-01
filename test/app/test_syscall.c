@@ -9,7 +9,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-
+#include <linux/un.h>
 void 
 syscall_openat (void)
 {
@@ -75,6 +75,20 @@ void syscall_tcp_bind_v6 (void)
     bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
 }
 
+void syscall_tcp_bind_unix (void)
+{ 
+     int listenfd = 0;
+    struct sockaddr_un my_addr;
+#define MY_SOCK_PATH "/tmp/test.sock"
+
+    listenfd = socket(AF_UNIX, SOCK_STREAM, 0);
+    my_addr.sun_family = AF_UNIX;
+    strncpy(my_addr.sun_path, MY_SOCK_PATH,
+                   sizeof(my_addr.sun_path) - 1); 
+
+    bind(listenfd, (struct sockaddr *) &my_addr,sizeof(my_addr));
+}
+
 int 
 main(int argc, char * argv[]) 
 {
@@ -93,6 +107,8 @@ main(int argc, char * argv[])
         syscall_tcp_bind();
     } else if (strcmp(argv[1], "tcp-bind-v6") == 0) {
         syscall_tcp_bind_v6();
+    } else if (strcmp(argv[1], "unix-bind") == 0) {
+        syscall_tcp_bind_unix();
     }
     return 0;
 }

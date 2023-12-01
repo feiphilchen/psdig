@@ -58,11 +58,18 @@ struct event_schema {
    struct event_field fields[EVENT_MAX_FIELDS];
 };
 
-struct event_sockaddr {
-   unsigned short  sa_family;
-   unsigned short  padding;
-   char 	   sa_data[14];
+union event_sockaddr {
+    struct {
+       unsigned short  sa_family;
+       unsigned short  padding;
+       char 	   sa_data[14];
+   } raw;
+   struct sockaddr_un  un;
+   struct sockaddr_in  in;
+   struct sockaddr_in6 in6;
 };
+
+typedef union event_sockaddr event_sockaddr_t;
 
 #define EVENT_FIELD_MAX_STR_LEN 128
 #define EVENT_FIELD_STR_LIST_LEN 32
