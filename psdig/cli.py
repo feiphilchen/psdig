@@ -37,7 +37,7 @@ def watch_headless(pid, uid, output, log, trace_conf):
     global pswatch
     with tempfile.TemporaryDirectory() as tmpdirname:
         pswatch = PsWatch(None, pid_filter=pid, uid_filter=uid, \
-           event_file=output, log_file=log, conf_file=trace_conf, \
+           event_file=output, log_file=log, conf=trace_conf, \
            tmp_dir=tmpdirname)
         signal.signal(signal.SIGINT, watch_interrupt)
         try:

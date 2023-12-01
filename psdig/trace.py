@@ -12,23 +12,23 @@ from .lambda_helper import *
 from .dwarf import Dwarf
 import tempfile
 
-default_syscall_fmt="lambda:time_str(metadata['timestamp']) + ' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + syscall_format(name, args, ret, metadata)"
-def syscall_print_fmt(name, metadata, args, ret, ctx):
+default_syscall_fmt="lambda:time_str(metadata['timestamp']) + ' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + syscall_format(syscall, args, ret, metadata)"
+def syscall_print_fmt(syscall, metadata, args, ret, ctx):
     fmt,filter_f = ctx
     if filter_f:
-        filter_ret = filter_f(name, metadata, args, ret)
+        filter_ret = filter_f(syscall, metadata, args, ret)
         if not filter_ret:
             return
-    print(fmt.format(name=name, metadata=metadata, args=args, ret=ret))
+    print(fmt.format(syscall=syscall, metadata=metadata, args=args, ret=ret))
 
 
-def syscall_print_lambda(name, metadata, args, ret, ctx):
+def syscall_print_lambda(syscall, metadata, args, ret, ctx):
     lambda_f,filter_f = ctx
     if filter_f:
-        filter_ret = filter_f(name, metadata, args, ret)
+        filter_ret = filter_f(syscall, metadata, args, ret)
         if not filter_ret:
             return
-    print(lambda_f(name, metadata, args, ret))
+    print(lambda_f(syscall, metadata, args, ret))
 
 def complete_syscall(ctx, param, incomplete):
     syscalls = Syscall.get_all()
@@ -52,12 +52,12 @@ def syscall_trace(output, filter, pid, uid, syscall):
         tracepoint = TracePoint(pid_filter=pid, uid_filter=uid)
         syscall_obj = Syscall(tracepoint)
         if filter:
-            filter_f = lambda name,metadata,args,ret:eval(filter)
+            filter_f = lambda syscall,metadata,args,ret:eval(filter)
         else:
             filter_f = None
         if output.strip().startswith('lambda:'):
             lambda_str = output.split(':', 1)[1]
-            lambda_f = lambda name,metadata,args,ret:eval(lambda_str)
+            lambda_f = lambda syscall,metadata,args,ret:eval(lambda_str)
             ctx = lambda_f,filter_f
             syscall_obj.add(syscall, syscall_print_lambda, ctx)
         else:
