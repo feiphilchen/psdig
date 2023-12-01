@@ -332,7 +332,7 @@
             "event": "tcp/tcp_receive_reset",
             "level": "WARNING",
             "detail": {
-               "lambda": "'saddr=%s sport=%d daddr=%s dport=%d' % (inet_ntoa(args['saddr']), args['sport'], inet_ntoa(args['daddr']), args['dport'])"
+               "lambda": "'saddr=%s sport=%d daddr=%s dport=%d' % (inet_ntoa(args['saddr'].value), args['sport'], inet_ntoa(args['daddr'].value), args['dport'])"
             }
          }
       },
@@ -343,7 +343,7 @@
             "event": "tcp/tcp_send_reset",
             "level": "WARNING",
             "detail": {
-               "lambda": "'saddr=%s sport=%d daddr=%s dport=%d' % (inet_ntoa(args['saddr']), args['sport'], inet_ntoa(args['daddr']), args['dport'])"
+               "lambda": "'saddr=%s sport=%d daddr=%s dport=%d' % (inet_ntoa(args['saddr'].value), args['sport'], inet_ntoa(args['daddr'].value), args['dport'])"
             }
          }
       }

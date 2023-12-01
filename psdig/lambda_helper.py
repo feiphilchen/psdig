@@ -1,8 +1,7 @@
 import socket
 from datetime import datetime
 
-def inet_ntoa(addr_str):
-    addr = bytes.fromhex(addr_str)
+def inet_ntoa(addr):
     return socket.inet_ntoa(addr)
 
 def time_str(timestamp):

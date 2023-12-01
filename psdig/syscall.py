@@ -79,7 +79,6 @@ class Syscall(object):
             metadata['pid'] = event['pid']
             metadata['uid'] = event['uid']
             metadata['comm'] = event["comm"]
-            metadata['bin_args'] = event["schema"]
             for arg in self.remove_args:
                 if arg in event['parameters']:
                     del event['parameters'][arg]
@@ -113,7 +112,6 @@ class Syscall(object):
             metadata['pid'] = event['pid']
             metadata['uid'] = event['uid']
             metadata['comm'] = event["comm"]
-            metadata['bin_args'] = event["schema"]
             if event:
                 for arg in self.remove_args:
                     if arg in event['parameters']:
