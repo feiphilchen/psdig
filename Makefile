@@ -1,4 +1,4 @@
-.PHONY:default clean install
+.PHONY:default clean install test
 version_file=VERSION
 version := $(shell cat ${version_file})
 
@@ -7,6 +7,9 @@ default:
 
 clean:
 	rm -rf psdig.egg-info build dist psdig/__pycache__
-
+	make -C test clean
 install:
 	pip3 install dist/psdig-$(version).tar.gz
+
+test:
+	make -C test

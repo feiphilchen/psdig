@@ -76,18 +76,18 @@ class TraceManager(object):
         self.pi_cache[key] = exe,parent_process
         return exe,parent_process
 
-    def syscall_event_handler(self, name, metadata, args, ret, ctx):
+    def syscall_event_handler(self, syscall, metadata, args, ret, ctx):
         try:
             syscall_trace = ctx
             trace_name = syscall_trace.name
-            syscall_trace.eval_processors(metadata, name, args, ret)
-            valid = syscall_trace.eval_filter(metadata, name, args, ret)
+            syscall_trace.eval_processors(metadata, syscall, args, ret)
+            valid = syscall_trace.eval_filter(metadata, syscall, args, ret)
             if not valid:
                 return
-            detail = syscall_trace.eval_detail(metadata, name, args, ret)
-            level = syscall_trace.eval_level(metadata, name, args, ret)
+            detail = syscall_trace.eval_detail(metadata, syscall, args, ret)
+            level = syscall_trace.eval_level(metadata, syscall, args, ret)
             extend = {}
-            syscall_info = "%d/%s" % (metadata['syscall_nr'], name)
+            syscall_info = "%d/%s" % (metadata['syscall_nr'], syscall)
             extend['syscall'] = syscall_info
             arg_list = [f"{k}={args[k]}" for k in args]
             extend['arguments'] = "\n".join(arg_list)
@@ -115,7 +115,7 @@ class TraceManager(object):
             }
             self.trace_send(trace)
         except:
-            self.logger.error(f'error processing syscall:{name} ' + \
+            self.logger.error(f'error processing syscall:{syscall} ' + \
                 f'args={args} metadata={metadata} ret={ret}')
             self.logger.error(traceback.format_exc())
 

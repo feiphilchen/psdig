@@ -64,25 +64,25 @@ class SyscallTraceConf(TraceConf):
         if not isinstance(self.syscall, str) or self.syscall not in Syscall.get_all():
             raise ValueError("invalid syscall parameter")
 
-    def eval_detail(self, metadata, name, args, ret):
+    def eval_detail(self, metadata, syscall, args, ret):
         detail_def = self.detail
         detail = None
         if detail_def:
             if isinstance(detail_def, str):
                 detail_fmt = detail_def
-                detail = detail_fmt.format(name=name, metadata=metadata, args=args, ret=ret)
+                detail = detail_fmt.format(syscall=syscall, metadata=metadata, args=args, ret=ret)
             elif isinstance(detail_def, dict):
                 detail_lambda = detail_def.get('lambda')
                 if detail_lambda:
-                    detail_func = lambda name,metadata,args,ret:eval(detail_lambda)
-                    detail = detail_func(name, metadata, args, ret)
+                    detail_func = lambda syscall,metadata,args,ret:eval(detail_lambda)
+                    detail = detail_func(syscall, metadata, args, ret)
         if detail == None:
-            default_lambda = "syscall_format(name,args,ret,metadata)"
-            detail_func =  lambda name,metadata,args,ret:eval(default_lambda)
-            detail = detail_func(name, metadata, args, ret)
+            default_lambda = "syscall_format(syscall,args,ret,metadata)"
+            detail_func =  lambda syscall,metadata,args,ret:eval(default_lambda)
+            detail = detail_func(syscall, metadata, args, ret)
         return detail
 
-    def eval_level(self, metadata, name, args, ret):
+    def eval_level(self, metadata, syscall, args, ret):
         level_def = self.level
         level = None
         if level_def:
@@ -91,13 +91,13 @@ class SyscallTraceConf(TraceConf):
             elif isinstance(level_def, dict):
                 level_lambda = level_def.get('lambda')
                 if level_lambda:
-                    level_check = lambda name,metadata,args,ret: eval(level_lambda)
-                    level = level_check(name, metadata, args, ret)
+                    level_check = lambda syscall,metadata,args,ret: eval(level_lambda)
+                    level = level_check(syscall, metadata, args, ret)
         if level == None:
             level = 'INFO'
         return level
 
-    def eval_filter(self, metadata, name, args, ret):
+    def eval_filter(self, metadata, syscall, args, ret):
         filter_def = self.filter
         if filter_def != None:
             if isinstance(filter_def, bool):
@@ -105,16 +105,16 @@ class SyscallTraceConf(TraceConf):
             elif isinstance(filter_def, dict):
                 filter_lambda = filter_def.get('lambda')
                 if filter_lambda:
-                    filter_check = lambda name,metadata,args,ret: eval(filter_lambda)
-                    return filter_check(name, metadata, args, ret)
+                    filter_check = lambda syscall,metadata,args,ret: eval(filter_lambda)
+                    return filter_check(syscall, metadata, args, ret)
         return True
 
-    def eval_processors(self, metadata, name, args, ret):
+    def eval_processors(self, metadata, syscall, args, ret):
         if self.processors == None:
             return
         for p in self.processors:
             if hasattr(p, "syscall"):
-                p.syscall(metadata, name, args, ret)
+                p.syscall(metadata, syscall, args, ret)
 
 class EventTraceConf(TraceConf):
     event = None

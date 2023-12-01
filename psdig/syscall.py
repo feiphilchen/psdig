@@ -11,7 +11,7 @@ from .tracepoint import TracePoint
 from .conf import LOGGER_NAME,TRACEFS
 
 class Syscall(object):
-    syscall_not_return = ["exit", "exit_group"]
+    syscall_not_return = ["sys_exit", "sys_exit_group"]
     remove_args = ["common_type", "common_flags", "common_preempt_count", "common_pid", "__syscall_nr"]
     def __init__(self, tracepoint):
         self.set_logger()
@@ -32,15 +32,16 @@ class Syscall(object):
         for syscall_enter in glob.glob(path):
             event_name = os.path.basename(syscall_enter)
             hit = re.match('sys_enter_(.*)$', event_name)
-            syscall = hit.group(1)
+            syscall = "sys_%s" % hit.group(1)
             syscalls.append(syscall)
         return sorted(syscalls)
 
     def add(self, syscall, callback, arg):
-        enter_event = f"syscalls/sys_enter_{syscall}"
+        short_name = syscall.replace("sys_", "")
+        enter_event = f"syscalls/sys_enter_{short_name}"
         self.tracepoint.add_event_watch(enter_event, self.syscall_enter)
         if syscall not in self.syscall_not_return:
-            exit_event = f"syscalls/sys_exit_{syscall}"
+            exit_event = f"syscalls/sys_exit_{short_name}"
             self.tracepoint.add_event_watch(exit_event, self.syscall_exit)
         self.callback[syscall] = callback
         self.callback_arg[syscall] = arg
@@ -56,7 +57,7 @@ class Syscall(object):
         hit = re.match('syscalls/sys_enter_(.*)$', event_name)
         if not hit:
             return
-        syscall = hit.group(1)
+        syscall = "sys_%s" % hit.group(1)
         if syscall not in self.syscall_not_return:
             if cpuid not in self.syscall_hash:
                 self.syscall_hash[cpuid] = {}
@@ -88,7 +89,7 @@ class Syscall(object):
         hit = re.match('syscalls/sys_exit_(.*)$', event_name)
         if not hit:
             return
-        syscall = hit.group(1)
+        syscall = "sys_%s" % hit.group(1)
         cb = self.callback.get(syscall)
         ctx = self.callback_arg.get(syscall)
         if not cb:

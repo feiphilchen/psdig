@@ -10,7 +10,7 @@ def time_str(timestamp):
     dt_str = dt.strftime('%H:%M:%S.%f')
     return dt_str
 
-def syscall_format(name, args=None, ret=None, metadata=None, argmaxlen=64):
+def syscall_format(syscall, args=None, ret=None, metadata=None, argmaxlen=64):
     if args == None:
         arg_str = "()"
     else:
@@ -34,9 +34,9 @@ def syscall_format(name, args=None, ret=None, metadata=None, argmaxlen=64):
                 arg_str_list.append(val)
         arg_str = "(" + ", ".join(arg_str_list) + ")"
     if ret != None:
-        return f"{name}{arg_str} => {ret}"
+        return f"{syscall}{arg_str} => {ret}"
     else:
-        return f"{name}{arg_str}"
+        return f"{syscall}{arg_str}"
 
 def uprobe_format(function, args=None, ret=None, metadata=None, argmaxlen=64, brief=False):
     name = function['name']

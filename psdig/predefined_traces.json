@@ -4,7 +4,7 @@
          "name": "open",
          "type": "syscall",
          "parameters": {
-            "syscall": "openat",
+            "syscall": "sys_openat",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -16,7 +16,7 @@
          "name": "open",
          "type": "syscall",
          "parameters": {
-            "syscall": "open",
+            "syscall": "sys_open",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -27,7 +27,7 @@
          "name": "close",
          "type": "syscall",
          "parameters": {
-            "syscall": "close",
+            "syscall": "sys_close",
             "level": {
                "lambda": "'INFO' if ret == 0 else 'ERROR'"
             },
@@ -41,7 +41,7 @@
          "name": "unlink",
          "type": "syscall",
          "parameters": {
-            "syscall": "unlink",
+            "syscall": "sys_unlink",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -52,18 +52,7 @@
          "name": "unlink",
          "type": "syscall",
          "parameters": {
-            "syscall": "unlinkat",
-            "level": {
-               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
-            },
-            "detail": "{args[pathname]} ret={ret}"
-         }
-      },
-      {
-         "name": "unlink",
-         "type": "syscall",
-         "parameters": {
-            "syscall": "unlinkat",
+            "syscall": "sys_unlinkat",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -74,7 +63,7 @@
          "name": "truncate",
          "type": "syscall",
          "parameters": {
-            "syscall": "truncate",
+            "syscall": "sys_truncate",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -85,7 +74,7 @@
          "name": "chown",
          "type": "syscall",
          "parameters": {
-            "syscall": "chown",
+            "syscall": "sys_chown",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -96,7 +85,7 @@
          "name": "chown",
          "type": "syscall",
          "parameters": {
-            "syscall": "fchownat",
+            "syscall": "sys_fchownat",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -107,7 +96,7 @@
          "name": "chmod",
          "type": "syscall",
          "parameters": {
-            "syscall": "chmod",
+            "syscall": "sys_chmod",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -118,7 +107,7 @@
          "name": "chmod",
          "type": "syscall",
          "parameters": {
-            "syscall": "fchmodat",
+            "syscall": "sys_fchmodat",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -129,7 +118,7 @@
          "name": "rmdir",
          "type": "syscall",
          "parameters": {
-            "syscall": "rmdir",
+            "syscall": "sys_rmdir",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -140,7 +129,7 @@
          "name": "mkdir",
          "type": "syscall",
          "parameters": {
-            "syscall": "mkdir",
+            "syscall": "sys_mkdir",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -151,7 +140,7 @@
          "name": "mkdir",
          "type": "syscall",
          "parameters": {
-            "syscall": "mkdirat",
+            "syscall": "sys_mkdirat",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -162,7 +151,7 @@
          "name": "symlink",
          "type": "syscall",
          "parameters": {
-            "syscall": "symlink",
+            "syscall": "sys_symlink",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -173,7 +162,7 @@
          "name": "symlink",
          "type": "syscall",
          "parameters": {
-            "syscall": "symlinkat",
+            "syscall": "sys_symlinkat",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -184,7 +173,7 @@
          "name": "kill",
          "type": "syscall",
          "parameters": {
-            "syscall": "kill",
+            "syscall": "sys_kill",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -195,7 +184,7 @@
          "name": "exec",
          "type": "syscall",
          "parameters": {
-            "syscall": "execve",
+            "syscall": "sys_execve",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -208,7 +197,7 @@
          "name": "fork",
          "type": "syscall",
          "parameters": {
-            "syscall": "fork",
+            "syscall": "sys_fork",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -219,7 +208,7 @@
          "name": "exit",
          "type": "syscall",
          "parameters": {
-            "syscall": "exit",
+            "syscall": "sys_exit",
             "level": {
                "lambda": "'INFO' if args['error_code'] == 0 else 'ERROR'"
             },
@@ -230,7 +219,7 @@
          "name": "exit",
          "type": "syscall",
          "parameters": {
-            "syscall": "exit_group",
+            "syscall": "sys_exit_group",
             "level": {
                "lambda": "'INFO' if args['error_code'] == 0 else 'ERROR'"
             },
@@ -241,7 +230,7 @@
          "name": "setuid",
          "type": "syscall",
          "parameters": {
-            "syscall": "setuid",
+            "syscall": "sys_setuid",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -252,7 +241,7 @@
          "name": "sethostname",
          "type": "syscall",
          "parameters": {
-            "syscall": "sethostname",
+            "syscall": "sys_sethostname",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -263,7 +252,7 @@
          "name": "listen",
          "type": "syscall",
          "parameters": {
-            "syscall": "listen",
+            "syscall": "sys_listen",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -274,7 +263,7 @@
          "name": "connect",
          "type": "syscall",
          "parameters": {
-            "syscall": "connect",
+            "syscall": "sys_connect",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -285,7 +274,7 @@
          "name": "accept",
          "type": "syscall",
          "parameters": {
-            "syscall": "accept",
+            "syscall": "sys_accept",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -296,7 +285,7 @@
          "name": "bind",
          "type": "syscall",
          "parameters": {
-            "syscall": "bind",
+            "syscall": "sys_bind",
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
@@ -307,7 +296,7 @@
          "name": "mount",
          "type": "syscall",
          "parameters": {
-            "syscall": "mount",
+            "syscall": "sys_mount",
             "level": {
                "lambda": "'INFO' if ret == 0 else 'ERROR'"
             },
@@ -318,7 +307,7 @@
          "name": "umount",
          "type": "syscall",
          "parameters": {
-            "syscall": "umount",
+            "syscall": "sys_umount",
             "level": {
                "lambda": "'INFO' if ret == 0 else 'ERROR'"
             },

@@ -31,12 +31,12 @@ class FdResolve(object):
         self.fd_hash[key]['update'] = time.time()
         return self.fd_hash[key]['filename']
 
-    def syscall(self, metadata, name, args, ret):
+    def syscall(self, metadata, syscall, args, ret):
         pid = metadata['pid']
-        if name in ['open', 'openat']:
+        if syscall in ['sys_open', 'sys_openat']:
             if 'filename' in args and ret >= 0:
                 self.file_add(pid, ret, args['filename'])
-        elif name in ['close']:
+        elif syscall in ['sys_close']:
             if 'fd' in args:
                 filename = self.file_lookup(pid, args['fd'])
                 if filename != None:

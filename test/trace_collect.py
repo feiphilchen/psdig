@@ -1,4 +1,5 @@
 import os
+import fcntl
 import subprocess
 import threading
 
@@ -29,7 +30,15 @@ class TraceCollect(object):
     def stop(self):
         if self.proc:
             self.proc.terminate()
-            return self.output,self.proc.stderr
+            self.proc.wait()
+            fd = self.proc.stderr.fileno()
+            fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+            fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+            error = self.proc.stderr.read()
+            if error:
+                return self.output,error.decode()
+            else:
+                return self.output,None
         else:
             return [],None
 
