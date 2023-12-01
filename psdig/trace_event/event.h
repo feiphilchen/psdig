@@ -1,6 +1,10 @@
 #ifndef __EVENT_H__
 #define __EVENT_H__
 
+#include <linux/in.h>
+#include <linux/in6.h>
+#include <linux/un.h>
+
 typedef enum {
    EVENT_FIELD_TYPE_INT,
    EVENT_FIELD_TYPE_UINT,

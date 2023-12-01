@@ -167,6 +167,19 @@ event_read_sockaddr_in (struct sockaddr_in    * in,
 
 }
 
+static  int
+event_read_sockaddr_in6 (struct sockaddr_in6    * in,
+                        struct json_object   * jobj)
+{
+    char  addr_buf[INET6_ADDRSTRLEN];
+    inet_ntop(in->sin6_family, &in->sin6_addr, addr_buf, sizeof(addr_buf));
+    json_object_object_add(jobj, "family", json_object_new_uint64(in->sin6_family));
+    json_object_object_add(jobj, "addr", json_object_new_string(addr_buf));
+    json_object_object_add(jobj, "port", json_object_new_uint64(in->sin6_port));
+    return 0;
+
+}
+
 void print_bpf_output(void *ctx, 
                       int cpu,
                       void *data, 
@@ -244,13 +257,15 @@ void print_bpf_output(void *ctx,
         } else if (field->type == EVENT_FIELD_TYPE_SOCKADDR) {
             memcpy(&sa, ptr, sizeof(struct event_sockaddr));
             //debug("family:0x%x\n", sa.sa_family);
-            if (sa.sa_family != AF_INET) {
+            if (sa.sa_family != AF_INET && sa.sa_family != AF_INET6) {
                 print = false;
                 break;
             }
             jsockaddr = json_object_new_object();
             if (sa.sa_family == AF_INET) {
                 event_read_sockaddr_in((struct sockaddr_in *)&sa, jsockaddr);
+            } else if (sa.sa_family == AF_INET6) {
+                event_read_sockaddr_in6((struct sockaddr_in6 *)&sa, jsockaddr);
             }
             json_object_object_add(jparams, field->name, jsockaddr);
             json_object_object_add(jschema, field->name, json_object_new_string("sockaddr"));

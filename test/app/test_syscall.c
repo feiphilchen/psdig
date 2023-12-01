@@ -60,6 +60,21 @@ void syscall_tcp_bind (void)
     bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
 }
 
+void syscall_tcp_bind_v6 (void)
+{
+    int listenfd = 0, connfd = 0;
+    struct sockaddr_in6 serv_addr;
+
+    listenfd = socket(AF_INET6, SOCK_STREAM, 0);
+    memset(&serv_addr, '0', sizeof(serv_addr));
+
+    serv_addr.sin6_family = AF_INET6;
+    serv_addr.sin6_addr = in6addr_any;
+    serv_addr.sin6_port = htons(55000);
+
+    bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+}
+
 int 
 main(int argc, char * argv[]) 
 {
@@ -76,6 +91,8 @@ main(int argc, char * argv[])
         syscall_fork();
     } else if (strcmp(argv[1], "tcp-bind") == 0) {
         syscall_tcp_bind();
+    } else if (strcmp(argv[1], "tcp-bind-v6") == 0) {
+        syscall_tcp_bind_v6();
     }
     return 0;
 }

@@ -3,7 +3,7 @@ import sys
 
 class SockAddr(object):
     def __init__(self, sa):
-        if sa['family'] == 2:
+        if sa['family'] == 2 or sa['family'] == 10:
             self.init_sockaddr_in(sa)
 
     def init_sockaddr_in(self, sa):
@@ -14,10 +14,8 @@ class SockAddr(object):
     def __str__(self):
         if self.family == 2:
             return f"{self.addr}:{self.port}"
-
-    def __repr__(self):
-        if self.family == 2:
-            return f"{self.addr}:{self.port}"
+        elif self.family == 10:
+            return f"[{self.addr}]:{self.port}"
 
 class Pointer(object):
     def __init__(self, ptr):
