@@ -12,10 +12,16 @@ import logging
 import traceback
 import pkgutil
 import threading
+from .data_type import *
 from .schema import EventSchema
 from .conf import LOGGER_NAME
 
 class TracePoint(object):
+    type_mapping = {
+       "ptr": Pointer,
+       "bytes": Bytes,
+       "sockaddr":SockAddr
+    }
     def __init__(self, pid_filter=[], 
                        uid_filter=[], 
                        ignore_self=True, 
@@ -123,8 +129,18 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
         #os.popen(cmd)
         subprocess.run(cmd, shell=True)
 
+    def params_type_convert(self, event_obj):
+        if 'schema' in event_obj:
+            for arg in event_obj['schema']:
+                arg_type = event_obj['schema'][arg]
+                if arg_type in self.type_mapping:
+                    cls = self.type_mapping[arg_type]
+                    new_value = cls(event_obj['parameters'][arg])
+                    event_obj['parameters'][arg] = new_value
+
     def call_event_handlers(self, event_obj):
         event = event_obj['event']
+        self.params_type_convert(event_obj)
         if event in self.event_handlers:
             for handler in self.event_handlers[event]:
                 func,arg = handler

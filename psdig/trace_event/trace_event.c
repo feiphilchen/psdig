@@ -154,6 +154,19 @@ event_read_uint (void                * ptr,
     return 0;
 }
 
+static  int
+event_read_sockaddr_in (struct sockaddr_in    * in,
+                        struct json_object   * jobj)
+{
+    char  addr_buf[INET6_ADDRSTRLEN];
+    inet_ntop(in->sin_family, &in->sin_addr, addr_buf, sizeof(addr_buf));
+    json_object_object_add(jobj, "family", json_object_new_uint64(in->sin_family));
+    json_object_object_add(jobj, "addr", json_object_new_string(addr_buf));
+    json_object_object_add(jobj, "port", json_object_new_uint64(in->sin_port));
+    return 0;
+
+}
+
 void print_bpf_output(void *ctx, 
                       int cpu,
                       void *data, 
@@ -168,7 +181,7 @@ void print_bpf_output(void *ctx,
     char                  str[EVENT_FIELD_MAX_STR_LEN];
     char                  bytes_str[EVENT_FIELD_MAX_BYTES_LEN*2 + 1];
     int                   ret, str_num;
-    struct json_object   *jobj, *jarray, *jparams, *jschema;
+    struct json_object   *jobj, *jarray, *jparams, *jschema, *jsockaddr;
     const char          * json_str;
     struct event_sockaddr sa;
     char                  addr_buf[INET6_ADDRSTRLEN];
@@ -231,12 +244,16 @@ void print_bpf_output(void *ctx,
         } else if (field->type == EVENT_FIELD_TYPE_SOCKADDR) {
             memcpy(&sa, ptr, sizeof(struct event_sockaddr));
             //debug("family:0x%x\n", sa.sa_family);
-            if (sa.sa_family != AF_INET && sa.sa_family != AF_INET6) {
+            if (sa.sa_family != AF_INET) {
                 print = false;
                 break;
             }
-            inet_ntop(sa.sa_family, sa.sa_data, addr_buf, sizeof(addr_buf));
-            json_object_object_add(jparams, field->name, json_object_new_string(addr_buf));
+            jsockaddr = json_object_new_object();
+            if (sa.sa_family == AF_INET) {
+                event_read_sockaddr_in((struct sockaddr_in *)&sa, jsockaddr);
+            }
+            json_object_object_add(jparams, field->name, jsockaddr);
+            json_object_object_add(jschema, field->name, json_object_new_string("sockaddr"));
             ptr += sizeof(struct event_sockaddr);
         }
     }

@@ -11,20 +11,15 @@ def time_str(timestamp):
     return dt_str
 
 def syscall_format(syscall, args=None, ret=None, metadata=None, argmaxlen=64):
-    bin_args = metadata.get('bin_args', {})
     if args == None:
         arg_str = "()"
     else:
         arg_str_list = []
         for k,v in args.items():
             if isinstance(v, str):
-                bin_type = bin_args.get(k)
-                if bin_type == 'ptr':
-                    val = f"{k}=0x{v}"
-                else:
-                    val = v.encode("unicode_escape").decode("utf-8")
-                    val = (val[:argmaxlen] + '..') if len(val) > argmaxlen else val
-                    val = f"{k}=\"{val}\""
+                val = v.encode("unicode_escape").decode("utf-8")
+                val = (val[:argmaxlen] + '..') if len(val) > argmaxlen else val
+                val = f"{k}=\"{val}\""
                 arg_str_list.append(val)
             elif isinstance(v, list):
                 val = str(v)
@@ -35,7 +30,8 @@ def syscall_format(syscall, args=None, ret=None, metadata=None, argmaxlen=64):
                 val = f"{k}={val}"
                 arg_str_list.append(val)
             else:
-                val = f"{k}={v}"
+                val = str(v)
+                val = f"{k}={val}"
                 arg_str_list.append(val)
         arg_str = "(" + ", ".join(arg_str_list) + ")"
     if ret != None:
