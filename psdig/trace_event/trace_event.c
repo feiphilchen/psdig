@@ -168,7 +168,7 @@ void print_bpf_output(void *ctx,
     char                  str[EVENT_FIELD_MAX_STR_LEN];
     char                  bytes_str[EVENT_FIELD_MAX_BYTES_LEN*2 + 1];
     int                   ret, str_num;
-    struct json_object   *jobj, *jarray, *jparams;
+    struct json_object   *jobj, *jarray, *jparams, *jschema;
     const char          * json_str;
     struct event_sockaddr sa;
     char                  addr_buf[INET6_ADDRSTRLEN];
@@ -180,6 +180,7 @@ void print_bpf_output(void *ctx,
     ptr = evt->data;
     jobj = json_object_new_object();
     jparams = json_object_new_object();
+    jschema = json_object_new_object();
     json_object_object_add(jobj, "event", json_object_new_string(schema->name));
     json_object_object_add(jobj, "comm", json_object_new_string(evt->comm));
     json_object_object_add(jobj, "pid", json_object_new_int64(evt->pid));
@@ -189,6 +190,7 @@ void print_bpf_output(void *ctx,
     json_object_object_add(jobj, "cpuid", json_object_new_int64(cpu));
     json_object_object_add(jobj, "ktime_ns", json_object_new_int64(evt->ktime_ns));
     json_object_object_add(jobj, "parameters", jparams);
+    json_object_object_add(jobj, "schema", jschema);
     for (pos = 0; pos < schema->field_nr; pos++) {
         field = &schema->fields[pos];
         if (field->type == EVENT_FIELD_TYPE_INT) {
@@ -197,10 +199,15 @@ void print_bpf_output(void *ctx,
         } else if (field->type == EVENT_FIELD_TYPE_UINT) {
             event_read_uint(ptr, field->size, jparams,  field->name);
             ptr += field->size;
-        } else if (field->type == EVENT_FIELD_TYPE_BYTES) {
+        } else if (field->type == EVENT_FIELD_TYPE_BYTES || field->type == EVENT_FIELD_TYPE_PTR) {
             if (field->size <= EVENT_FIELD_MAX_BYTES_LEN) {
                 bytes_to_str(ptr, field->size, bytes_str);
                 json_object_object_add(jparams, field->name, json_object_new_string(bytes_str));
+            }
+            if (field->type == EVENT_FIELD_TYPE_PTR) {
+                json_object_object_add(jschema, field->name, json_object_new_string("ptr"));
+            } else {
+                json_object_object_add(jschema, field->name, json_object_new_string("bytes"));
             }
             ptr += field->size;
         } else if (field->type == EVENT_FIELD_TYPE_STR) {

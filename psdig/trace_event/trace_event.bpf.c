@@ -240,7 +240,8 @@ read_event (void                * ctx,
         ef = &schema->fields[pos];
         if (ef->type == EVENT_FIELD_TYPE_INT ||
             ef->type == EVENT_FIELD_TYPE_UINT ||
-            ef->type == EVENT_FIELD_TYPE_BYTES) {
+            ef->type == EVENT_FIELD_TYPE_BYTES ||
+            ef->type == EVENT_FIELD_TYPE_PTR) {
             read_event_field_bytes(ctx, ef, evt);
         } else if (ef->type == EVENT_FIELD_TYPE_STR) {
             read_event_field_string(ctx, ef, evt);

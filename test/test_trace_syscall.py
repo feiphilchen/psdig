@@ -10,8 +10,44 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 trace_syscall_cmd = "psdig trace syscall"
 cases = [
-    ("./app/test_syscall openat", "sys_openat", "metadata['comm'] == 'test_syscall' and args['filename'] == '/tmp/test_file.txt'", 1, None),
-    ("./app/test_syscall openat", "sys_openatxx", None, 0, "is not a valid syscall")
+    (
+        "./app/test_syscall openat", 
+        "sys_openat", 
+        "metadata['comm'] == 'test_syscall' and args['filename'] == '/tmp/test_file.txt'" + \
+          "and syscall == 'sys_openat' and args['flags'] == 1025 and ret == -2", 
+        1, 
+        None
+    ),
+    (
+        "./app/test_syscall exit",
+        "sys_exit_group",
+        "metadata['comm'] == 'test_syscall' " + \
+          "and syscall == 'sys_exit_group' and args['error_code'] == 5",
+        1,
+        None
+    ),
+    (
+        "./app/test_syscall fork",
+        "sys_clone",
+        "metadata['comm'] == 'test_syscall' " + \
+          "and syscall == 'sys_clone' and ret > 0",
+        1,
+        None
+    ),
+    (
+        "./app/test_syscall exit",
+        "sys_execve",
+        "syscall == 'sys_execve' and args['filename'] == './app/test_syscall' and ' '.join(args['argv']) == './app/test_syscall exit'",
+        1,
+        None
+    ),
+    (
+       "./app/test_syscall openat", 
+       "sys_openatxx", 
+       None, 
+       0, 
+       "is not a valid syscall"
+    )
 ]
 
 @pytest.mark.parametrize("test_cmd,syscall,filter_str,expect_trace_nr,expect_error", cases)

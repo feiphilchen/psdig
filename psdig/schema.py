@@ -107,6 +107,8 @@ class EventSchema(object):
     def get_field_type_mapping(self, field_type):
         if field_type in self.type_mapping:
             return self.type_mapping[field_type]
+        elif '*' in field_type:
+            return 'EVENT_FIELD_TYPE_PTR'
         else:
             return 'EVENT_FIELD_TYPE_BYTES'
 

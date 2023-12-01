@@ -205,6 +205,17 @@
          }
       },
       {
+         "name": "fork",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sys_clone",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "pid={ret}"
+         }
+      },
+      {
          "name": "exit",
          "type": "syscall",
          "parameters": {
