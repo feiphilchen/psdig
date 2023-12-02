@@ -36,8 +36,9 @@ def complete_syscall(ctx, param, incomplete):
 
 def validate_syscall(ctx, param, value):
     syscalls = Syscall.get_all()
-    if value not in syscalls:
-        raise click.BadParameter(f'{value} is not a valid syscall')
+    for syscall in value:
+        if syscall not in syscalls:
+            raise click.BadParameter(f'{syscall} is not a valid syscall')
     return value
 
 @click.command()
@@ -45,7 +46,7 @@ def validate_syscall(ctx, param, value):
 @click.option('--filter', '-f', type=str, help="Filter string")
 @click.option('--pid', '-p', type=int, multiple=True, help='Pid filter')
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
-@click.argument('syscall', shell_complete=complete_syscall, callback=validate_syscall)
+@click.argument('syscall', nargs=-1, shell_complete=complete_syscall, callback=validate_syscall)
 def syscall_trace(output, filter, pid, uid, syscall):
     """Trace syscall"""
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -59,10 +60,12 @@ def syscall_trace(output, filter, pid, uid, syscall):
             lambda_str = output.split(':', 1)[1]
             lambda_f = lambda syscall,metadata,args,ret:eval(lambda_str)
             ctx = lambda_f,filter_f
-            syscall_obj.add(syscall, syscall_print_lambda, ctx)
+            callback = syscall_print_lambda
         else:
             ctx = output,filter_f
-            syscall_obj.add(syscall, syscall_print_fmt, ctx)
+            callback = syscall_print_fmt
+        for s in syscall:
+            syscall_obj.add(s, callback, ctx)
         tracepoint.start(obj_dir=tmpdirname)
 
 default_event_fmt="lambda:time_str(metadata['timestamp']) + f' {name}: ' + ','.join([f'{k}={v}' for k,v in args.items()])"
