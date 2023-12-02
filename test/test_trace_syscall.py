@@ -11,7 +11,7 @@ logger.setLevel(logging.INFO)
 trace_syscall_cmd = "psdig trace syscall"
 cases = [
     (
-        "./app/test_syscall openat", 
+        "syscall/test_syscall openat", 
         "sys_openat", 
         "metadata['comm'] == 'test_syscall' and args['filename'] == '/tmp/test_file.txt'" + \
           "and syscall == 'sys_openat' and args['flags'] == 1025 and ret == -2", 
@@ -19,7 +19,7 @@ cases = [
         None
     ),
     (
-        "./app/test_syscall exit",
+        "syscall/test_syscall exit",
         "sys_exit_group",
         "metadata['comm'] == 'test_syscall' " + \
           "and syscall == 'sys_exit_group' and args['error_code'] == 5",
@@ -27,7 +27,7 @@ cases = [
         None
     ),
     (
-        "./app/test_syscall fork",
+        "syscall/test_syscall fork",
         "sys_clone",
         "metadata['comm'] == 'test_syscall' " + \
           "and syscall == 'sys_clone' and ret > 0",
@@ -35,14 +35,35 @@ cases = [
         None
     ),
     (
-        "./app/test_syscall exit",
+        "syscall/test_syscall exit",
         "sys_execve",
-        "syscall == 'sys_execve' and args['filename'] == './app/test_syscall' and ' '.join(args['argv']) == './app/test_syscall exit'",
+        "syscall == 'sys_execve' and args['filename'] == 'syscall/test_syscall' and ' '.join(args['argv']) == 'syscall/test_syscall exit'",
         1,
         None
     ),
     (
-       "./app/test_syscall openat", 
+        "syscall/test_syscall tcp-bind",
+        "sys_bind",
+        "syscall == 'sys_bind' and args['umyaddr']=='0.0.0.0:55510'",
+        1,
+        None
+    ),
+    (
+        "syscall/test_syscall tcp-bind-v6",
+        "sys_bind",
+        "syscall == 'sys_bind' and args['umyaddr']=='[::]:55510'",
+        1,
+        None
+    ),
+    (
+        "syscall/test_syscall unix-bind",
+        "sys_bind",
+        "syscall == 'sys_bind' and args['umyaddr']=='/tmp/test.sock'",
+        1,
+        None
+    ),
+    (
+       "syscall/test_syscall openat", 
        "sys_openatxx", 
        None, 
        0, 

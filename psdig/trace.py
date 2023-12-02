@@ -39,7 +39,7 @@ def validate_syscall(ctx, param, value):
     for syscall in value:
         if syscall not in syscalls:
             raise click.BadParameter(f'{syscall} is not a valid syscall')
-    return value
+    return list(set(value))
 
 @click.command()
 @click.option('--output', '-o', type=str, default=default_syscall_fmt, help="Format string")

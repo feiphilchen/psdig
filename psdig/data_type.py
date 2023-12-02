@@ -25,6 +25,16 @@ class SockAddr(object):
         elif self.family == 1:
             return f"{self.path}"
 
+    def __eq__(self, other):
+        if self.family == 2:
+            return f"{self.addr}:{self.port}" == other
+        elif self.family == 10:
+            return f"[{self.addr}]:{self.port}" == other
+        elif self.family == 1:
+            return f"{self.path}" == other
+        else:
+            return False
+
 class Pointer(object):
     def __init__(self, ptr):
         self.ptr = ptr
@@ -40,6 +50,25 @@ class Pointer(object):
         value = bytes.fromhex(self.ptr)
         return int.from_bytes(value, sys.byteorder)
 
+    def __eq__(self, other):
+        value = bytes.fromhex(self.ptr)
+        return int.from_bytes(value, sys.byteorder) == other
+
+    def __le__(self, other):
+        value = bytes.fromhex(self.ptr)
+        return int.from_bytes(value, sys.byteorder) <= other
+
+    def __ge__(self, other):
+        value = bytes.fromhex(self.ptr)
+        return int.from_bytes(value, sys.byteorder) >= other
+
+    def __lt__(self, other):
+        value = bytes.fromhex(self.ptr)
+        return int.from_bytes(value, sys.byteorder) < other
+
+    def __gt__(self, other):
+        value = bytes.fromhex(self.ptr)
+        return int.from_bytes(value, sys.byteorder) > other
 
 class Bytes(object):
     def __init__(self, bs):
@@ -52,4 +81,10 @@ class Bytes(object):
     def value(self):
         return bytes.fromhex(self.bs)
 
-
+    def __eq__(self, other):
+        if isinstance(other, str):
+            return self.bs == other
+        elif isinstance(other, bytes):
+            return bytes.fromhex(self.bs) == other
+        else:
+            return False

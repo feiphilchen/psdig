@@ -4,8 +4,8 @@ default: test_app
 	pytest -s
 
 test_app:
-	make -C app
+	make -C syscall
 
 clean:
-	make -C app clean
+	make -C syscall clean
 	rm -rf __pycache__
