@@ -49,17 +49,16 @@ class Uprobe(object):
         elapsed =  float("%.6f" % (ktime_ns/1000000000))
         return self.boot_ts + elapsed
 
-    def probe_id(self, elf_path, function, enter):
+    def probe_id(self, elf_path, function, addr, enter):
         if enter:
-            probe_str = f"{elf_path}:{function}:enter"
+            probe_str = f"{elf_path}:{function}:{addr}:enter"
         else:
-            probe_str = f"{elf_path}:{function}:ret"
+            probe_str = f"{elf_path}:{function}:{addr}:ret"
         id_str = hashlib.md5(probe_str.encode('utf-8')).hexdigest()[0:8]
         return int(id_str, 16)
 
     def add(self, elf_path, function, callback, enter=True, arg=None, sym=None):
         elf_path = os.path.abspath(elf_path)
-        probe_id = self.probe_id(elf_path, function, enter)
         if sym:
             self.symbols[elf_path] = sym
         if enter:
@@ -67,7 +66,7 @@ class Uprobe(object):
         else:
             probe_type = "uretprobe"
         probe_key = f"{function}:{elf_path}"
-        new_probe = {"type":probe_type, "function": function, "elf": elf_path, "probe_id": probe_id, "callbacks":[]}
+        new_probe = {"type":probe_type, "function": function, "elf": elf_path, "callbacks":[]}
         if elf_path not in self.probe_index:
             self.probe_index[elf_path] = {}
         if function not in self.probe_index[elf_path]:
@@ -86,6 +85,8 @@ class Uprobe(object):
                     sym = elf
                 dwarf = Dwarf(sym)
                 instances = dwarf.resolve_function(function)
+                for instance in instances:
+                    instance['elf'] = elf
                 self.probe_index[elf][function]['instances'] = instances
 
     def _add_handler(self, probe_id, handler):
@@ -94,13 +95,12 @@ class Uprobe(object):
         else:
             self.probe_handlers[probe_id] = [handler]
 
-    def add_handler(self, probe, instance):
+    def add_handler(self, probe_id, probe, instance):
         elf = probe['elf']
         function_name = probe['function']
         addr = instance['addr']
         function = {"name":function_name,"elf":elf, "addr":addr}
         name = probe['type']
-        probe_id = probe['probe_id']
         for cb in probe['callbacks']:
             callback,arg = cb
             handler = name,function,callback,arg
@@ -288,11 +288,7 @@ class Uprobe(object):
         insts.append(inst)
         return insts
 
-    def build_bpf_c(self, elf, function, instance, probe):
-        elf_path = elf
-        func_name = function
-        enter_id = probe.get('uprobe', {}).get('probe_id')
-        ret_id = probe.get('uretprobe', {}).get('probe_id')
+    def build_bpf_c(self, instance, enter_id, ret_id):
         return self.__build_bpf_c(instance, enter_id, ret_id)
 
     def __build_bpf_c(self, function, enter_id, ret_id):
@@ -348,14 +344,16 @@ int BPF_KRETPROBE(%s)
             fp.write(content)
         return bpf_c_file
 
-    def build_bpf_o(self, elf, function, instance, func_probe):
-        bpf_c = self.build_bpf_c(elf, function, instance, func_probe)
+    def build_bpf_o(self, instance, uprobe_id, uretprobe_id):
+        bpf_c = self.build_bpf_c(instance, uprobe_id, uretprobe_id)
         bname = os.path.basename(bpf_c)
         bpf_o = os.path.join(self.obj_dir, f"{bname}.o")
         cmd = f"clang -I/usr/local/share/psdig/usr/include -O2 -D__TARGET_ARCH_x86 -target bpf -c {bpf_c} -o {bpf_o}"
         subprocess.run(cmd, shell=True)
         offset = instance['addr']
+        elf = instance['elf']
         self.uprobe_bpf_o.append(f"{bpf_o},{offset},{elf}")
+        return uprobe_id,uretprobe_id
 
     def copy_from_pkg(self, src, dst):
         data = pkgutil.get_data(__package__, src)
@@ -376,19 +374,19 @@ int BPF_KRETPROBE(%s)
                 self.logger.info(f'building uprobe {elf}:{function}')
                 func_probe = self.probe_index[elf][function]
                 for instance in self.probe_index[elf][function]['instances']:
-                    self.build_bpf_o(elf, function, instance, func_probe)
+                    uprobe_id = None
+                    uretprobe_id = None
+                    addr = instance['addr']
+                    if 'uprobe' in func_probe:
+                        uprobe_id = self.probe_id(elf, function, addr, True)
+                        self.add_handler(uprobe_id, func_probe['uprobe'], instance)
+                    if 'uretprobe' in func_probe:
+                        uretprobe_id = self.probe_id(elf, function, addr, False)
+                        self.add_handler(uretprobe_id, func_probe['uretprobe'], instance)
+                    self.build_bpf_o(instance, uprobe_id, uretprobe_id)
                 self.loaded += 1
         cmd = f"gcc {self.trace_uprobe_c} -g -I/usr/local/share/psdig/usr/include -L/usr/local/share/psdig/usr/lib64/ -l:libbpf.a -ljson-c -lelf -lz -lpthread -o {self.trace_uprobe_elf}"
         subprocess.run(cmd, shell=True)
-        for elf in self.probe_index:
-            for function in self.probe_index[elf]:
-                uprobe = self.probe_index[elf][function].get('uprobe')
-                uretprobe = self.probe_index[elf][function].get('uretprobe')
-                for instance in self.probe_index[elf][function]['instances']:
-                    if uprobe:
-                        self.add_handler(uprobe, instance)
-                    if uretprobe:
-                        self.add_handler(uretprobe, instance)
 
     def parse_uprobe_trace(self, event_obj):
         metadata = event_obj.copy()
