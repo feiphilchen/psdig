@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <getopt.h>
@@ -210,9 +211,11 @@ trace_read_ptr (trace_data_t * data,
     return data->len + sizeof(trace_data_t);
 }
 
+
 static  int
 trace_read_obj (trace_data_t        * data,
-                struct json_object   * jobj)
+                struct json_object   * jobj,
+                struct json_object   * jschema)
 
 {
     void               * ptr;
@@ -222,6 +225,7 @@ trace_read_obj (trace_data_t        * data,
     char                ptr_data_str[32];
     int                 ret, field_id = 0, field_cnt;
     struct json_object   *mb_obj;
+    struct json_object   * child_schema;
 
     ptr = data->value;
     field_cnt = data->len;
@@ -254,8 +258,9 @@ trace_read_obj (trace_data_t        * data,
                 if (ret < 0) {
                     return -EINVAL;
                 }
-                snprintf(ptr_data_str, sizeof(ptr_data_str), "%p", ptr_data);
+                snprintf(ptr_data_str, sizeof(ptr_data_str), "%lx", (uintptr_t)ptr_data);
                 json_object_object_add(jobj, field_name, json_object_new_string(ptr_data_str));
+                json_object_object_add(jschema, field_name, json_object_new_string("ptr"));
                 break;
             case TRACE_DATA_TYPE_STR:
                 ret = trace_read_str(data, str_data, sizeof(str_data));
@@ -266,8 +271,10 @@ trace_read_obj (trace_data_t        * data,
                 break;
             case TRACE_DATA_TYPE_OBJECT:
                 mb_obj = json_object_new_object();
+                child_schema = json_object_new_object();
                 json_object_object_add(jobj, field_name, mb_obj);
-                ret = trace_read_obj(data, mb_obj);
+                json_object_object_add(jschema, field_name, child_schema);
+                ret = trace_read_obj(data, mb_obj, child_schema);
                 if (ret < 0) {
                     return -EINVAL;
                 }
@@ -288,7 +295,7 @@ void print_bpf_output(void *ctx,
 {
     struct trace_header * th;
     trace_data_t        * td;
-    struct json_object   *jobj, * jparams;
+    struct json_object   *jobj, * jparams, *jschema;
     const char          * json_str;
     int                   ret;
 
@@ -296,6 +303,7 @@ void print_bpf_output(void *ctx,
     td = (trace_data_t *)(th + 1);
     jobj = json_object_new_object();
     jparams = json_object_new_object();
+    jschema = json_object_new_object();
     json_object_object_add(jobj, "id", json_object_new_int64(th->id));
     json_object_object_add(jobj, "comm", json_object_new_string(th->comm));
     json_object_object_add(jobj, "pid", json_object_new_int64(th->pid));
@@ -305,7 +313,8 @@ void print_bpf_output(void *ctx,
     json_object_object_add(jobj, "cpuid", json_object_new_int64(cpu));
     json_object_object_add(jobj, "ktime_ns", json_object_new_int64(th->ktime_ns));
     json_object_object_add(jobj, "parameters", jparams);
-    ret = trace_read_obj(td, jparams);
+    json_object_object_add(jobj, "schema", jschema);
+    ret = trace_read_obj(td, jparams, jschema);
     if (ret < 0) {
         json_object_put(jobj);
         return ;

@@ -14,6 +14,11 @@ from .data_type import *
 from .conf import LOGGER_NAME
 
 class Uprobe(object):
+    type_mapping = {
+       "ptr": Pointer,
+       "bytes": Bytes,
+       "sockaddr":SockAddr
+    }
     def __init__(self, pid_filter=[], uid_filter=[], symbols={}, ignore_self=True):
         self.set_logger()
         self.probe_index = {}
