@@ -7,6 +7,13 @@
 
 char _license[] SEC("license") = "GPL";
 
+#define uprobe_bpf_printk(level, fmt,...) do {\
+        if ((level) > 0) { \
+           char ___fmt[] = fmt; \
+            bpf_trace_printk(___fmt, sizeof(___fmt), ##__VA_ARGS__);\
+        }\
+} while(0)
+
 struct bpf_map_def SEC("maps") perf_evt_buffer = {
     .type = BPF_MAP_TYPE_PERF_EVENT_ARRAY,
     .key_size = sizeof(int),
@@ -262,7 +269,10 @@ __trace_init (__u32 id)
    } \
 } while(0)
 
-#define read_str(t, str, field) __read_str(t, (char *)str, field)
+#define read_str(t, str, field) do { \
+    uprobe_bpf_printk(1, "read_str=%lx", str); \
+    __read_str(t, (char *)str, field); \
+} while(0)
 
 void
 trace_send (void *ctx, trace_t * trace)
@@ -270,6 +280,7 @@ trace_send (void *ctx, trace_t * trace)
     trace->hdr.len &= TRACE_MAX_SIZE - 1;
     bpf_perf_event_output(ctx, &perf_evt_buffer, BPF_F_CURRENT_CPU, trace, trace->hdr.len);
 }
+
 
 #define uprobe_enter_start(id) \
    trace_t    * t; \

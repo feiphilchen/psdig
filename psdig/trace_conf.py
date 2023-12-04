@@ -238,7 +238,7 @@ class UprobeTraceConf(TraceConf):
                     detail_func = lambda function,metadata,args,ret:eval(detail_lambda)
                     detail = detail_func(function, metadata, args, ret)
         if detail == None:
-            default_lambda = "uprobe_format(function, args, ret, metadata, brief=True)"
+            default_lambda = "uprobe_format(function, args, ret, metadata)"
             detail_func =  lambda function,metadata,args,ret:eval(default_lambda)
             detail = detail_func(function, metadata, args, ret)
         return detail

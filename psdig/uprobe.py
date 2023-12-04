@@ -10,6 +10,7 @@ import hashlib
 import time
 import subprocess
 from .dwarf import Dwarf
+from .data_type import *
 from .conf import LOGGER_NAME
 
 class Uprobe(object):
@@ -220,6 +221,20 @@ class Uprobe(object):
             return False
         return True
 
+    def arg_is_struct(self, type_list):
+        if len(type_list) == 0:
+            return False
+        if type_list[0]['type'] != 'struct':
+            return False
+        return True
+
+    def arg_is_union(self, type_list):
+        if len(type_list) == 0:
+            return False
+        if type_list[0]['type'] != 'union':
+            return False
+        return True
+
     def arg_is_unsigned(self, type_list):
         if len(type_list) == 0:
             return False
@@ -239,7 +254,10 @@ class Uprobe(object):
             size = arg['type'][0]['size']
             if self.arg_is_str(arg['type']):
                 inst = f'read_str(t, {name}, "{name}")'
-            elif self.arg_is_ptr(arg['type']) or self.arg_is_class(arg['type']):
+            elif self.arg_is_ptr(arg['type']) or  \
+                self.arg_is_class(arg['type']) or \
+                self.arg_is_struct(arg['type']) or \
+                self.arg_is_union(arg['type']) :
                 inst = f'read_ptr(t, &{name}, "{name}")'
             elif self.arg_is_unsigned(arg['type']):
                 inst = f'read_uint(t, &{name}, {size}, "{name}")'
@@ -378,17 +396,29 @@ int BPF_KRETPROBE(%s)
             args = {}
         return metadata,args
 
+    def params_type_convert(self, event_obj):
+        if 'schema' in event_obj:
+            for arg in event_obj['schema']:
+                arg_type = event_obj['schema'][arg]
+                if arg_type in self.type_mapping:
+                    cls = self.type_mapping[arg_type]
+                    new_value = cls(event_obj['parameters'][arg])
+                    event_obj['parameters'][arg] = new_value
+
     def call_probe_handlers(self, event_obj):
         uprobe_id = event_obj['id']
+        self.params_type_convert(event_obj)
         if uprobe_id in self.probe_handlers:
             metadata,args = self.parse_uprobe_trace(event_obj)
-            metadata['uprobe'] = self
             for handler in self.probe_handlers[uprobe_id]:
                 name,func,callback,ctx = handler
-                ret = None
                 if name == 'uretprobe':
+                    metadata['enter'] = False
                     ret = args.get('ret')
                     args = None
+                else:
+                    metadata['enter'] = True
+                    ret = None
                 if ctx == None:
                     callback(func, metadata, args, ret)
                 else:

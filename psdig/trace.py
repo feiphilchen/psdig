@@ -138,18 +138,35 @@ def uprobe_print_lambda(function, metadata, args, ret, ctx):
 
 
 def complete_uprobe_function(ctx, param, incomplete):
-    #sys.stderr.write(f"{ctx}")
-    #sys.stderr.write(f"{param}")
     elf = ctx.params.get('elf')
     sym = ctx.params.get('sym')
-    if sym:
-        dwarf = Dwarf(sym)
-    else:
-        dwarf = Dwarf(elf)
-    functions = dwarf.all_functions()
+    try:
+        if sym:
+            dwarf = Dwarf(sym)
+        else:
+            dwarf = Dwarf(elf)
+        functions = dwarf.all_functions()
+    except:
+        return []
     return [f for f in functions if f.startswith(incomplete)]
 
-default_uprobe_fmt="lambda:uprobe_format(function, args, ret, metadata)"
+def validate_uprobe_function(ctx, param, value):
+    elf = ctx.params.get('elf')
+    sym = ctx.params.get('sym')
+    try:
+        if sym:
+            dwarf = Dwarf(sym)
+        else:
+            dwarf = Dwarf(elf)
+        functions = dwarf.all_functions()
+    except:
+        raise click.BadParameter(f'error resolving symbols from {elf}')
+    for func in value:
+         if func not in functions:
+             raise click.BadParameter(f'no function "{func}" in {elf}')
+    return list(set(value))
+
+default_uprobe_fmt="lambda:time_str(metadata['timestamp']) + ' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + uprobe_format(function, args, ret, metadata)"
 @click.command()
 @click.option('--output', '-o', type=str, default=default_uprobe_fmt, help="Output format")
 @click.option('--filter', '-f', type=str, help="Filter string")
@@ -157,7 +174,7 @@ default_uprobe_fmt="lambda:uprobe_format(function, args, ret, metadata)"
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
 @click.option('--sym', '-s', type=click.Path(exists=True), help='Symbol file')
 @click.argument('elf', type=click.Path(exists=True))
-@click.argument('function', shell_complete=complete_uprobe_function)
+@click.argument('function', nargs=-1, shell_complete=complete_uprobe_function, callback=validate_uprobe_function)
 def uprobe_trace(output, filter, pid, uid, sym, elf, function):
     """Trace uprobe"""
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -170,17 +187,12 @@ def uprobe_trace(output, filter, pid, uid, sym, elf, function):
             lambda_str = output.split(':', 1)[1]
             lambda_f = lambda function,metadata,args,ret:eval(lambda_str)
             ctx = lambda_f,filter_f
-            uprobe.add(elf, function, uprobe_print_lambda, True, ctx, sym)
+            callback = uprobe_print_lambda
         else:
             ctx = output,filter_f
-            uprobe.add(elf, function, uprobe_print_fmt, True, ctx, sym)
-        if output.strip().startswith('lambda:'):
-            lambda_str = output.split(':', 1)[1]
-            lambda_f = lambda function,metadata,args,ret:eval(lambda_str)
-            ctx = lambda_f,filter_f
-            uprobe.add(elf, function, uprobe_print_lambda, False, ctx, sym)
-        else:
-            ctx = output,filter_f
-            uprobe.add(elf, function, uprobe_print_fmt, False, ctx, sym)
+            callback = uprobe_print_fmt
+        for func in function:
+            uprobe.add(elf, func, callback, True, ctx, sym)
+            uprobe.add(elf, func, callback, False, ctx, sym)
         uprobe.start(obj_dir=tmpdirname)
 
