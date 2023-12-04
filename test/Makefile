@@ -3,9 +3,15 @@
 default: test_app
 	pytest -s
 
+app_dir=syscall uprobe_c
+
 test_app:
-	make -C syscall
+	for dir in $(app_dir); do \
+	    make -C $$dir ;\
+	done
 
 clean:
-	make -C syscall clean
+	for dir in $(app_dir); do \
+	    make -C $$dir clean;\
+	done
 	rm -rf __pycache__
