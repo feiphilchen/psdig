@@ -163,7 +163,10 @@ def validate_uprobe_function(ctx, param, value):
         raise click.BadParameter(f'error resolving symbols from {elf}')
     for func in value:
          if func not in functions:
-             raise click.BadParameter(f'no function "{func}" in {elf}')
+             if sym:
+                 raise click.BadParameter(f'no function "{func}" in {sym}')
+             else:
+                 raise click.BadParameter(f'no function "{func}" in {elf}')
     return list(set(value))
 
 default_uprobe_fmt="lambda:time_str(metadata['timestamp']) + ' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + uprobe_format(function, args, ret, metadata)"

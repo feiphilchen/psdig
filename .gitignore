@@ -1,5 +1,6 @@
 psdig.egg-info/
 psdig/__pycache__
 test/__pycache__
-test/app/test_syscall
+test/syscall/test_syscall
+test/uprobe_c/test_uprobe
 dist
