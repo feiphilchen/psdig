@@ -29,7 +29,7 @@ void MyClass2::myMethod(string a1) {
 }
 
 // Method/function definition outside the class
-my_enum_t  MyClass2::myMethod2(my_enum_t x) {
+my_enum_t MyClass2::myMethod2(my_enum_t x) {
      printf("MyClass2::myMethod2(this=%p, x=%u) => %u\n", this,x, x);
      return x;
 }

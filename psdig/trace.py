@@ -151,6 +151,8 @@ def complete_uprobe_function(ctx, param, incomplete):
     return [f for f in functions if f.startswith(incomplete)]
 
 def validate_uprobe_function(ctx, param, value):
+    if len(value) == 0:
+        raise click.BadParameter("no function to trace")
     elf = ctx.params.get('elf')
     sym = ctx.params.get('sym')
     try:
@@ -158,16 +160,21 @@ def validate_uprobe_function(ctx, param, value):
             dwarf = Dwarf(sym)
         else:
             dwarf = Dwarf(elf)
-        functions = dwarf.all_functions()
     except:
         raise click.BadParameter(f'error resolving symbols from {elf}')
+    validated_funcs = []
     for func in value:
-         if func not in functions:
-             if sym:
-                 raise click.BadParameter(f'no function "{func}" in {sym}')
-             else:
-                 raise click.BadParameter(f'no function "{func}" in {elf}')
-    return list(set(value))
+        func = func.strip()
+        if func in validated_funcs:
+            continue
+        functions = dwarf.resolve_function(func)
+        if functions == None or len(functions) == 0:
+            if sym:
+                raise click.BadParameter(f'no function "{func}" in {sym}')
+            else:
+                raise click.BadParameter(f'no function "{func}" in {elf}')
+        validated_funcs.append(func)
+    return validated_funcs
 
 default_uprobe_fmt="lambda:time_str(metadata['timestamp']) + ' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + uprobe_format(function, args, ret, metadata)"
 @click.command()

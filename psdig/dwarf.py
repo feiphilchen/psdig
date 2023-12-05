@@ -63,7 +63,10 @@ class Dwarf(object):
             return type_list
         elif dietype.tag == "DW_TAG_enumeration_type":
             size = dietype.attributes.get('DW_AT_byte_size').value
-            type_list = [{"type": "enum", "size": size}]
+            obj = {"type": "enum", "size": size}
+            if 'DW_AT_name' in dietype.attributes:
+                obj['name'] = dietype.attributes.get('DW_AT_name').value.decode()
+            type_list = [obj]
             return type_list
         elif dietype.tag == "DW_TAG_structure_type":
             obj = {"type": "struct"}
