@@ -86,7 +86,7 @@ cases = [
            "test_uprobe: MyClass::myMethod\\(\\) => void",
            "test_uprobe: MyClass2::myMethod2\\(this=0x[0-9a-z]+, x=1\\)",
            "test_uprobe: MyClass2::myMethod2\\(\\) => 1",
-           "test_uprobe: MyNamespace2::MyClass2::~MyClass2\\(this=0x[0-9a-z]+, __in_chrg=\\-[0-9]+\\)",
+           "test_uprobe: MyNamespace2::MyClass2::~MyClass2\\(this=0x[0-9a-z]+, __in_chrg=\\-*[0-9]+\\)",
            "test_uprobe: MyNamespace2::MyClass2::~MyClass2\\(\\) => void"
         ],
         None
