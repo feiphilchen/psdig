@@ -212,6 +212,18 @@ read_uint (trace_t * t, void * addr, __u32 size, char * field)
 }
 
 static inline int
+read_float (trace_t * t, void * addr, __u32 size, char * field)
+{
+    if (trace_add_str(t, field) < 0) {
+        return -1;
+    }
+    if (trace_add(t, addr, size, TRACE_DATA_TYPE_FLOAT) < 0) {
+        return -1;
+    }
+    return 0;
+}
+
+static inline int
 __read_str (trace_t * t, char * str, char * field)
 {
     if (trace_add_str(t, field) < 0) {
@@ -270,7 +282,6 @@ __trace_init (__u32 id)
 } while(0)
 
 #define read_str(t, str, field) do { \
-    uprobe_bpf_printk(1, "read_str=%lx", str); \
     __read_str(t, (char *)str, field); \
 } while(0)
 
@@ -292,6 +303,7 @@ trace_send (void *ctx, trace_t * trace)
 #define uprobe_ret_start(id) \
    trace_t    * t; \
    trace_init(t, id);
+
 #define uprobe_ret_finish() \
    trace_send(ctx, t);
 

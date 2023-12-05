@@ -51,7 +51,6 @@ cases = [
             'test_uprobe: uprobed_add5\\(\\) => void',
             'test_uprobe: uprobed_add6\\(ptr=0x[0-9a-z]+, iu=-1, str="yy"\\)',
             'test_uprobe: uprobed_add6\\(\\) => 0x[0-9a-z]+'
-
         ],
         None
     ),

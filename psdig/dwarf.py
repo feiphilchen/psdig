@@ -134,11 +134,26 @@ class Dwarf(object):
         type_list = self.parse_var_type(cu, dietype)
         return type_list
 
+    def resolve_abstract_origin_addr(self, cu, die):
+        if die.attributes.get('DW_AT_sibling') != None:
+            next_sibling = cu.get_DIE_from_refaddr(cu.cu_offset + die.attributes.get('DW_AT_sibling').value)
+            if next_sibling.attributes.get('DW_AT_abstract_origin') != None:
+                origin_value = next_sibling.attributes.get('DW_AT_abstract_origin').value
+                if origin_value == die.offset:
+                    low_pc = next_sibling.attributes.get('DW_AT_low_pc')
+                    if low_pc != None:
+                        return low_pc.value
+        return None
+
     def __resolve_function(self, cu, die, resolve_args=True):
         result = {}
         low_pc = die.attributes.get('DW_AT_low_pc')
         if low_pc:
             result['addr'] = low_pc.value
+        else:
+            addr = self.resolve_abstract_origin_addr(cu, die)
+            if addr != None:
+                result['addr'] = addr
         if resolve_args:
             args = self.resolve_args(cu, die)
             result['args'] = args
@@ -176,29 +191,62 @@ class Dwarf(object):
                 namespace = parent.attributes.get('DW_AT_name').value.decode()
         return namespace,class_name
 
-    def fuction_full_name(self, function, class_name, namespace):
+    def args_to_dec(self, args):
+        arg_decls = []
+        for arg in args:
+            decl = []
+            if 'type' not in arg or arg['type'] == None:
+                break
+            for t in arg['type']:
+                if t['type'] == 'ptr':
+                    decl.insert(0, '*')
+                elif t['type'] == 'struct' or t['type'] == 'class' or \
+                    t['type'] == 'union' or t['type'] == 'enum':
+                    if 'name' in t:
+                        decl.insert(0, '%s %s' % (t['type'], t['name']))
+                    else:
+                        decl.insert(0, '%s' % (t['type']))
+                else:
+                    decl.insert(0, t['name'])
+            decl_str = ' '.join(decl)
+            arg_decls.append(decl_str)
+        return ','.join(arg_decls)
+
+    def function_full_name(self, function, class_name, namespace):
         name_list = []
         if namespace:
             name_list.append(namespace)
         if class_name:
             name_list.append(class_name)
         name_list.append(function)
-        return "::".join(name_list)
+        full_name = "::".join(name_list)
+        return full_name
 
     def parse_function_str(self, func_str):
+        hit = re.match('([^(]+)\((.*)\)', func_str)
+        if hit:
+            func_str = hit.group(1)
+            args_decl = hit.group(2)
+        else:
+            args_decl = None
         name_list = func_str.split("::")
         if len(name_list) == 1:
-            return None,None,name_list[0]
+            return None,None,name_list[0],args_decl
         elif len(name_list) == 2:
-            return None,name_list[0],name_list[1]
+            return None,name_list[0],name_list[1],args_decl
         elif len(name_list) == 3:
-            return name_list[0],name_list[1],name_list[2]
+            return name_list[0],name_list[1],name_list[2],args_decl
         else:
-            return None,None,None
+            return None,None,None,args_decl
+
+    def func_args_eq(self, decl_0, decl_1):
+        decl_0 = decl_0.replace(' ', '')
+        decl_1 = decl_1.replace(' ', '')
+        return decl_0 == decl_1
 
     def resolve_function(self, func_str):
         funcs = []
-        namespace,class_name,function = self.parse_function_str(func_str)
+        namespace,class_name,function,func_args = self.parse_function_str(func_str)
         if function == None:
             return funcs
         for CU in self.dwarfinfo.iter_CUs():
@@ -210,9 +258,12 @@ class Dwarf(object):
                         result = self.__resolve_function(CU, child)
                         if result == None or 'addr' not in result:
                             continue
+                        args_decl = self.args_to_dec(result['args'])
                         func_ns,func_class = self.resolve_function_parent(parent)
+                        if func_args != None and not self.func_args_eq(func_args, args_decl):
+                            continue
                         if func_ns == namespace and func_class == class_name:
-                            result['function'] = self.fuction_full_name(function, class_name, namespace)
+                            result['function'] = self.function_full_name(function, class_name, namespace)
                             result['ret'] =  self.resolve_return(CU, decl)
                             funcs.append(result)
         return funcs
@@ -226,11 +277,16 @@ class Dwarf(object):
                     funcname,parent,decl = self.get_function_name(CU, child)
                     if funcname == None:
                         continue
-                    result = self.__resolve_function(CU, child, resolve_args=False)
+                    result = self.__resolve_function(CU, child)
                     if result == None or 'addr' not in result:
                         continue
+                    args_decl = self.args_to_dec(result['args'])
                     func_ns,func_class = self.resolve_function_parent(parent)
-                    fullname = self.fuction_full_name(funcname,func_class,func_ns)
-                    functions.append(fullname)
+                    fullname = self.function_full_name(funcname,func_class,func_ns)
+                    if func_class != None:
+                        decl = fullname + '(' + args_decl + ')'
+                        functions.append(decl)
+                    else:
+                        functions.append(fullname)
         return sorted(list(set(functions)))
 

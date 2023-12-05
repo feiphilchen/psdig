@@ -198,6 +198,29 @@ trace_read_int (trace_data_t * data,
 }
 
 static  int
+trace_read_float (trace_data_t         * data,
+                  struct json_object   * jobj,
+                  char                 * field_name)
+{
+    unsigned int ulen;
+    float        flt;
+    double       dbl;
+
+    ulen = data->len;
+    if (ulen == sizeof(float)) {
+        memcpy(&flt, data->value, ulen);
+        json_object_object_add(jobj, field_name, json_object_new_double(flt));
+    } else if (ulen == sizeof(double)) {
+        memcpy(&dbl, data->value, ulen);
+        fprintf(stderr, "%lf\n", dbl);
+        json_object_object_add(jobj, field_name, json_object_new_double(dbl));
+    } else {
+        return -EINVAL;
+    }
+    return data->len + sizeof(trace_data_t);
+}
+
+static  int
 trace_read_ptr (trace_data_t * data,
                 void        ** ptr)
 {
@@ -249,6 +272,12 @@ trace_read_obj (trace_data_t        * data,
                 break;
             case TRACE_DATA_TYPE_UINT:
                 ret = trace_read_uint(data, jobj, field_name);
+                if (ret < 0) {
+                    return -EINVAL;
+                }
+                break;
+            case TRACE_DATA_TYPE_FLOAT:
+                ret = trace_read_float(data, jobj, field_name);
                 if (ret < 0) {
                     return -EINVAL;
                 }

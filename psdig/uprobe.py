@@ -251,6 +251,17 @@ class Uprobe(object):
         else:
             return False
 
+    def arg_is_float(self, type_list):
+        if len(type_list) == 0:
+            return False
+        if type_list[0]['type'] != 'base':
+            return False
+        base_types = type_list[0]['name'].split()
+        if 'float' in base_types or 'double' in base_types:
+            return True
+        else:
+            return False
+
     def get_arg_read_insts(self, args):
         insts = []
         for arg in args:
@@ -264,6 +275,8 @@ class Uprobe(object):
                 self.arg_is_struct(arg['type']) or \
                 self.arg_is_union(arg['type']) :
                 inst = f'read_ptr(t, &{name}, "{name}")'
+            elif self.arg_is_float(arg['type']):
+                inst = f'read_float(t, &{name}, {size}, "{name}")'
             elif self.arg_is_unsigned(arg['type']):
                 inst = f'read_uint(t, &{name}, {size}, "{name}")'
             else:
@@ -281,6 +294,8 @@ class Uprobe(object):
             inst = f'read_str(t, {name}, "{name}")'
         elif self.arg_is_ptr(type_list):
             inst = f'read_ptr(t, &{name}, "{name}")'
+        elif self.arg_is_float(type_list):
+            inst = f'read_float(t, &{name}, {size}, "{name}")'
         elif self.arg_is_unsigned(type_list):
             inst = f'read_uint(t, &{name}, {size}, "{name}")'
         else:
