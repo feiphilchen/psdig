@@ -25,12 +25,12 @@ void MyClass::myMethod(int a1) {
 
 // Method/function definition outside the class
 void MyClass2::myMethod(string a1) {
-      printf("MyClass2::myMethod(a1=%p) => void\n", &a1);
+      printf("MyClass2::myMethod(this=%p, a1=%p) => void\n", this, &a1);
 }
 
 // Method/function definition outside the class
 my_enum_t MyClass2::myMethod2(my_enum_t x) {
-     printf("MyClass2::myMethod2(this=%p, x=%u) => %u\n", this,x, x);
+     printf("MyClass2::myMethod2(this=%p, x=%u) => %u\n", this, x, x);
      return x;
 }
 
@@ -44,10 +44,10 @@ class MyClass {         // The class
 class MyClass2 {         // The class
   public:               // Access specifier
     MyClass2(long long xxxx) {
-        printf("MyNamespace2::MyClass::MyClass2(xx=%lld)\n", xxxx);
+        printf("MyNamespace2::MyClass::MyClass2(this=%p, xx=%lld)\n", this, xxxx);
     }
     ~MyClass2() {
-         printf("~MyNamespace2::MyClass::MyClass2()\n");
+         printf("~MyNamespace2::MyClass::MyClass2(this=%p)\n", this);
     }
     int myMethod(string);    // Method/function declaration
     int myMethod(unsigned int, char);    // Method/function declaration
@@ -55,18 +55,18 @@ class MyClass2 {         // The class
 
 // Method/function definition outside the class
 void MyClass::myMethod1(int a1) {
-    printf("MyNamespace2::MyClass::myMethod1(a1=%d) => void\n", a1);
+    printf("MyNamespace2::MyClass::myMethod1(this=%p, a1=%d) => void\n", this, a1);
 }
 
 // Method/function definition outside the class
 int MyClass2::myMethod(string a1) {
-    printf("MyNamespace2::MyClass2::myMethod(a1=%p) => -1\n", &a1); 
+    printf("MyNamespace2::MyClass2::myMethod(this=%p, a1=%p) => -1\n", this, &a1); 
     return -1;
 }
 
 // Method/function definition outside the class
 int MyClass2::myMethod(unsigned int x, char ch) {
-    printf("MyNamespace2::MyClass2::myMethod(x=%u, ch=%u) => 0\n", x, ch);
+    printf("MyNamespace2::MyClass2::myMethod(this=%p, x=%u, ch=%u) => 0\n", this, x, ch);
   return 0;
 }
 
@@ -80,7 +80,6 @@ int main() {
   MyClass2              myObj4;
   string s = "foo";
   my_enum_t y = EN_1;
-  printf("%p\n", &y);
   myObj1.myMethod1(1);
   myObj2.myMethod(s);
   myObj2.myMethod(10, 'i');

@@ -97,7 +97,7 @@ class Uprobe(object):
 
     def add_handler(self, probe_id, probe, instance):
         elf = probe['elf']
-        function_name = probe['function']
+        function_name = instance['function']
         addr = instance['addr']
         function = {"name":function_name,"elf":elf, "addr":addr}
         name = probe['type']
