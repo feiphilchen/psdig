@@ -47,7 +47,7 @@ def watch_headless(pid, uid, output, log, trace_conf):
         finally:
             pswatch.stop()
 
-def event_load(stdscr, input_file, log):
+def trace_load(stdscr, input_file, log):
     stdscr.clear()
     stdscr.refresh()
     pswatch = PsWatch(stdscr, load_from=input_file, log_file=log)
@@ -69,7 +69,7 @@ def validate_conf(ctx, param, value):
 @click.option('--pid', '-p', type=int, multiple=True, help='Pid filter')
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
 @click.option('--output', '-o', type=click.Path(), help='Save traces to file')
-@click.option('--log', '-l', type=click.Path(), help='Log messages to logfile')
+@click.option('--log', '-l', type=click.Path(), help='Log messages to file')
 @click.option('--conf', '-c', type=click.File('r'), callback=validate_conf, help='Configuation file')
 @click.option('--headless', is_flag=True, help='Run without curse windows')
 def watch(pid, uid, output, log, conf, headless):
@@ -80,11 +80,11 @@ def watch(pid, uid, output, log, conf, headless):
         watch_headless(pid, uid, output, log, conf)
 
 @click.command()
-@click.option('--input', '-i', required=True, type=click.Path(exists=True), help='Load events from the file')
-@click.option('--log', '-l', type=click.Path(), help='Log all messages to logfile')
-def load(input, log):
+@click.option('--log', '-l', type=click.Path(), help='Log all messages to file')
+@click.argument('file', type=click.Path(exists=True))
+def load(log, file):
     """Load traces from file"""
-    wrapper(event_load,  input, log)
+    wrapper(trace_load,  file, log)
     pass
 
 @click.group()

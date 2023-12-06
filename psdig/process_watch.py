@@ -195,11 +195,13 @@ class PsWatch(object):
 
     def get_message(self):
         message = None
+        if self.load_from != None:
+            return f"Load from: {self.load_from} "
         loading,loaded = self.trace_mgr.loading_status()
         if loading > 0 and loading != loaded:
             percent = int((loaded/loading) * 100)
             return f"Loading events collector, {percent}%"   
-        if self.load_from == None and not self.event_scroll:
+        if not self.event_scroll:
             return "Scrolling is stopped, press <SPACE> to continue..."
         prefix = ['|', '/', '-', '\\']
         phash = int(time.time())%4
