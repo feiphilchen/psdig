@@ -47,6 +47,7 @@ class PsWatch(object):
         self.running = False
         self.stopped = False
         self.ext_display = False
+        self.help_info = True
         self.mutex = threading.Lock()
 
     def set_logger(self, logfile):
@@ -63,7 +64,7 @@ class PsWatch(object):
         self.logger.addHandler(fh)
 
     def init_windows(self):
-        status_win_height = 4
+        status_win_height = 3
         status_win_width = curses.COLS
         status_win_x = 0
         status_win_y = 0
@@ -72,11 +73,17 @@ class PsWatch(object):
         filter_win_x = 0
         filter_win_y = status_win_height
         tag_win_width = 30
-        tag_win_height =  curses.LINES - status_win_height - filter_win_height
+        if self.help_info:
+            tag_win_height =  curses.LINES - status_win_height - filter_win_height - 1
+        else:
+            tag_win_height =  curses.LINES - status_win_height
         tag_win_x = curses.COLS - tag_win_width
         tag_win_y = status_win_height + filter_win_height
         main_win_width = curses.COLS  - tag_win_width
-        main_win_height = curses.LINES - status_win_height - filter_win_height
+        if self.help_info:
+            main_win_height = curses.LINES - status_win_height - filter_win_height - 1
+        else:
+            main_win_height = curses.LINES - status_win_height - filter_win_height
         main_win_x = 0
         main_win_y = status_win_height + filter_win_height
         self.status_win = StatusWin(self.stdscr, status_win_width, status_win_height, status_win_x, status_win_y, "Status")
@@ -99,16 +106,43 @@ class PsWatch(object):
         for win in self.win_list:
             win.display()
 
+    def display_help(self):
+        help_color = curses.color_pair(6)
+        keys_help = {
+            "SPACE":"Stop/Resume scrolling",
+            "UP": "Scroll up",
+            "DOWN": "Scroll down",
+            "LEFT": "Page up",
+            "RIGHT": "Page down",
+            "ENTER": "Show/Hide trace",
+            "F1": "Filter",
+        }
+        win_width = "{:<%d}" % (curses.COLS - 1)
+        help_row = win_width.format("")
+        try:
+            self.stdscr.addstr(curses.LINES - 1, 0, help_row, help_color)
+        except:
+            self.logger.error(traceback.format_exc())
+        help_str = ""
+        self.stdscr.addstr(curses.LINES - 1, 0, help_str)
+        for k in keys_help:
+            help_str = keys_help[k]
+            self.stdscr.addstr(f"{k}")
+            self.stdscr.addstr(f'{help_str}  ', help_color)
+
+
     def gui_init(self):
         curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_RED)
         curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
         curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)
         curses.init_pair(4, curses.COLOR_WHITE, curses.COLOR_RED)
         curses.init_pair(5, curses.COLOR_WHITE, curses.COLOR_YELLOW)
-        curses.init_pair(6, curses.COLOR_WHITE, curses.COLOR_BLUE)
+        curses.init_pair(6, curses.COLOR_BLACK, curses.COLOR_BLUE)
         curses.init_pair(7, curses.COLOR_WHITE, curses.COLOR_GREEN)
         self.init_windows()
         self.display_windows()
+        if self.help_info:
+            self.display_help()
 
     def focus_next(self):
         if self.focus_pos == None:
@@ -230,7 +264,7 @@ class PsWatch(object):
             self.stats_thread = None
 
     def key_handler(self, input_ch):
-        if input_ch == ord('f'):
+        if input_ch == ord('f') or input_ch == curses.KEY_F1:
             self.focus(self.filter_win)
             self.filter_editing = True
             try:

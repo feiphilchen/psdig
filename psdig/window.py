@@ -124,16 +124,7 @@ class StatusWin(CurseWin):
     def __init__(self, stdscr, width, height, x = 0, y = 0, title=None):
         super().__init__(stdscr, width, height, x, y, title, text_mode=False)
         self.stats = None
-        self.help_color = curses.color_pair(6)
-        self.keys_help = {
-            "SPACE":"Stop/Resume scrolling",
-            "UP": "Scroll up",
-            "DOWN": "Scroll down",
-            "LEFT": "Page up",
-            "RIGHT": "Page down",
-            "ENTER": "Show/Hide trace",
-            "'f'": "Edit filter",
-        }
+
     def update_stats(self, stats):
         self.stats = stats
         self.display()
@@ -160,12 +151,7 @@ class StatusWin(CurseWin):
         curse_win.addstr(1, 1, stat_str, curses.A_BOLD)
         if message != None:
             curse_win.addstr(message, curses.A_REVERSE)
-        help_str = "" 
-        curse_win.addstr(2, 1, help_str)
-        for k in self.keys_help:
-            help_str = self.keys_help[k]
-            curse_win.addstr(f" {k}")
-            curse_win.addstr(" " + help_str, self.help_color)
+
         curse_win.refresh()
 
 class MainWin(CurseWin):
