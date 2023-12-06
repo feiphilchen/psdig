@@ -45,6 +45,7 @@ class PsWatch(object):
         self.conf = conf
         self.trace_mgr = TraceManager(pid_filter=pid_filter, uid_filter=uid_filter, conf=self.conf, tmp_dir=tmp_dir)
         self.running = False
+        self.stopped = False
         self.ext_display = False
         self.mutex = threading.Lock()
 
@@ -304,10 +305,26 @@ class PsWatch(object):
         while self.running:
             time.sleep(0.2)
 
+    def stats_to_log(self, stats):
+        total = 0
+        items = []
+        for key,val in stats.items():
+            if val == 0:
+                continue
+            total += val
+            items.append("# {:20s} {:6d}".format(key,val))
+        return "%d traces collected\n%s" % (total, '\n'.join(items))
+
     def stop(self):
+        if self.stopped:
+            return
+        self.stopped = True
         self.stop_watch_thread()
         self.stop_stats_thread()
         self.running = False
+        if self.load_from == None:
+            stats = self.trace_mgr.get_stats()
+            stats_log = self.stats_to_log(stats)
+            self.logger.info(stats_log)
         if not self.headless and self.main_win:
             self.main_win.close()
-
