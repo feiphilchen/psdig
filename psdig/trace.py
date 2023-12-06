@@ -68,7 +68,7 @@ def syscall_trace(output, filter, pid, uid, syscall):
             syscall_obj.add(s, callback, ctx)
         tracepoint.start(obj_dir=tmpdirname)
 
-default_event_fmt="lambda:time_str(metadata['timestamp']) + f' {name}: ' + ','.join([f'{k}={v}' for k,v in args.items()])"
+default_event_fmt="lambda:time_str(metadata['timestamp']) + ' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + f' {name}: ' + ','.join([f'{k}={v}' for k,v in args.items()])"
 def event_print_fmt(name, metadata, args, ctx):
     fmt,filter_f = ctx
     if filter_f:
@@ -91,16 +91,17 @@ def complete_event(ctx, param, incomplete):
 
 def validate_event(ctx, param, value):
     events = Event.get_all()
-    if value not in events:
-        raise click.BadParameter(f'{value} is not a valid event')
-    return value
+    for evt in value:
+        if evt not in events:
+            raise click.BadParameter(f'{evt} is not a valid event')
+    return list(set(value))
 
 @click.command()
 @click.option('--output', '-o', type=str, default=default_event_fmt,help="Format string")
 @click.option('--filter', '-f', type=str, help="Filter string")
 @click.option('--pid', '-p', type=int, multiple=True, help='Pid filter')
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
-@click.argument('event', shell_complete=complete_event, callback=validate_event)
+@click.argument('event', nargs=-1, shell_complete=complete_event, callback=validate_event)
 def event_trace(output, filter, pid, uid, event):
     """Trace event"""
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -114,10 +115,12 @@ def event_trace(output, filter, pid, uid, event):
             lambda_str = output.split(':', 1)[1]
             lambda_f = lambda name,metadata,args:eval(lambda_str)
             ctx = lambda_f,filter_f
-            event_obj.add(event, event_print_lambda, ctx)
+            callback = event_print_lambda
         else:
             ctx = output,filter_f
-            event_obj.add(event, event_print_fmt, ctx)
+            callback = event_print_fmt
+        for evt in event:
+             event_obj.add(evt, callback, ctx)
         tracepoint.start(obj_dir=tmpdirname)
 
 def uprobe_print_fmt(function, metadata, args, ret, ctx):
