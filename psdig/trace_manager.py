@@ -239,7 +239,8 @@ class TraceManager(object):
             else:
                 self.stats[name] = 1
             callback(event)
-        return event_nb
+        self.logger.info(f'{event_nb} trace readed')
+        return self.stats
 
     def stop(self):
         self.tp.stop()

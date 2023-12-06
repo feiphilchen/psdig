@@ -39,9 +39,6 @@ class PsWatch(object):
         self.event_file = event_file
         self.tmp_dir = tmp_dir
         self.load_from = load_from
-        if conf == None:
-            conf = TraceConfFile()
-            conf.load()
         self.conf = conf
         self.trace_mgr = TraceManager(pid_filter=pid_filter, uid_filter=uid_filter, conf=self.conf, tmp_dir=tmp_dir)
         self.running = False
@@ -114,7 +111,7 @@ class PsWatch(object):
             "DOWN": "Scroll down",
             "LEFT": "Page up",
             "RIGHT": "Page down",
-            "ENTER": "Show/Hide trace",
+            "ENTER": "Show/Hide detail",
             "F1": "Filter",
         }
         win_width = "{:<%d}" % (curses.COLS - 1)
@@ -158,8 +155,6 @@ class PsWatch(object):
             elif self.win_list[pos].is_focused():
                 self.win_list[pos].unfocus()
         self.display_windows()
-        #sys.stdout = sys.__stdout__
-        #sys.stdout.write("start to edit ..")
         if self.win_list[self.focus_pos].is_text_mode():
             self.win_list[self.focus_pos].start_edit()
 
@@ -230,13 +225,13 @@ class PsWatch(object):
     def get_message(self):
         message = None
         if self.load_from != None:
-            return f"Load from: {self.load_from} "
+            return f"Loaded from: {self.load_from} "
         loading,loaded = self.trace_mgr.loading_status()
         if loading > 0 and loading != loaded:
             percent = int((loaded/loading) * 100)
             return f"Loading events collector, {percent}%"   
         if not self.event_scroll:
-            return "Scrolling is stopped, press <SPACE> to continue..."
+            return "Scrolling is stopped, press <SPACE> to continue ..."
         prefix = ['|', '/', '-', '\\']
         phash = int(time.time())%4
         return "Watching ... " + prefix[phash]

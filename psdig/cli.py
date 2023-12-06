@@ -50,13 +50,14 @@ def watch_headless(pid, uid, output, log, trace_conf):
 def trace_load(stdscr, input_file, log):
     stdscr.clear()
     stdscr.refresh()
-    pswatch = PsWatch(stdscr, load_from=input_file, log_file=log)
-    try:
-        pswatch.run()
-    except:
-        pass
-    finally:
-        pswatch.stop()
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        pswatch = PsWatch(stdscr, load_from=input_file, log_file=log, tmp_dir=tmpdirname)
+        try:
+            pswatch.run()
+        except:
+            pass
+        finally:
+            pswatch.stop()
 
 def validate_conf(ctx, param, value):
     conf = TraceConfFile(value)
