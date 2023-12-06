@@ -243,6 +243,7 @@ class TraceManager(object):
 
     def stop(self):
         self.tp.stop()
+        self.uprobe.stop()
         self.collecting = False
 
     def get_stats(self):

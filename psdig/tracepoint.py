@@ -222,7 +222,6 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
                 json_str = None
             else:
                 json_str += line
-        self.logger.info('trace_event exiting')
         if self.callout_thread:
             self.callout_thread_running = False
             self.callout_thread.join()
@@ -242,7 +241,6 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
             self.logger.error('error building trace objects')
             self.logger.error(traceback.format_exc())
         time.sleep(1)
-        self.logger.info('starting event trace ...')
         if compile_only:
             return
         self.logger.info('running now')
@@ -253,7 +251,7 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
             self.start_collect_thread()
 
     def stop(self):
-        self.logger.info('trace collect is being stopped ...')
+        self.logger.info('tracepoint is being stopped ...')
         self.collect_thread_running = False
         self.callout_thread_running = False
         if self.proc != None:

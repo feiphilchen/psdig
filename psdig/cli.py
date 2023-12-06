@@ -68,11 +68,11 @@ def validate_conf(ctx, param, value):
 @click.command()
 @click.option('--pid', '-p', type=int, multiple=True, help='Pid filter')
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
-@click.option('--output', '-o', type=click.Path(), help='Save traces to the file')
-@click.option('--log', '-l', type=click.Path(), help='Log all messages to logfile')
-@click.option('--headless', is_flag=True, help='Run without curse windows')
+@click.option('--output', '-o', type=click.Path(), help='Save traces to file')
+@click.option('--log', '-l', type=click.Path(), help='Log messages to logfile')
 @click.option('--conf', '-c', type=click.File('r'), callback=validate_conf, help='Configuation file')
-def watch(pid, uid, output, log, headless, conf):
+@click.option('--headless', is_flag=True, help='Run without curse windows')
+def watch(pid, uid, output, log, conf, headless):
     """Watch file system, network and process activity"""
     if not headless:
         wrapper(watch_start, pid, uid, output, log, conf)

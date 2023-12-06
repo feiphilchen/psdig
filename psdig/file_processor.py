@@ -24,6 +24,20 @@ class FdResolve(object):
         if len(self.fd_hash) > FD_CACHE:
             self.cleanup(int(FD_CACHE/2))
 
+    def file_delete(self, pid, fd):
+        key = self.fd_key(pid, fd)
+        if key in self.fd_hash:
+            del self.fd_hash[key]
+
+    def proc_fd(self, pid, fd):
+        fd_path = f'/proc/{pid}/fd/{fd}'
+        try:
+            path = os.readlink(fd_path)
+        except:
+            return None
+        else:
+            return path
+
     def file_lookup(self, pid, fd):
         key = self.fd_key(pid, fd)
         if key not in self.fd_hash:
@@ -41,3 +55,5 @@ class FdResolve(object):
                 filename = self.file_lookup(pid, args['fd'])
                 if filename != None:
                     args['filename'] = filename
+                    self.file_delete(pid, args['fd'])
+

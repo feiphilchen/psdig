@@ -154,6 +154,7 @@ class StatusWin(CurseWin):
             filtered_text = f", filtered {filtered}"
         else:
             filtered_text = ""
+        display_end = display_end - 1 if display_end > 0 else 0
         displaying = f", displaying from {display_start} to {display_end}"
         stat_str = f"Total traces:{total}{filtered_text}{displaying}. "
         curse_win.addstr(1, 1, stat_str, curses.A_BOLD)
