@@ -90,6 +90,8 @@ def complete_event(ctx, param, incomplete):
     return [e for e in events if e.startswith(incomplete)]
 
 def validate_event(ctx, param, value):
+    if len(value) == 0:
+        raise click.BadParameter("no event to trace")
     events = Event.get_all()
     for evt in value:
         if evt not in events:
