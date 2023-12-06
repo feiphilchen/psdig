@@ -77,7 +77,7 @@ class SyscallTraceConf(TraceConf):
                     detail_func = lambda syscall,metadata,args,ret:eval(detail_lambda)
                     detail = detail_func(syscall, metadata, args, ret)
         if detail == None:
-            default_lambda = "syscall_format(syscall,args,ret,metadata)"
+            default_lambda = "' '.join([ f'{key}={val}' for key,val in args.items()]) + (f' ret={ret}' if ret != None else '') "
             detail_func =  lambda syscall,metadata,args,ret:eval(default_lambda)
             detail = detail_func(syscall, metadata, args, ret)
         return detail
