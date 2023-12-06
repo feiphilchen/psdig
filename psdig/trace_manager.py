@@ -21,12 +21,13 @@ from .lambda_helper import *
 class TraceManager(object):
     def __init__(self, pid_filter=[], 
                       uid_filter=[],
+                      comm_filter=[],
                       conf=None,
                       tmp_dir='/var/tmp'):
         self.set_logger()
         self.tmp_dir = tmp_dir
-        self.tp = TracePoint(pid_filter=pid_filter, uid_filter=uid_filter)
-        self.uprobe = Uprobe(pid_filter=pid_filter, uid_filter=uid_filter)
+        self.tp = TracePoint(pid_filter=pid_filter, uid_filter=uid_filter, comm_filter=comm_filter)
+        self.uprobe = Uprobe(pid_filter=pid_filter, uid_filter=uid_filter, comm_filter=comm_filter)
         self.syscall = Syscall(self.tp)
         self.event = Event(self.tp)
         self.stats = {}

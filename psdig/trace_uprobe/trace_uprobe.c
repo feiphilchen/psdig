@@ -22,6 +22,7 @@
 #define MAX_UPROBE_TRACE 64
 #define MAX_PID_FILTER 32
 #define MAX_UID_FILTER 32
+#define MAX_COMM_FILTER 32
 struct uprobe {
     char * obj;
     char * path;
@@ -32,9 +33,11 @@ struct uprobe uprobe_trace[MAX_UPROBE_TRACE];
 unsigned int pid_filter[MAX_PID_FILTER];
 unsigned int uid_filter[MAX_UID_FILTER];
 unsigned int pid_exclude[MAX_PID_FILTER];
+void *  comm_filter[MAX_COMM_FILTER];
 unsigned int pid_filter_count = 0;
 unsigned int pid_exclude_count = 0;
 unsigned int uid_filter_count = 0;
+unsigned int comm_filter_count = 0;
 unsigned int uprobe_trace_count = 0;
 pthread_mutex_t print_mutex;
 
@@ -122,6 +125,34 @@ init_uid_filter (struct bpf_object * bo)
         if (updated < 0) {
              fprintf(stderr, "failed to update uid filter: id=%u, %s\n",
                  uid_filter[pos], strerror(errno));
+             return -EINVAL;
+        }
+    }
+    return 0;
+}
+
+int
+init_comm_filter (struct bpf_object * bo)
+{
+    unsigned int pos;
+    int         updated, filter_count_fd, filter_fd;
+    unsigned int filter_type = TRACE_FILTER_TYPE_COMM;
+
+    filter_count_fd = bpf_object__find_map_fd_by_name(bo, "trace_filter_count");
+    if (filter_count_fd < 0) {
+         fprintf(stderr, "ERROR: bpf_object__find_map_fd_by_name failed\n");
+         return -EINVAL;
+    }
+    updated = bpf_map_update_elem(filter_count_fd, &filter_type, &comm_filter_count, BPF_ANY);
+    if (comm_filter_count == 0) {
+        return 0;
+    }
+    filter_fd = bpf_object__find_map_fd_by_name(bo, "trace_comm_filter");
+    for (pos = 0; pos < comm_filter_count; pos++) {
+        updated = bpf_map_update_elem(filter_fd, comm_filter[pos], comm_filter[pos], BPF_ANY);
+        if (updated < 0) {
+             fprintf(stderr, "failed to update comm filter: id=%s, %s\n",
+                 (char *)comm_filter[pos], strerror(errno));
              return -EINVAL;
         }
     }
@@ -424,6 +455,10 @@ uprobe_trace_thread (void * obj)
         fprintf(stderr, "ERROR: fail to initialize uid filter\n");
         return NULL;
     }
+    if (init_comm_filter(bo) < 0) {
+        fprintf(stderr, "ERROR: fail to initialize comm filter\n");
+        return NULL;
+    }
     pb = init_perf_buffer(bo);
     if (pb == NULL) {
         fprintf(stderr, "ERROR: fail to initialize perf buffer\n");
@@ -444,6 +479,7 @@ usage(const char *prgname)
            "  -p: <pid>               Pid filter\n"
            "  -x: <pid>               Pid excluded\n"
            "  -u: <uid>               Uid filter\n"
+           "  -c: <command>           Command filter\n"
            "  -h:                     Show help message and exit\n",
                prgname);
     return;
@@ -454,6 +490,7 @@ static const char short_options[] =
         "u:" /* uid filter*/
         "p:" /* pid filter */
         "x:" /* pid excluded */
+        "c:" /* command filter */
         "o:" /* trace object file*/
         ;
 
@@ -488,6 +525,19 @@ parse_uprobe_str (char * uprobe_str)
     return 0;
 }
 
+void *
+alloc_comm_filter (char * comm)
+{
+    void * buf;
+    buf = malloc(TRACE_COMM_SIZE);
+    if (buf == NULL) {
+        return NULL;
+    }
+    memset(buf, 0, TRACE_COMM_SIZE);
+    strncpy(buf, comm, TRACE_COMM_SIZE);
+    return buf;
+}
+
 static int
 parse_args (int argc, char **argv)
 {
@@ -519,6 +569,12 @@ parse_args (int argc, char **argv)
                 if (pid_exclude_count < MAX_PID_FILTER) {
                     pid_exclude[pid_exclude_count] = atoi(optarg);
                     pid_exclude_count++;
+                }
+                break;
+            case 'c':
+                if (comm_filter_count < MAX_COMM_FILTER) {
+                    comm_filter[comm_filter_count] = alloc_comm_filter(optarg);
+                    comm_filter_count++;
                 }
                 break;
             case 'o':

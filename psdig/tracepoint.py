@@ -24,6 +24,7 @@ class TracePoint(object):
     }
     def __init__(self, pid_filter=[], 
                        uid_filter=[], 
+                       comm_filter=[],
                        ignore_self=True, 
                        obj_cache=True):
         self.event_handlers = {}
@@ -34,6 +35,7 @@ class TracePoint(object):
         self.proc = None
         self.pid_filter = pid_filter
         self.uid_filter = uid_filter
+        self.comm_filter = comm_filter
         self.ignore_self = ignore_self
         self.pid = os.getpid()
         self.callout_thread_running = False
@@ -198,6 +200,9 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
         for uid in self.uid_filter:
             cmd.append("-u")
             cmd.append(str(uid))
+        for comm in self.comm_filter:
+            cmd.append("-c")
+            cmd.append(str(comm))
         cmd.append('-x')
         cmd.append(str(self.pid))
         cmd_str = " ".join(cmd)

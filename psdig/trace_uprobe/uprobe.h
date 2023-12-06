@@ -24,6 +24,7 @@ typedef union trace {
 typedef enum {
    TRACE_FILTER_TYPE_PID = 0,
    TRACE_FILTER_TYPE_UID,
+   TRACE_FILTER_TYPE_COMM,
    TRACE_FILTER_TYPE_MAX
 } TRACE_filter_type_t;
 

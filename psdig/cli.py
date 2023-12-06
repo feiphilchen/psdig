@@ -17,13 +17,13 @@ pswatch=None
 def watch_interrupt(sig, frame):
     pswatch.stop()
 
-def watch_start(stdscr, pid, uid, output, log, trace_conf):
+def watch_start(stdscr, pid, uid, comm, output, log, trace_conf):
     stdscr.clear()
     stdscr.refresh()
     global pswatch
     with tempfile.TemporaryDirectory() as tmpdirname:
         pswatch = PsWatch(stdscr, pid_filter=pid, uid_filter=uid, \
-           event_file=output, log_file=log, conf=trace_conf, \
+           comm_filter=comm, event_file=output, log_file=log, conf=trace_conf, \
            tmp_dir=tmpdirname)
         signal.signal(signal.SIGINT, watch_interrupt)
         try:
@@ -33,11 +33,11 @@ def watch_start(stdscr, pid, uid, output, log, trace_conf):
         finally:
             pswatch.stop()
 
-def watch_headless(pid, uid, output, log, trace_conf):
+def watch_headless(pid, uid, comm, output, log, trace_conf):
     global pswatch
     with tempfile.TemporaryDirectory() as tmpdirname:
         pswatch = PsWatch(None, pid_filter=pid, uid_filter=uid, \
-           event_file=output, log_file=log, conf=trace_conf, \
+           comm_filter=comm, event_file=output, log_file=log, conf=trace_conf, \
            tmp_dir=tmpdirname)
         signal.signal(signal.SIGINT, watch_interrupt)
         try:
@@ -69,16 +69,17 @@ def validate_conf(ctx, param, value):
 @click.command()
 @click.option('--pid', '-p', type=int, multiple=True, help='Pid filter')
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
+@click.option('--comm', '-c', type=str, multiple=True, help='Command filter')
 @click.option('--output', '-o', type=click.Path(), help='Save traces to file')
 @click.option('--log', '-l', type=click.Path(), help='Log messages to file')
-@click.option('--conf', '-c', type=click.File('r'), callback=validate_conf, help='Configuation file')
+@click.option('--template', '-t', type=click.File('r'), callback=validate_conf, help='Template file')
 @click.option('--headless', is_flag=True, help='Run without curse windows')
-def watch(pid, uid, output, log, conf, headless):
+def watch(pid, uid, comm, output, log, template, headless):
     """Watch file system, network and process activity"""
     if not headless:
-        wrapper(watch_start, pid, uid, output, log, conf)
+        wrapper(watch_start, pid, uid, comm, output, log, template)
     else:
-        watch_headless(pid, uid, output, log, conf)
+        watch_headless(pid, uid, comm, output, log, template)
 
 @click.command()
 @click.option('--log', '-l', type=click.Path(), help='Log all messages to file')

@@ -23,13 +23,16 @@
 #define MAX_TRACE_OBJ 64
 #define MAX_PID_FILTER 32
 #define MAX_UID_FILTER 32
+#define MAX_COMM_FILTER 32
 char * trace_objs[MAX_TRACE_OBJ];
 unsigned int pid_filter[MAX_PID_FILTER];
 unsigned int uid_filter[MAX_UID_FILTER];
+void  * comm_filter[MAX_COMM_FILTER];
 unsigned int pid_exclude[MAX_PID_FILTER];
 unsigned int pid_filter_count = 0;
 unsigned int uid_filter_count = 0;
 unsigned int pid_exclude_count = 0;
+unsigned int comm_filter_count = 0;
 unsigned int trace_obj_count = 0;
 struct event_schema event_schemas [] = EVT_SCHEMA_LIST;
 
@@ -397,6 +400,35 @@ init_uid_filter (struct bpf_object * bo)
     return 0;
 }
 
+int
+init_comm_filter (struct bpf_object * bo)
+{
+    unsigned int pos;
+    int         updated, filter_count_fd, filter_fd;
+    unsigned int filter_type = EVENT_FILTER_TYPE_COMM;
+
+    filter_count_fd = bpf_object__find_map_fd_by_name(bo, "event_filter_count");
+    if (filter_count_fd < 0) {
+         fprintf(stderr, "ERROR: bpf_object__find_map_fd_by_name failed\n");
+         return -EINVAL;
+    }
+    updated = bpf_map_update_elem(filter_count_fd, &filter_type, &comm_filter_count, BPF_ANY);
+    if (comm_filter_count == 0) {
+        return 0;
+    }
+    filter_fd = bpf_object__find_map_fd_by_name(bo, "event_comm_filter");
+    for (pos = 0; pos < comm_filter_count; pos++) {
+        updated = bpf_map_update_elem(filter_fd, comm_filter[pos], comm_filter[pos], BPF_ANY);
+        if (updated < 0) {
+             fprintf(stderr, "failed to update comm filter: comm=%s, %s\n", 
+                 (char *)comm_filter[pos], strerror(errno));
+             return -EINVAL;
+        }
+    }
+    return 0;
+}
+
+
 struct perf_buffer *
 init_perf_buffer (struct bpf_object * bo)
 {
@@ -454,6 +486,10 @@ event_trace_thread (void * obj)
         fprintf(stderr, "ERROR: fail to initialize uid filter\n");
         return NULL;
     }
+    if (init_comm_filter(bo) < 0) {
+        fprintf(stderr, "ERROR: fail to initialize comm filter\n");
+        return NULL;
+    }
     pb = init_perf_buffer(bo);
     if (pb == NULL) {
         fprintf(stderr, "ERROR: fail to initialize perf buffer\n");
@@ -474,6 +510,7 @@ usage(const char *prgname)
            "  -p: <pid>       Pid filter\n"
            "  -x: <pid>       Pid excluded\n"
            "  -u: <uid>       Uid filter\n"
+           "  -c: <command>   Command filter\n"
            "  -h:             Show help message and exit\n",
                prgname);
     return;
@@ -484,8 +521,22 @@ static const char short_options[] =
         "u:" /* uid filter*/
         "p:" /* pid filter */
         "x:" /* pid excluded */
+        "c:" /* command filter */
         "o:" /* trace object file*/
         ;
+
+void *
+alloc_comm_filter (char * comm)
+{
+    void * buf;
+    buf = malloc(EVENT_COMM_SIZE);
+    if (buf == NULL) {
+        return NULL;
+    }
+    memset(buf, 0, EVENT_COMM_SIZE);
+    strncpy(buf, comm, EVENT_COMM_SIZE);
+    return buf;
+}
 
 static int
 parse_args (int argc, char **argv)
@@ -512,6 +563,12 @@ parse_args (int argc, char **argv)
                 if (pid_filter_count < MAX_PID_FILTER) {
                     pid_filter[pid_filter_count] = atoi(optarg);
                     pid_filter_count++;
+                }
+                break;
+            case 'c':
+                if (comm_filter_count < MAX_COMM_FILTER) {
+                    comm_filter[comm_filter_count] = alloc_comm_filter(optarg);
+                    comm_filter_count++;
                 }
                 break;
             case 'x':

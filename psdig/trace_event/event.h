@@ -19,6 +19,7 @@ typedef enum {
 typedef enum {
    EVENT_FILTER_TYPE_PID = 0,
    EVENT_FILTER_TYPE_UID,
+   EVENT_FILTER_TYPE_COMM,
    EVENT_FILTER_TYPE_MAX
 } event_filter_type_t;
 

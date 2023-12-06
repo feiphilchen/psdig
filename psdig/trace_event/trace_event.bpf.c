@@ -56,6 +56,13 @@ struct bpf_map_def SEC("maps") event_uid_filter = {
     .max_entries = 64
 };
 
+struct bpf_map_def SEC("maps") event_comm_filter = {
+    .type = BPF_MAP_TYPE_HASH,
+    .key_size = EVENT_COMM_SIZE,
+    .value_size = EVENT_COMM_SIZE,
+    .max_entries = 64
+};
+
 struct bpf_map_def SEC("maps") exclude_pid_filter = {
     .type = BPF_MAP_TYPE_HASH,
     .key_size = sizeof(int),
@@ -89,12 +96,10 @@ read_event_field_string (void                 * ctx,
     bpf_probe_read(&str, sizeof(str), ctx + field->offset);
     if (evt->hdr.len < sizeof(event_t) - EVENT_FIELD_MAX_STR_LEN) {
         data = evt->hdr.len + (void *)evt;
-        //event_bpf_printk(1, "read_event_field_string_ %lx\n",(__u64)str);
         ret = bpf_probe_read_str(data, EVENT_FIELD_MAX_STR_LEN, str);
         if (ret >= 0) {
             evt->hdr.len += ret;
         } else {
-            //event_bpf_printk(1, "read string error %d\n", ret);
             return -1;
         }
     }
@@ -137,7 +142,6 @@ read_event_field_string_list (void                 * ctx,
         data = evt->hdr.len + (void *)evt;
         *(char *)data = '\0';
         evt->hdr.len += 1;
-        //event_bpf_printk(1, "null\n");
         return 0;
     }
     return -1;
@@ -204,6 +208,27 @@ check_uid_filter(unsigned int uid)
     return 0;
 }
 
+static int
+check_comm_filter(char * comm)
+{
+    int filter_type = EVENT_FILTER_TYPE_COMM;
+    int * count, * filter;
+
+    count = bpf_map_lookup_elem(&event_filter_count, &filter_type);
+    if (count == NULL) {
+        return 0;
+    }
+    if (*count == 0) {
+        return 0;
+    }
+    filter = bpf_map_lookup_elem(&event_comm_filter, comm);
+    if (filter == NULL) {
+        return 1;
+    }
+    return 0;
+}
+
+
 static inline int
 read_event (void                * ctx,
             struct event_schema * schema)
@@ -214,7 +239,7 @@ read_event (void                * ctx,
     void                 * data;
     event_t              * evt;
     int                   filter_out;
-
+    char                  comm[EVENT_COMM_SIZE] = {0};
     evt = bpf_map_lookup_elem(&event_heap, &zero);
     if (evt == NULL) {
         return 0;
@@ -224,11 +249,17 @@ read_event (void                * ctx,
     evt->hdr.gid = bpf_get_current_uid_gid() >> 32;
     evt->hdr.uid = bpf_get_current_uid_gid() & 0xffffffff;
     evt->hdr.ktime_ns = bpf_ktime_get_ns();
+    bpf_get_current_comm(comm, sizeof(comm));
     filter_out = check_pid_filter(evt->hdr.pid);
     if (filter_out > 0) {
         return 0;
     }
     filter_out = check_uid_filter(evt->hdr.uid);
+    if (filter_out > 0) {
+        return 0;
+    }
+   
+    filter_out = check_comm_filter(comm);
     if (filter_out > 0) {
         return 0;
     }
@@ -256,12 +287,3 @@ read_event (void                * ctx,
     return 0;
 }
 
-#if 0
-SEC("tracepoint/syscalls/sys_enter_execve")
-int execve_trace(void *ctx)
-{
-    struct event_schema schema = EVT_SCHEMA_SYSCALLS_SYS_ENTER_EXECVE;
-    read_event(ctx, &schema);
-    return 0;
-}
-#endif

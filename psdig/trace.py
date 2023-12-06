@@ -46,11 +46,12 @@ def validate_syscall(ctx, param, value):
 @click.option('--filter', '-f', type=str, help="Filter string")
 @click.option('--pid', '-p', type=int, multiple=True, help='Pid filter')
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
+@click.option('--comm', '-c', type=str, multiple=True, help='Command filter')
 @click.argument('syscall', nargs=-1, shell_complete=complete_syscall, callback=validate_syscall)
-def syscall_trace(output, filter, pid, uid, syscall):
+def syscall_trace(output, filter, pid, uid, comm, syscall):
     """Trace syscall"""
     with tempfile.TemporaryDirectory() as tmpdirname:
-        tracepoint = TracePoint(pid_filter=pid, uid_filter=uid)
+        tracepoint = TracePoint(pid_filter=pid, uid_filter=uid, comm_filter=comm)
         syscall_obj = Syscall(tracepoint)
         if filter:
             filter_f = lambda syscall,metadata,args,ret:eval(filter)
@@ -103,11 +104,12 @@ def validate_event(ctx, param, value):
 @click.option('--filter', '-f', type=str, help="Filter string")
 @click.option('--pid', '-p', type=int, multiple=True, help='Pid filter')
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
+@click.option('--comm', '-c', type=str, multiple=True, help='Command filter')
 @click.argument('event', nargs=-1, shell_complete=complete_event, callback=validate_event)
-def event_trace(output, filter, pid, uid, event):
+def event_trace(output, filter, pid, uid, comm, event):
     """Trace event"""
     with tempfile.TemporaryDirectory() as tmpdirname:
-        tracepoint = TracePoint(pid_filter=pid, uid_filter=uid)
+        tracepoint = TracePoint(pid_filter=pid, uid_filter=uid, comm_filter=comm)
         event_obj = Event(tracepoint)
         if filter:
             filter_f = lambda name,metadata,args:eval(filter)
@@ -187,13 +189,14 @@ default_uprobe_fmt="lambda:time_str(metadata['timestamp']) + ' %s(%s): '%(metada
 @click.option('--filter', '-f', type=str, help="Filter string")
 @click.option('--pid', '-p', type=int, multiple=True, help='Pid filter')
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
+@click.option('--comm', '-c', type=str, multiple=True, help='Command filter')
 @click.option('--sym', '-s', type=click.Path(exists=True), help='Symbol file')
 @click.argument('elf', type=click.Path(exists=True))
 @click.argument('function', nargs=-1, shell_complete=complete_uprobe_function, callback=validate_uprobe_function)
-def uprobe_trace(output, filter, pid, uid, sym, elf, function):
+def uprobe_trace(output, filter, pid, uid, comm, sym, elf, function):
     """Trace uprobe"""
     with tempfile.TemporaryDirectory() as tmpdirname:
-        uprobe = Uprobe(pid_filter=pid, uid_filter=uid)
+        uprobe = Uprobe(pid_filter=pid, uid_filter=uid, comm_filter=comm)
         if filter:
             filter_f = lambda function,metadata,args,ret:eval(filter)
         else:

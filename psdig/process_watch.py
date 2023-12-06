@@ -21,6 +21,7 @@ class PsWatch(object):
     def __init__(self, stdscr, 
                pid_filter=[], 
                uid_filter=[], 
+               comm_filter=[],
                event_file=None,
                load_from=None,
                log_file=None,
@@ -40,7 +41,9 @@ class PsWatch(object):
         self.tmp_dir = tmp_dir
         self.load_from = load_from
         self.conf = conf
-        self.trace_mgr = TraceManager(pid_filter=pid_filter, uid_filter=uid_filter, conf=self.conf, tmp_dir=tmp_dir)
+        self.trace_mgr = TraceManager(pid_filter=pid_filter, \
+          uid_filter=uid_filter, comm_filter=comm_filter, \
+          conf=self.conf, tmp_dir=tmp_dir)
         self.running = False
         self.stopped = False
         self.ext_display = False

@@ -19,13 +19,18 @@ class Uprobe(object):
        "bytes": Bytes,
        "sockaddr":SockAddr
     }
-    def __init__(self, pid_filter=[], uid_filter=[], symbols={}, ignore_self=True):
+    def __init__(self, pid_filter=[], 
+                       uid_filter=[], 
+                       comm_filter=[],
+                       symbols={}, 
+                       ignore_self=True):
         self.set_logger()
         self.probe_index = {}
         self.functions = {}
         self.proc = None
         self.pid_filter = pid_filter
         self.uid_filter = uid_filter
+        self.comm_filter = comm_filter
         self.pid = os.getpid()
         self.event_bucket = {}
         self.event_mutex = threading.Lock()
@@ -487,6 +492,9 @@ int BPF_KRETPROBE(%s)
         for uid in self.uid_filter:
             cmd.append("-u")
             cmd.append(str(uid))
+        for comm in self.comm_filter:
+            cmd.append("-c")
+            cmd.append(str(comm))
         cmd.append('-x')
         cmd.append(str(self.pid))
         cmd_str = " ".join(cmd)
