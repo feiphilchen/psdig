@@ -260,6 +260,16 @@
          }
       },
       {
+         "name": "socket",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sys_socket",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            }
+         }
+      },
+      {
          "name": "listen",
          "type": "syscall",
          "parameters": {

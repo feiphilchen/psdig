@@ -165,7 +165,7 @@ event_read_sockaddr_in (struct sockaddr_in    * in,
     inet_ntop(in->sin_family, &in->sin_addr, addr_buf, sizeof(addr_buf));
     json_object_object_add(jobj, "family", json_object_new_uint64(in->sin_family));
     json_object_object_add(jobj, "addr", json_object_new_string(addr_buf));
-    json_object_object_add(jobj, "port", json_object_new_uint64(in->sin_port));
+    json_object_object_add(jobj, "port", json_object_new_uint64(ntohs(in->sin_port)));
     return 0;
 
 }
@@ -178,7 +178,7 @@ event_read_sockaddr_in6 (struct sockaddr_in6    * in,
     inet_ntop(in->sin6_family, &in->sin6_addr, addr_buf, sizeof(addr_buf));
     json_object_object_add(jobj, "family", json_object_new_uint64(in->sin6_family));
     json_object_object_add(jobj, "addr", json_object_new_string(addr_buf));
-    json_object_object_add(jobj, "port", json_object_new_uint64(in->sin6_port));
+    json_object_object_add(jobj, "port", json_object_new_uint64(ntohs(in->sin6_port)));
     return 0;
 
 }
