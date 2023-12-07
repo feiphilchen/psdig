@@ -7,6 +7,8 @@ class SockAddr(object):
             self.init_sockaddr_in(sa)
         elif sa['family'] == 1:
             self.init_sockaddr_un(sa)
+        elif sa['family'] == 16:
+            self.init_sockaddr_nl(sa)
 
     def init_sockaddr_in(self, sa):
         self.family = sa['family']
@@ -17,21 +19,34 @@ class SockAddr(object):
         self.family = sa['family']
         self.path = sa['path']
 
+    def init_sockaddr_nl(self, sa):
+        self.family = sa['family']
+        self.nl_pid = sa['nl_pid']
+        self.nl_groups = sa['nl_groups']
+
     def __str__(self):
         if self.family == 2:
-            return f"{self.addr}:{self.port}"
+            return "{family=AF_INET,addr=%s,port=%u}" % (self.addr, self.port)
         elif self.family == 10:
-            return f"[{self.addr}]:{self.port}"
+            return "{family=AF_INET6,addr=%s,port=%u}" % (self.addr, self.port)
         elif self.family == 1:
-            return f"{self.path}"
+            return "{family=AF_UNIX,path=%s}" % self.path
+        elif self.family == 16:
+            return "{family=AF_NETLINK,nl_pid=%u,nl_groups=%u}" % (self.nl_pid, self.nl_groups)
 
     def __eq__(self, other):
         if self.family == 2:
-            return f"{self.addr}:{self.port}" == other
+            addr = "{family=AF_INET,addr=%s,port=%u}" % (self.addr, self.port)
+            return addr == other
         elif self.family == 10:
-            return f"[{self.addr}]:{self.port}" == other
+            addr = "{family=AF_INET6,addr=%s,port=%u}" % (self.addr, self.port)
+            return addr == other
         elif self.family == 1:
-            return f"{self.path}" == other
+            addr = "{family=AF_UNIX,path=%s}" % self.path
+            return addr == other
+        elif self.family == 16:
+            addr = "{nl_pid=%u,nl_groups=%u}" % (self.nl_pid, self.nl_groups)
+            return addr == other
         else:
             return False
 

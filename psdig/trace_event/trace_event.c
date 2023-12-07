@@ -192,6 +192,16 @@ event_read_sockaddr_un (struct sockaddr_un    * un,
     return 0;
 }
 
+static  int
+event_read_sockaddr_nl (struct sockaddr_nl    * nl,
+                        struct json_object   * jobj)
+{
+    json_object_object_add(jobj, "family", json_object_new_uint64(nl->nl_family));
+    json_object_object_add(jobj, "nl_pid", json_object_new_uint64(nl->nl_pid));
+    json_object_object_add(jobj, "nl_groups", json_object_new_uint64(nl->nl_groups));
+    return 0;
+}
+
 void print_bpf_output(void *ctx, 
                       int cpu,
                       void *data, 
@@ -271,7 +281,8 @@ void print_bpf_output(void *ctx,
             //debug("family:0x%x\n", sa.sa_family);
             if (sa.raw.sa_family != AF_INET && 
                 sa.raw.sa_family != AF_INET6 &&
-                sa.raw.sa_family != AF_UNIX) {
+                sa.raw.sa_family != AF_UNIX && 
+                sa.raw.sa_family != AF_NETLINK) {
                 print = false;
                 break;
             }
@@ -282,6 +293,8 @@ void print_bpf_output(void *ctx,
                 event_read_sockaddr_in6((struct sockaddr_in6 *)&sa, jsockaddr);
             } else if (sa.raw.sa_family == AF_UNIX) {
                 event_read_sockaddr_un((struct sockaddr_un *)&sa, jsockaddr);
+            } if (sa.raw.sa_family == AF_NETLINK) {
+                event_read_sockaddr_nl((struct sockaddr_nl *)&sa, jsockaddr);
             }
             json_object_object_add(jparams, field->name, jsockaddr);
             json_object_object_add(jschema, field->name, json_object_new_string("sockaddr"));

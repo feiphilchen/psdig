@@ -44,21 +44,21 @@ cases = [
     (
         "syscall/test_syscall tcp-bind",
         "sys_bind",
-        "syscall == 'sys_bind' and args['umyaddr']=='0.0.0.0:55510'",
+        "syscall == 'sys_bind' and args['umyaddr']=='{family=AF_INET,addr=0.0.0.0,port=55000}'",
         1,
         None
     ),
     (
         "syscall/test_syscall tcp-bind-v6",
         "sys_bind",
-        "syscall == 'sys_bind' and args['umyaddr']=='[::]:55510'",
+        "syscall == 'sys_bind' and args['umyaddr']=='{family=AF_INET6,addr=::,port=55000}'",
         1,
         None
     ),
     (
         "syscall/test_syscall unix-bind",
         "sys_bind",
-        "syscall == 'sys_bind' and args['umyaddr']=='/tmp/test.sock'",
+        "syscall == 'sys_bind' and args['umyaddr']=='{family=AF_UNIX,path=/tmp/test.sock}'",
         1,
         None
     ),

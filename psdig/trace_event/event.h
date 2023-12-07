@@ -4,6 +4,7 @@
 #include <linux/in.h>
 #include <linux/in6.h>
 #include <linux/un.h>
+#include <linux/netlink.h>
 
 typedef enum {
    EVENT_FIELD_TYPE_INT,
@@ -68,6 +69,7 @@ union event_sockaddr {
    struct sockaddr_un  un;
    struct sockaddr_in  in;
    struct sockaddr_in6 in6;
+   struct sockaddr_nl  nl;
 };
 
 typedef union event_sockaddr event_sockaddr_t;
