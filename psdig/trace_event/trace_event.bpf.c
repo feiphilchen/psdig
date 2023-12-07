@@ -118,13 +118,11 @@ read_event_field_string_list (void                 * ctx,
     unsigned int pos;
 
     bpf_probe_read(&pstr, sizeof(pstr), ctx + field->offset);
-    event_bpf_printk(1, "read_event_field_string_list %lx\n",(__u64)pstr);
     #pragma unroll
     for (pos = 0; pos < EVENT_FIELD_STR_LIST_LEN; pos++) {
         str = NULL;
         bpf_probe_read(&str, sizeof(str), pstr + pos);
         if (str == NULL) {
-            event_bpf_printk(1, "error read str ptr\n");
             break;
         }
         if (evt->hdr.len < sizeof(event_t) - EVENT_FIELD_MAX_STR_LEN) {
@@ -133,7 +131,6 @@ read_event_field_string_list (void                 * ctx,
             if (ret > 0) {
                 evt->hdr.len += ret;
             } else {
-                event_bpf_printk(1, "error bpf_probe_read_user_str:%d\n", ret);
                 return -1;
             }
         }
@@ -152,13 +149,20 @@ read_event_field_sockaddr (void                 * ctx,
                            struct event_field   * field,
                            event_t              * evt)
 {
-    void                  * data;
+    event_sockaddr_t      * data;
     event_sockaddr_t      * sa;
+    __u16                   family;
 
     if (evt->hdr.len < sizeof(event_t) - sizeof(event_sockaddr_t)) {
         data = evt->hdr.len + (void *)evt;
         bpf_probe_read(&sa, sizeof(event_sockaddr_t *), ctx + field->offset);
-        bpf_probe_read(data, sizeof(event_sockaddr_t), (void *)sa);
+        bpf_probe_read(&family, sizeof(family), sa);
+        if (family == 0) {
+            data->raw.sa_family = 0;
+            bpf_probe_read(data->raw.sa_data, sizeof(event_sockaddr_t *), ctx + field->offset);
+        } else {
+            bpf_probe_read(data, sizeof(event_sockaddr_t), (void *)sa);
+        }
         evt->hdr.len += sizeof(event_sockaddr_t);
     }
     return 0;

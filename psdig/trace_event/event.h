@@ -63,8 +63,7 @@ struct event_schema {
 union event_sockaddr {
     struct {
        unsigned short  sa_family;
-       unsigned short  padding;
-       char 	   sa_data[14];
+       char 	   sa_data[16];
    } raw;
    struct sockaddr_un  un;
    struct sockaddr_in  in;

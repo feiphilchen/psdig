@@ -99,6 +99,25 @@ void bytes_to_str(uint8_t * bytes, uint32_t bytes_len, char * buf)
     return ;
 }
 
+void bytes_to_ptr(uint8_t * bytes, char * buf, unsigned int buf_len)
+{
+    void               ** pp = (void **)bytes;
+    void                * ptr;
+
+    ptr = *pp;
+    if (ptr != NULL) {
+        snprintf(buf, buf_len, "%p", ptr);
+    } else {
+        if (sizeof(void *) == 8) {
+            snprintf(buf, buf_len, "0x0000000000000000");
+        } else {
+            snprintf(buf, buf_len, "0x00000000");
+        }
+    }
+    return ;
+}
+
+
 static  int
 event_read_int (void                * ptr, 
                 unsigned int          ulen,
@@ -247,16 +266,17 @@ void print_bpf_output(void *ctx,
         } else if (field->type == EVENT_FIELD_TYPE_UINT) {
             event_read_uint(ptr, field->size, jparams,  field->name);
             ptr += field->size;
-        } else if (field->type == EVENT_FIELD_TYPE_BYTES || field->type == EVENT_FIELD_TYPE_PTR) {
+        } else if (field->type == EVENT_FIELD_TYPE_BYTES) {
             if (field->size <= EVENT_FIELD_MAX_BYTES_LEN) {
                 bytes_to_str(ptr, field->size, bytes_str);
                 json_object_object_add(jparams, field->name, json_object_new_string(bytes_str));
             }
-            if (field->type == EVENT_FIELD_TYPE_PTR) {
-                json_object_object_add(jschema, field->name, json_object_new_string("ptr"));
-            } else {
-                json_object_object_add(jschema, field->name, json_object_new_string("bytes"));
-            }
+            json_object_object_add(jschema, field->name, json_object_new_string("bytes"));
+            ptr += field->size;
+        } else if (field->type == EVENT_FIELD_TYPE_PTR) {
+            bytes_to_ptr(ptr, bytes_str, sizeof(bytes_str));
+            json_object_object_add(jparams, field->name, json_object_new_string(bytes_str + 2));
+            json_object_object_add(jschema, field->name, json_object_new_string("ptr"));
             ptr += field->size;
         } else if (field->type == EVENT_FIELD_TYPE_STR) {
             ret = snprintf(str, sizeof(str), "%s", (char *)ptr);
@@ -278,26 +298,27 @@ void print_bpf_output(void *ctx,
             json_object_object_add(jparams, field->name, jarray);
         } else if (field->type == EVENT_FIELD_TYPE_SOCKADDR) {
             memcpy(&sa, ptr, sizeof(event_sockaddr_t));
-            //debug("family:0x%x\n", sa.sa_family);
             if (sa.raw.sa_family != AF_INET && 
                 sa.raw.sa_family != AF_INET6 &&
                 sa.raw.sa_family != AF_UNIX && 
                 sa.raw.sa_family != AF_NETLINK) {
-                print = false;
-                break;
+                bytes_to_ptr(sa.raw.sa_data, bytes_str, sizeof(bytes_str));
+                json_object_object_add(jparams, field->name, json_object_new_string(bytes_str + 2));
+                json_object_object_add(jschema, field->name, json_object_new_string("ptr"));
+            } else {
+                jsockaddr = json_object_new_object();
+                if (sa.raw.sa_family == AF_INET) {
+                    event_read_sockaddr_in((struct sockaddr_in *)&sa, jsockaddr);
+                } else if (sa.raw.sa_family == AF_INET6) {
+                    event_read_sockaddr_in6((struct sockaddr_in6 *)&sa, jsockaddr);
+                } else if (sa.raw.sa_family == AF_UNIX) {
+                    event_read_sockaddr_un((struct sockaddr_un *)&sa, jsockaddr);
+                } if (sa.raw.sa_family == AF_NETLINK) {
+                    event_read_sockaddr_nl((struct sockaddr_nl *)&sa, jsockaddr);
+                }
+                json_object_object_add(jparams, field->name, jsockaddr);
+                json_object_object_add(jschema, field->name, json_object_new_string("sockaddr"));
             }
-            jsockaddr = json_object_new_object();
-            if (sa.raw.sa_family == AF_INET) {
-                event_read_sockaddr_in((struct sockaddr_in *)&sa, jsockaddr);
-            } else if (sa.raw.sa_family == AF_INET6) {
-                event_read_sockaddr_in6((struct sockaddr_in6 *)&sa, jsockaddr);
-            } else if (sa.raw.sa_family == AF_UNIX) {
-                event_read_sockaddr_un((struct sockaddr_un *)&sa, jsockaddr);
-            } if (sa.raw.sa_family == AF_NETLINK) {
-                event_read_sockaddr_nl((struct sockaddr_nl *)&sa, jsockaddr);
-            }
-            json_object_object_add(jparams, field->name, jsockaddr);
-            json_object_object_add(jschema, field->name, json_object_new_string("sockaddr"));
             ptr += sizeof(event_sockaddr_t);
         }
     }
