@@ -34,8 +34,11 @@ struct event_header {
    unsigned int  uid;
    unsigned int  gid;
    __u64         ktime_ns;
+#define EVENT_FLAGS_SYSCALL 0x01
+   unsigned int  flags;
+   __u64         duration;
+   int           ret_id;
    char          comm[EVENT_COMM_SIZE];
-   unsigned char data[0];
 };
 
 typedef union event {
@@ -43,19 +46,36 @@ typedef union event {
     char                msg[EVENT_MAX_SIZE];
 } event_t;
 
-#define FIELD_NAME_SIZE 64
+#ifndef __BPF_PROG__
+#define F_NAME_INIT(n) .name = n,
+#else
+#define F_NAME_INIT(n)
+#endif
+
+#define FIELD_NAME_SIZE 32
 struct event_field {
+#ifndef __BPF_PROG__
     char               name[FIELD_NAME_SIZE];
-    unsigned int       offset;
-    unsigned int       size;
+#endif
+    unsigned short       offset;
+    unsigned short       size;
+    unsigned short       skip;
     event_field_type_t type;
 };
 
-#define EVENT_NAME_SIZE 128
+#ifndef __BPF_PROG__
+#define SCHEMA_NAME_INIT(n) .name = n,
+#else
+#define SCHEMA_NAME_INIT(n)
+#endif
+
+#define EVENT_NAME_SIZE 64
 #define EVENT_MAX_FIELDS 16
 struct event_schema {
    int                id;
+#ifndef __BPF_PROG__
    char               name[EVENT_NAME_SIZE];
+#endif
    unsigned int       field_nr;
    struct event_field fields[EVENT_MAX_FIELDS];
 };
@@ -71,6 +91,11 @@ union event_sockaddr {
    struct sockaddr_nl  nl;
 };
 
+struct syscall_context {
+    __u64         ktime_ns;
+    unsigned char data[1024];
+};
+
 typedef union event_sockaddr event_sockaddr_t;
 
 #define EVENT_FIELD_MAX_STR_LEN 128
@@ -82,8 +107,30 @@ SEC(_sec) \
 int _func(void *ctx) \
 { \
     struct event_schema schema = _schema; \
-    read_event(ctx, &schema); \
+    read_event(ctx, &schema, 0); \
     return 0; \
 }
 
+#define SYSCALL_START_FUNC(_sec, _func, _schema, _noexit) \
+SEC(_sec) \
+int _func(void *ctx) \
+{ \
+    struct event_schema start_schema = _schema; \
+    if (_noexit) { \
+        read_event(ctx, &start_schema, 1); \
+    } else {\
+        syscall_start(ctx, &start_schema); \
+    }\
+    return 0; \
+}
+
+#define SYSCALL_FINISH_FUNC(_sec, _func, _enter_schema, _exit_schema) \
+SEC(_sec) \
+int _func(void *ctx) \
+{ \
+    struct event_schema finish_enter_schema = _enter_schema; \
+    struct event_schema finish_exit_schema = _exit_schema; \
+    syscall_finish(ctx, &finish_enter_schema, &finish_exit_schema); \
+    return 0; \
+}
 #endif

@@ -9,6 +9,8 @@ from .conf import TRACEFS
 class EventSchema(object):
     def __init__(self):
         self.event_fields = {}
+        #self.skipped_args = ["common_type", "common_flags", "common_preempt_count", "common_pid", "__syscall_nr"]
+        self.skipped_args = ["common_type", "common_flags", "common_preempt_count", "common_pid"]
         self.type_mapping = {
             "unsigned char": "EVENT_FIELD_TYPE_UINT",
             "unsigned short": "EVENT_FIELD_TYPE_UINT",
@@ -66,11 +68,16 @@ class EventSchema(object):
         if array:
             field_name = array.group(1)
             field_type = f"{field_type}[]"
+        if field_name in self.skipped_args:
+            skipped = 1
+        else:
+            skipped = 0
         field = {'name':field_name, 
                  'type':field_type,
                  'offset': int(field_offset),
                  'size': int(field_size),
-                 'signed': int(field_signed)}
+                 'signed': int(field_signed),
+                 'skip': int(skipped)}
         return field
 
     def parse_event_format(self, event):
@@ -117,16 +124,18 @@ class EventSchema(object):
         for elm in field_def:
             value = field_def[elm]
             if elm == "name":
-                mb_str = f".{elm}=\"{value}\""
+                mb_str = f"F_NAME_INIT(\"{value}\")"
             elif elm == "size" or elm == "offset":
-                mb_str = f".{elm}={value}"
+                mb_str = f",.{elm}={value}"
             elif elm == "type":
                 mapped_type = self.get_field_type_mapping(value)
                 mb_str = f".{elm}={mapped_type}"
+            elif elm == "skip":
+                mb_str = f",.{elm}={value}"
             else:
                 continue
             mb_list.append(mb_str)
-        mb_list_str = ','.join(mb_list)
+        mb_list_str = ' '.join(mb_list)
         return "{%s}" % mb_list_str
 
     def get_field_define_name(self, event_name, field_name):
@@ -164,7 +173,7 @@ class EventSchema(object):
             field_list_str = ',\\\n        '.join(field_list)
             field_nr = len(field_list)
             schema="""#define %s { \\
-        .name = "%s", \\
+        SCHEMA_NAME_INIT("%s") \\
         .id = %s, \\
         .field_nr = %u,\\
         .fields = { \\

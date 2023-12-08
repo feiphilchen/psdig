@@ -28,6 +28,8 @@ class TracePoint(object):
                        ignore_self=True, 
                        obj_cache=True):
         self.event_handlers = {}
+        self.syscall_handlers = {}
+        self.syscall_events = {}
         self.set_logger()
         self.obj_cache = obj_cache
         self.trace_bpf_o = []
@@ -66,6 +68,15 @@ class TracePoint(object):
         else:
             self.event_handlers[event] = [handler]
 
+    def add_syscall_watch(self, syscall, events, func, arg=None):
+        handler = func,arg
+        enter_event = events[0]
+        if enter_event in self.syscall_handlers and self.syscall_handlers[enter_event] != None:
+            self.syscall_handlers[enter_event].append(handler)
+        else:
+            self.syscall_handlers[enter_event] = [handler]
+        self.syscall_events[syscall] = events
+
     def delete_event_watch(self, event, handler):
         pass
 
@@ -73,17 +84,19 @@ class TracePoint(object):
         events = []
         for event in self.event_handlers.keys():
             events.append(event)
-        return events
+        for syscall in self.syscall_events:
+            events += self.syscall_events[syscall]
+        return list(set(events))
 
     def get_event_id(self, event):
         event_id = event.replace('/', '_')
         event_id = event_id.lower()
         return event_id
 
-    def build_bpf_c(self, event):
+    def build_event_bpf_c(self, event):
         event_id = event.replace('/', '_')
         event_id = event_id.lower()
-        bpf_c_file = os.path.join(self.obj_dir, f"{event_id}.bpf.c")
+        bpf_c_file = os.path.join(self.obj_dir, f"event_{event_id}.bpf.c")
         event_func = f"func_{event_id}"
         event_schema = self.schema.get_event_schema_name(event)
         content="""#include "trace_event.bpf.c"
@@ -93,14 +106,51 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
             fp.write(content)
         return bpf_c_file
 
-    def build_bpf_o(self, event):
+    def build_event_bpf_o(self, event):
         event_id = event.replace('/', '_')
         event_id = event_id.lower()
-        bpf_o = os.path.join(self.obj_dir, f"{event_id}.bpf.o")
+        bpf_o = os.path.join(self.obj_dir, f"event_{event_id}.bpf.o")
         if self.obj_cache and os.path.exists(bpf_o):
             self.trace_bpf_o.append(bpf_o)
             return
-        bpf_c = self.build_bpf_c(event)
+        bpf_c = self.build_event_bpf_c(event)
+        cmd = f"clang -I/usr/local/share/psdig/usr/include -O2 -target bpf -c {bpf_c} -o {bpf_o}"
+        #os.popen(cmd)
+        subprocess.run(cmd, shell=True)
+        self.trace_bpf_o.append(bpf_o)
+
+    def build_syscall_bpf_c(self, events):
+        enter_event_id = events[0].replace('/', '_')
+        enter_event_id = enter_event_id.lower()
+        bpf_c_file = os.path.join(self.obj_dir, f"syscall_{enter_event_id}.bpf.c")
+        enter_event_func = f"func_{enter_event_id}"
+        content = "#include \"trace_event.bpf.c\"\n"
+        enter_schema = self.schema.get_event_schema_name(events[0])
+        if len(events) > 1:
+            exit_schema = self.schema.get_event_schema_name(events[1])
+            exit_event_id = events[1].replace('/', '_')
+            exit_event_id = exit_event_id.lower()
+            exit_event_func = f"func_{exit_event_id}"
+        else:
+            exit_schema = None
+        if exit_schema != None:
+            content += "SYSCALL_START_FUNC(\"tracepoint/%s\", %s, %s, 0)\n" % (events[0], enter_event_func, enter_schema)
+            content += "SYSCALL_FINISH_FUNC(\"tracepoint/%s\", %s, %s, %s)\n" % (events[1], exit_event_func, enter_schema, exit_schema)
+        else:
+            content += "SYSCALL_START_FUNC(\"tracepoint/%s\", %s, %s, 1)\n" % (events[0], enter_event_func, enter_schema)
+        with open(bpf_c_file, 'w') as fp:
+            fp.write(content)
+        return bpf_c_file
+ 
+    def build_syscall_bpf_o(self, syscall):
+        events = self.syscall_events[syscall]
+        event_id = events[0].replace('/', '_')
+        event_id = event_id.lower()
+        bpf_o = os.path.join(self.obj_dir, f"syscall_{event_id}.bpf.o")
+        if self.obj_cache and os.path.exists(bpf_o):
+            self.trace_bpf_o.append(bpf_o)
+            return
+        bpf_c = self.build_syscall_bpf_c(events)
         cmd = f"clang -I/usr/local/share/psdig/usr/include -O2 -target bpf -c {bpf_c} -o {bpf_o}"
         #os.popen(cmd)
         subprocess.run(cmd, shell=True)
@@ -113,7 +163,7 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
 
     def build_trace_objs(self):
         events = self.get_event_list()
-        self.loading = len(events)
+        self.loading = len(self.syscall_events) + len(self.event_handlers)
         self.logger.info('building schema ...')
         self.schema.build(events, self.schema_h)
         dst_file = os.path.join(self.obj_dir, 'trace_event.bpf.c')
@@ -123,9 +173,13 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
         dst_file = os.path.join(self.obj_dir, 'trace_event.c')
         self.copy_from_pkg('trace_event/trace_event.c', dst_file)
         self.trace_bpf_o = []
-        for event in events:
-            self.logger.debug('building event %s' % str(event))
-            self.build_bpf_o(event)
+        for event in self.event_handlers.keys():
+            self.logger.debug('building bpf object for event %s' % str(event))
+            self.build_event_bpf_o(event)
+            self.loaded += 1
+        for syscall in self.syscall_events:
+            self.logger.debug('building bpf object for syscall %s' % str(syscall))
+            self.build_syscall_bpf_o(syscall)
             self.loaded += 1
         cmd = f"gcc {self.trace_event_c} -g -I/usr/local/share/psdig/usr/include -L/usr/local/share/psdig/usr/lib64/ -l:libbpf.a -ljson-c -lelf -lz -lpthread -o {self.trace_event_elf}"
         #os.popen(cmd)
@@ -151,13 +205,28 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
                 else:
                     func(event_obj, arg)
 
+    def call_syscall_handlers(self, event_obj):
+        event = event_obj['event']
+        self.params_type_convert(event_obj)
+        if event in self.syscall_handlers:
+            for handler in self.syscall_handlers[event]:
+                func,arg = handler
+                if arg == None:
+                    func(event_obj)
+                else:
+                    func(event_obj, arg)
+
     def loading_status(self):
         return self.loading,self.loaded
 
     def events_callout(self, events):
         events.sort(key=lambda x: x['ktime_ns'], reverse=False)
         for event_obj in events:
-            self.call_event_handlers(event_obj)
+            is_syscall = event_obj.get('syscall', False)
+            if not is_syscall:
+                self.call_event_handlers(event_obj)
+            else:
+                self.call_syscall_handlers(event_obj)
 
     def callout(self):
         while self.callout_thread_running:

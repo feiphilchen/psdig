@@ -11,7 +11,7 @@ from .tracepoint import TracePoint
 from .conf import LOGGER_NAME,TRACEFS
 
 class Syscall(object):
-    syscall_not_return = ["sys_exit", "sys_exit_group"]
+    syscall_not_return = ["sys_exit", "sys_exit_group", "sys_execve"]
     remove_args = ["common_type", "common_flags", "common_preempt_count", "common_pid", "__syscall_nr"]
     def __init__(self, tracepoint):
         self.set_logger()
@@ -38,11 +38,10 @@ class Syscall(object):
 
     def add(self, syscall, callback, arg):
         short_name = syscall.replace("sys_", "")
-        enter_event = f"syscalls/sys_enter_{short_name}"
-        self.tracepoint.add_event_watch(enter_event, self.syscall_enter)
+        events = [f"syscalls/sys_enter_{short_name}"]
         if syscall not in self.syscall_not_return:
-            exit_event = f"syscalls/sys_exit_{short_name}"
-            self.tracepoint.add_event_watch(exit_event, self.syscall_exit)
+            events.append(f"syscalls/sys_exit_{short_name}")
+        self.tracepoint.add_syscall_watch(short_name, events, self.syscall_done)
         self.callback[syscall] = callback
         self.callback_arg[syscall] = arg
 
@@ -50,43 +49,9 @@ class Syscall(object):
         elapsed =  float("%.6f" % (ktime_ns/1000000000))
         return self.boot_ts + elapsed
 
-    def syscall_enter(self, event):
+    def syscall_done(self, event):
         event_name = event['event']
-        cpuid = event['cpuid']
-        syscall_nr = event['parameters']['__syscall_nr']
         hit = re.match('syscalls/sys_enter_(.*)$', event_name)
-        if not hit:
-            return
-        syscall = "sys_%s" % hit.group(1)
-        if syscall not in self.syscall_not_return:
-            if cpuid not in self.syscall_hash:
-                self.syscall_hash[cpuid] = {}
-            if syscall_nr not in self.syscall_hash[cpuid]:
-                self.syscall_hash[cpuid][syscall_nr] = []
-            self.syscall_hash[cpuid][syscall_nr].append(event)
-        else:
-            cb = self.callback.get(syscall)
-            ctx = self.callback_arg.get(syscall)
-            if not cb:
-                return
-            cpuid = event['cpuid']
-            ktime_ns = event['ktime_ns']
-            timestamp = self.kernel_ns_to_timestamp(ktime_ns)
-            metadata = {}
-            metadata['syscall_nr'] = syscall_nr
-            metadata['cpuid'] = cpuid
-            metadata['timestamp'] = timestamp
-            metadata['pid'] = event['pid']
-            metadata['uid'] = event['uid']
-            metadata['comm'] = event["comm"]
-            for arg in self.remove_args:
-                if arg in event['parameters']:
-                    del event['parameters'][arg]
-            cb(syscall, metadata, event['parameters'], None, ctx)
-
-    def syscall_exit(self, event):
-        event_name = event['event']
-        hit = re.match('syscalls/sys_exit_(.*)$', event_name)
         if not hit:
             return
         syscall = "sys_%s" % hit.group(1)
@@ -95,26 +60,24 @@ class Syscall(object):
         if not cb:
             return
         cpuid = event['cpuid']
+        if 'ret' in event['parameters']:
+            ret = event['parameters'].get('ret')
+            del event['parameters']['ret']
+        else:
+            ret = None
         syscall_nr = event['parameters']['__syscall_nr']
-        ret = event['parameters']['ret']
         ktime_ns = event['ktime_ns']
         timestamp = self.kernel_ns_to_timestamp(ktime_ns)
-        if cpuid in self.syscall_hash and syscall_nr in self.syscall_hash[cpuid]:
-            try:
-                event = self.syscall_hash[cpuid][syscall_nr].pop(0)
-            except:
-                return
-            metadata = {}
-            metadata['syscall_nr'] = syscall_nr
-            metadata['cpuid'] = cpuid
-            metadata['timestamp'] = timestamp
-            metadata['latency'] = ktime_ns - event['ktime_ns']
-            metadata['pid'] = event['pid']
-            metadata['uid'] = event['uid']
-            metadata['comm'] = event["comm"]
-            if event:
-                for arg in self.remove_args:
-                    if arg in event['parameters']:
-                        del event['parameters'][arg]
-                cb(syscall, metadata, event['parameters'], ret, ctx)
+        metadata = {}
+        metadata['syscall_nr'] = syscall_nr
+        metadata['cpuid'] = cpuid
+        metadata['timestamp'] = timestamp
+        metadata['latency'] = event['duration']
+        metadata['pid'] = event['pid']
+        metadata['uid'] = event['uid']
+        metadata['comm'] = event["comm"]
+        for arg in self.remove_args:
+            if arg in event['parameters']:
+                del event['parameters'][arg]
+        cb(syscall, metadata, event['parameters'], ret, ctx)
 

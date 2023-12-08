@@ -185,9 +185,6 @@
          "type": "syscall",
          "parameters": {
             "syscall": "sys_execve",
-            "level": {
-               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
-            },
             "detail": {
                "lambda": "' '.join(args['argv'])"
             }

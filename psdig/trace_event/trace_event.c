@@ -221,45 +221,28 @@ event_read_sockaddr_nl (struct sockaddr_nl    * nl,
     return 0;
 }
 
-void print_bpf_output(void *ctx, 
-                      int cpu,
-                      void *data, 
-                      __u32 size)
+int
+event_read (void               * ptr, 
+           struct event_schema * schema,
+           struct json_object   * jparams,
+           struct json_object   * jschema)
 {
-    struct event_header * evt;
-    struct event_schema * schema;
-    struct event_field  * field;
-    unsigned int          pos;
-    uint64_t              result;
-    void                * ptr;
+    struct json_object  *jarray, *jsockaddr;
+    unsigned int         pos;
+    void               * start;
     char                  str[EVENT_FIELD_MAX_STR_LEN];
     char                  bytes_str[EVENT_FIELD_MAX_BYTES_LEN*2 + 1];
-    int                   ret, str_num;
-    struct json_object   *jobj, *jarray, *jparams, *jschema, *jsockaddr;
-    const char          * json_str;
     event_sockaddr_t      sa;
     char                  addr_buf[INET6_ADDRSTRLEN];
-    bool                  print = true;
+    int                   ret, str_num;
+    struct event_field  * field;
 
-    evt = data;
-    schema = &event_schemas[evt->id];
-    //printf("event(%u/%u):%s\n", evt->id, evt->len, schema->name);
-    ptr = evt->data;
-    jobj = json_object_new_object();
-    jparams = json_object_new_object();
-    jschema = json_object_new_object();
-    json_object_object_add(jobj, "event", json_object_new_string(schema->name));
-    json_object_object_add(jobj, "comm", json_object_new_string(evt->comm));
-    json_object_object_add(jobj, "pid", json_object_new_int64(evt->pid));
-    json_object_object_add(jobj, "tid", json_object_new_int64(evt->tid));
-    json_object_object_add(jobj, "uid", json_object_new_int64(evt->uid));
-    json_object_object_add(jobj, "gid", json_object_new_int64(evt->gid));
-    json_object_object_add(jobj, "cpuid", json_object_new_int64(cpu));
-    json_object_object_add(jobj, "ktime_ns", json_object_new_int64(evt->ktime_ns));
-    json_object_object_add(jobj, "parameters", jparams);
-    json_object_object_add(jobj, "schema", jschema);
+    start = ptr;
     for (pos = 0; pos < schema->field_nr; pos++) {
         field = &schema->fields[pos];
+        if (field->skip) {
+            continue;
+        }
         if (field->type == EVENT_FIELD_TYPE_INT) {
             event_read_int(ptr, field->size, jparams,  field->name);
             ptr += field->size;
@@ -322,13 +305,60 @@ void print_bpf_output(void *ctx,
             ptr += sizeof(event_sockaddr_t);
         }
     }
+    return (int)(ptr - start);
+}
+
+void print_bpf_output(void *ctx, 
+                      int cpu,
+                      void *data, 
+                      __u32 size)
+{
+    struct event_header * evt;
+    struct event_schema * schema;
+    void                * ptr;
+    int                   ret;
+    struct json_object   *jobj,  *jparams, *jschema;
+    const char          * json_str;
+
+    evt = data;
+    schema = &event_schemas[evt->id];
+    //printf("event(%u/%u):%s\n", evt->id, evt->len, schema->name);
+    ptr = (void *)(evt + 1);
+    jobj = json_object_new_object();
+    jparams = json_object_new_object();
+    jschema = json_object_new_object();
+    json_object_object_add(jobj, "event", json_object_new_string(schema->name));
+    json_object_object_add(jobj, "comm", json_object_new_string(evt->comm));
+    json_object_object_add(jobj, "pid", json_object_new_int64(evt->pid));
+    json_object_object_add(jobj, "tid", json_object_new_int64(evt->tid));
+    json_object_object_add(jobj, "uid", json_object_new_int64(evt->uid));
+    json_object_object_add(jobj, "gid", json_object_new_int64(evt->gid));
+    json_object_object_add(jobj, "cpuid", json_object_new_int64(cpu));
+    json_object_object_add(jobj, "ktime_ns", json_object_new_int64(evt->ktime_ns));
+    if (evt->flags & EVENT_FLAGS_SYSCALL) { 
+        json_object_object_add(jobj, "syscall", json_object_new_boolean(1));
+        json_object_object_add(jobj, "duration", json_object_new_uint64(evt->duration));
+    }
+    json_object_object_add(jobj, "parameters", jparams);
+    json_object_object_add(jobj, "schema", jschema);
+    ret = event_read(ptr, schema, jparams, jschema);
+    if (ret < 0) {
+        goto err_exit;
+    }
+    ptr += ret;
+    if ((evt->flags & EVENT_FLAGS_SYSCALL) && evt->ret_id >= 0) {
+        schema = &event_schemas[evt->ret_id];
+        ret = event_read(ptr, schema, jparams, jschema);
+        if (ret < 0) {
+            goto err_exit;
+        }
+    }
     json_str = json_object_to_json_string_ext(jobj, JSON_C_TO_STRING_PRETTY);
     pthread_mutex_lock(&print_mutex);
-    if (print) {
-       printf("%s\n", json_str);
-       fflush(stdout);
-    }
+    printf("%s\n", json_str);
+    fflush(stdout);
     pthread_mutex_unlock(&print_mutex);
+err_exit:
     json_object_put(jobj);
     return;
 }
