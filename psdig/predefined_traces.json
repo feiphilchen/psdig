@@ -300,6 +300,17 @@
          }
       },
       {
+         "name": "accept",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sys_accept4",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "address={args[upeer_sockaddr]} ret={ret}"
+         }
+      },
+      {
          "name": "bind",
          "type": "syscall",
          "parameters": {

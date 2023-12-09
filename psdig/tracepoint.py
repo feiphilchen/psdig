@@ -291,15 +291,24 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
             if not line:
                 break
             try:
-                line = line.decode()
+                #line = line.decode('unicode_escape')
+                line = line.decode(errors='ignore')
             except:
+                self.logger.error(str(line))
+                self.logger.error(traceback.format_exc())
                 continue
             if json_str == None:
                 if line == "{\n":
                     json_str = line
             elif line == "}\n":
                 json_str += line
-                event_obj = json.loads(json_str)
+                try:
+                    event_obj = json.loads(json_str, strict=False)
+                except:
+                    self.logger.error(json_str)
+                    self.logger.error(traceback.format_exc())
+                    json_str = None
+                    continue
                 #self.call_event_handlers(event_obj)
                 self.event_obj_enqueue(event_obj)
                 json_str = None
