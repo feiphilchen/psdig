@@ -26,7 +26,7 @@ class TraceManager(object):
                       tmp_dir='/var/tmp'):
         self.set_logger()
         self.tmp_dir = tmp_dir
-        self.tp = TracePoint(pid_filter=pid_filter, uid_filter=uid_filter, comm_filter=comm_filter, obj_cache=False)
+        self.tp = TracePoint(pid_filter=pid_filter, uid_filter=uid_filter, comm_filter=comm_filter)
         self.uprobe = Uprobe(pid_filter=pid_filter, uid_filter=uid_filter, comm_filter=comm_filter)
         self.syscall = Syscall(self.tp)
         self.event = Event(self.tp)

@@ -161,11 +161,22 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
         with open(dst, 'wb') as fd:
             fd.write(data)
 
+    def build_schema(self, events):
+        if self.obj_cache and os.path.exists(self.schema_h):
+            return
+        self.logger.info('building schema ...')
+        self.schema.build(events, self.schema_h)
+
+    def build_trace_event(self):
+        if self.obj_cache and os.path.exists(self.trace_event_elf):
+            return
+        cmd = f"gcc {self.trace_event_c} -g -I/usr/local/share/psdig/usr/include -L/usr/local/share/psdig/usr/lib64/ -l:libbpf.a -ljson-c -lelf -lz -lpthread -o {self.trace_event_elf}"
+        subprocess.run(cmd, shell=True)
+ 
     def build_trace_objs(self):
         events = self.get_event_list()
         self.loading = len(self.syscall_events) + len(self.event_handlers)
-        self.logger.info('building schema ...')
-        self.schema.build(events, self.schema_h)
+        self.build_schema(events)
         dst_file = os.path.join(self.obj_dir, 'trace_event.bpf.c')
         self.copy_from_pkg('trace_event/trace_event.bpf.c', dst_file)
         dst_file = os.path.join(self.obj_dir, 'event.h')
@@ -181,9 +192,7 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
             self.logger.debug('building bpf object for syscall %s' % str(syscall))
             self.build_syscall_bpf_o(syscall)
             self.loaded += 1
-        cmd = f"gcc {self.trace_event_c} -g -I/usr/local/share/psdig/usr/include -L/usr/local/share/psdig/usr/lib64/ -l:libbpf.a -ljson-c -lelf -lz -lpthread -o {self.trace_event_elf}"
-        #os.popen(cmd)
-        subprocess.run(cmd, shell=True)
+        self.build_trace_event()
 
     def params_type_convert(self, event_obj):
         if 'schema' in event_obj:
