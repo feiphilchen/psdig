@@ -26,26 +26,26 @@ class SockAddr(object):
 
     def __str__(self):
         if self.family == 2:
-            return "{family=AF_INET,addr=%s,port=%u}" % (self.addr, self.port)
+            return "{family=2,addr=%s,port=%u}" % (self.addr, self.port)
         elif self.family == 10:
-            return "{family=AF_INET6,addr=%s,port=%u}" % (self.addr, self.port)
+            return "{family=10,addr=%s,port=%u}" % (self.addr, self.port)
         elif self.family == 1:
-            return "{family=AF_UNIX,path=%s}" % self.path
+            return "{family=1,path=%s}" % self.path
         elif self.family == 16:
-            return "{family=AF_NETLINK,nl_pid=%u,nl_groups=%u}" % (self.nl_pid, self.nl_groups)
+            return "{family=16,nl_pid=%u,nl_groups=%u}" % (self.nl_pid, self.nl_groups)
 
     def __eq__(self, other):
         if self.family == 2:
-            addr = "{family=AF_INET,addr=%s,port=%u}" % (self.addr, self.port)
+            addr = "{family=2,addr=%s,port=%u}" % (self.addr, self.port)
             return addr == other
         elif self.family == 10:
-            addr = "{family=AF_INET6,addr=%s,port=%u}" % (self.addr, self.port)
+            addr = "{family=10,addr=%s,port=%u}" % (self.addr, self.port)
             return addr == other
         elif self.family == 1:
-            addr = "{family=AF_UNIX,path=%s}" % self.path
+            addr = "{family=1,path=%s}" % self.path
             return addr == other
         elif self.family == 16:
-            addr = "{nl_pid=%u,nl_groups=%u}" % (self.nl_pid, self.nl_groups)
+            addr = "{family=16,nl_pid=%u,nl_groups=%u}" % (self.nl_pid, self.nl_groups)
             return addr == other
         else:
             return False
