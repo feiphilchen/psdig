@@ -4,6 +4,7 @@ import os
 import sys
 import re
 import click
+import signal
 from .syscall import Syscall
 from .event import Event
 from .tracepoint import TracePoint
@@ -11,6 +12,15 @@ from .uprobe import Uprobe
 from .lambda_helper import *
 from .dwarf import Dwarf
 import tempfile
+
+tracepoint=None
+uprobe=None
+def sig_handler(sig, frame):
+    if tracepoint != None:
+        tracepoint.stop()
+    if uprobe != None:
+        uprobe.stop()
+    sys.exit(0)
 
 default_syscall_fmt="lambda:time_str(metadata['timestamp']) + ' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + syscall_format(syscall, args, ret, metadata)"
 def syscall_print_fmt(syscall, metadata, args, ret, ctx):
@@ -35,11 +45,14 @@ def complete_syscall(ctx, param, incomplete):
     return [s for s in syscalls if s.startswith(incomplete)]
 
 def validate_syscall(ctx, param, value):
+    if len(value) == 0:
+        raise click.BadParameter("no syscall to trace")
     syscalls = Syscall.get_all()
     for syscall in value:
         if syscall not in syscalls:
             raise click.BadParameter(f'{syscall} is not a valid syscall')
     return list(set(value))
+
 
 @click.command()
 @click.option('--output', '-o', type=str, default=default_syscall_fmt, help="Format string")
@@ -50,6 +63,7 @@ def validate_syscall(ctx, param, value):
 @click.argument('syscall', nargs=-1, shell_complete=complete_syscall, callback=validate_syscall)
 def syscall_trace(output, filter, pid, uid, comm, syscall):
     """Trace syscall"""
+    global tracepoint
     with tempfile.TemporaryDirectory() as tmpdirname:
         tracepoint = TracePoint(pid_filter=pid, uid_filter=uid, comm_filter=comm)
         syscall_obj = Syscall(tracepoint)
@@ -67,6 +81,8 @@ def syscall_trace(output, filter, pid, uid, comm, syscall):
             callback = syscall_print_fmt
         for s in syscall:
             syscall_obj.add(s, callback, ctx)
+        signal.signal(signal.SIGINT, sig_handler)
+        signal.signal(signal.SIGTERM, sig_handler)
         tracepoint.start(obj_dir=tmpdirname)
 
 default_event_fmt="lambda:time_str(metadata['timestamp']) + ' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + f' {name}: ' + ','.join([f'{k}={v}' for k,v in args.items()])"
@@ -108,6 +124,7 @@ def validate_event(ctx, param, value):
 @click.argument('event', nargs=-1, shell_complete=complete_event, callback=validate_event)
 def event_trace(output, filter, pid, uid, comm, event):
     """Trace event"""
+    global tracepoint
     with tempfile.TemporaryDirectory() as tmpdirname:
         tracepoint = TracePoint(pid_filter=pid, uid_filter=uid, comm_filter=comm)
         event_obj = Event(tracepoint)
@@ -125,6 +142,8 @@ def event_trace(output, filter, pid, uid, comm, event):
             callback = event_print_fmt
         for evt in event:
              event_obj.add(evt, callback, ctx)
+        signal.signal(signal.SIGINT, sig_handler)
+        signal.signal(signal.SIGTERM, sig_handler)
         tracepoint.start(obj_dir=tmpdirname)
 
 def uprobe_print_fmt(function, metadata, args, ret, ctx):
@@ -195,6 +214,7 @@ default_uprobe_fmt="lambda:time_str(metadata['timestamp']) + ' %s(%s): '%(metada
 @click.argument('function', nargs=-1, shell_complete=complete_uprobe_function, callback=validate_uprobe_function)
 def uprobe_trace(output, filter, pid, uid, comm, sym, elf, function):
     """Trace uprobe"""
+    global uprobe
     with tempfile.TemporaryDirectory() as tmpdirname:
         uprobe = Uprobe(pid_filter=pid, uid_filter=uid, comm_filter=comm)
         if filter:
@@ -212,5 +232,7 @@ def uprobe_trace(output, filter, pid, uid, comm, sym, elf, function):
         for func in function:
             uprobe.add(elf, func, callback, True, ctx, sym)
             uprobe.add(elf, func, callback, False, ctx, sym)
+        signal.signal(signal.SIGINT, sig_handler)
+        signal.signal(signal.SIGTERM, sig_handler)
         uprobe.start(obj_dir=tmpdirname)
 
