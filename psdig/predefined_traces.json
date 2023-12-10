@@ -24,6 +24,28 @@
          }
       },
       {
+         "name": "read",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sys_read",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "fd={args[fd]} count={args[count]} ret={ret}"
+         }
+      },
+      {
+         "name": "write",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sys_write",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "fd={args[fd]} count={args[count]} ret={ret}"
+         }
+      },
+      {
          "name": "close",
          "type": "syscall",
          "parameters": {
@@ -319,6 +341,83 @@
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
             "detail": "address={args[umyaddr]} ret={ret}"
+         }
+      },
+      {
+         "name": "recvmsg",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sys_recvmsg",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "fd={args[fd]} flags={args[flags]} ret={ret}"
+         }
+      },
+      {
+         "name": "recvmsg",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sys_recvfrom",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "fd={args[fd]} flags={args[flags]} addr={args[addr]} ret={ret}"
+         }
+      },
+      {
+         "name": "recvmsg",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sys_recvmmsg",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "fd={args[fd]} vlen={args[vlen]} flags={args[flags]} ret={ret}"
+         }
+      },
+      {
+         "name": "sendmsg",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sys_sendmsg",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "fd={args[fd]} flags={args[flags]} ret={ret}"
+         }
+      },
+      {
+         "name": "sendmsg",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sys_sendmsg",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "fd={args[fd]} flags={args[flags]} ret={ret}"
+         }
+      },
+      {
+         "name": "sendmsg",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sys_sendto",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "fd={args[fd]} len={args[len]} flags={args[flags]} addr={args[addr]} ret={ret}"
+         }
+      },
+      {  
+         "name": "sendmsg",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sys_sendmmsg",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "fd={args[fd]} vlen={args[vlen]} flags={args[flags]} ret={ret}"
          }
       },
       {

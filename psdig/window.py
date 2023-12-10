@@ -326,7 +326,10 @@ class MainWin(CurseWin):
         for pos in range(self.pad_start, self.pad_end):
             event = self.trace_buffer.read(pos)
             if event:
-                self.event_format_add(event)
+                try:
+                    self.event_format_add(event)
+                except:
+                    self.logger.error(traceback.format_exc())
             else:
                 length = self.trace_buffer.length()
                 self.logger.error(f"row {pos} is none, {length}!!")

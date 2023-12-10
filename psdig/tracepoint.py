@@ -209,10 +209,13 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
         if event in self.event_handlers:
             for handler in self.event_handlers[event]:
                 func,arg = handler
-                if arg == None:
-                    func(event_obj)
-                else:
-                    func(event_obj, arg)
+                try:
+                    if arg == None:
+                        func(event_obj)
+                    else:
+                        func(event_obj, arg)
+                except:
+                    self.logger.error(traceback.format_exc())
 
     def call_syscall_handlers(self, event_obj):
         event = event_obj['event']
@@ -220,10 +223,13 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
         if event in self.syscall_handlers:
             for handler in self.syscall_handlers[event]:
                 func,arg = handler
-                if arg == None:
-                    func(event_obj)
-                else:
-                    func(event_obj, arg)
+                try:
+                    if arg == None:
+                        func(event_obj)
+                    else:
+                        func(event_obj, arg)
+                except:
+                    self.logger.error(traceback.format_exc())
 
     def loading_status(self):
         return self.loading,self.loaded
