@@ -55,7 +55,10 @@ class FdResolve(object):
         if syscall in ['sys_open', 'sys_openat']:
             if 'filename' in args and ret >= 0:
                 self.fd_add(pid, ret, args['filename'])
-        elif syscall in ['sys_close', 'sys_read', 'sys_write', 'sys_sendmsg', 'sys_sendmmsg', 'sys_recvmsg', 'sys_recvmmsg']:
+        elif syscall in ['sys_close', 'sys_read', 'sys_write', \
+             'sys_sendmsg', 'sys_sendmmsg', \
+             'sys_recvmsg', 'sys_recvmmsg', \
+             'sys_mmap']:
             if 'fd' in args:
                 try:
                     result = self.fd_lookup(pid, args['fd'])

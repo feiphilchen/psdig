@@ -231,6 +231,29 @@
          }
       },
       {
+         "name": "mmap",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sys_mmap",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "addr={args[addr]} len={args[len]} prot={args[prot]} flags={args[flags]} fd={args[fd]} off={args[off]} ret={ret}"
+         },
+         "processor": ["psdig.file_processor.FdResolve"]
+      },
+      {
+         "name": "munmap",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sys_munmap",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "addr={args[addr]} len={args[len]} ret={ret}"
+         }
+      },
+      {
          "name": "kill",
          "type": "syscall",
          "parameters": {
