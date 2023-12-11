@@ -70,3 +70,13 @@ def uprobe_format(function, args=None, ret=None, metadata=None, argmaxlen=64):
     else:
         return f"{name}{arg_str}"
 
+def context_str(args):
+    filename = args.get('@file')
+    remote = args.get('@peer_sock')
+    if filename != None:
+        prefix = f" <file={filename}>"
+    elif remote != None:
+        prefix = f" <peer_sock={remote}>"
+    else:
+        prefix = ""
+    return prefix

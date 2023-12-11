@@ -1,6 +1,7 @@
 import os
 import logging
 import time
+from .data_type import SockAddr
 from .conf import LOGGER_NAME,FD_CACHE
 
 class FdResolve(object):
@@ -17,14 +18,14 @@ class FdResolve(object):
             key = sorted_hash[0]
             del self.fd_hash[key]
 
-    def file_add(self, pid, fd, filename):
+    def fd_add(self, pid, fd, obj):
         key = self.fd_key(pid, fd)
         time_now = time.time()
-        self.fd_hash[key] = {"filename":filename, "update":time_now}
+        self.fd_hash[key] = {"obj":obj, "update":time_now}
         if len(self.fd_hash) > FD_CACHE:
             self.cleanup(int(FD_CACHE/2))
 
-    def file_delete(self, pid, fd):
+    def fd_delete(self, pid, fd):
         key = self.fd_key(pid, fd)
         if key in self.fd_hash:
             del self.fd_hash[key]
@@ -38,22 +39,40 @@ class FdResolve(object):
         else:
             return path
 
-    def file_lookup(self, pid, fd):
+    def fd_lookup(self, pid, fd):
         key = self.fd_key(pid, fd)
-        if key not in self.fd_hash:
-            return None
-        self.fd_hash[key]['update'] = time.time()
-        return self.fd_hash[key]['filename']
+        if key in self.fd_hash:
+            self.fd_hash[key]['update'] = time.time()
+            return self.fd_hash[key]['obj']
+        proc_path = f'/proc/{pid}/fd/{fd}'
+        fd_path = os.readlink(proc_path)
+        if os.path.exists(fd_path):
+            self.fd_add(pid, fd, fd_path)
+            return fd_path
 
     def syscall(self, metadata, syscall, args, ret):
         pid = metadata['pid']
         if syscall in ['sys_open', 'sys_openat']:
             if 'filename' in args and ret >= 0:
-                self.file_add(pid, ret, args['filename'])
-        elif syscall in ['sys_close']:
+                self.fd_add(pid, ret, args['filename'])
+        elif syscall in ['sys_close', 'sys_read', 'sys_write', 'sys_sendmsg', 'sys_sendmmsg', 'sys_recvmsg', 'sys_recvmmsg']:
             if 'fd' in args:
-                filename = self.file_lookup(pid, args['fd'])
-                if filename != None:
-                    args['filename'] = filename
-                    self.file_delete(pid, args['fd'])
+                try:
+                    result = self.fd_lookup(pid, args['fd'])
+                except:
+                    return
+                if result == None:
+                    return
+                if isinstance(result, str):
+                    args['@file'] = result
+                elif isinstance(result, SockAddr):
+                    args['@peer_sock'] = result
+                if syscall == 'sys_close':
+                    self.fd_delete(pid, args['fd'])
+        elif syscall in ['sys_connect']:
+            if 'uservaddr' in args and ret >= 0 and isinstance(args['uservaddr'], SockAddr):
+                self.fd_add(pid, args['fd'], args['uservaddr'])
+        elif syscall in ['sys_accept', 'sys_accept4']:
+            if 'upeer_sockaddr' in args and ret >= 0 and isinstance(args['upeer_sockaddr'], SockAddr):
+                self.fd_add(pid, ret, args['upeer_sockaddr'])
 

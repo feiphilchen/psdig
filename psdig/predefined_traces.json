@@ -8,7 +8,7 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "{args[filename]} mode={args[mode]} flags={args[flags]} ret={ret}"
+            "detail": "filename={args[filename]} mode={args[mode]} flags={args[flags]} ret={ret}"
          },
          "processor": ["psdig.file_processor.FdResolve"]
       },
@@ -20,7 +20,7 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "{args[filename]} mode={args[mode]} flags={args[flags]} ret={ret}"
+            "detail": "filename={args[filename]} mode={args[mode]} flags={args[flags]} ret={ret}"
          }
       },
       {
@@ -31,8 +31,11 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "fd={args[fd]} count={args[count]} ret={ret}"
-         }
+            "detail":{
+               "lambda":"'fd=%u count=%u ret=%d' % (args.get('fd'), args.get('count'), ret) + context_str(args)"
+            }
+         },
+         "processor": ["psdig.file_processor.FdResolve"]
       },
       {
          "name": "write",
@@ -42,8 +45,11 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "fd={args[fd]} count={args[count]} ret={ret}"
-         }
+            "detail":{
+               "lambda":"'fd=%u count=%u ret=%d' % (args.get('fd'), args.get('count'), ret) + context_str(args)"
+            }
+         },
+         "processor": ["psdig.file_processor.FdResolve"]
       },
       {
          "name": "close",
@@ -53,8 +59,8 @@
             "level": {
                "lambda": "'INFO' if ret == 0 else 'ERROR'"
             },
-            "detail":{
-               "lambda":"('' if args.get('filename') == None else '%s ' % args.get('filename')) + 'fd=%s ' % args.get('fd')  + f'ret={ret}'"
+            "detail": {
+                "lambda": "'fd=%u ret=%d' % (args.get('fd'), ret) + context_str(args)"
             }
          },
          "processor": ["psdig.file_processor.FdResolve"]
@@ -67,7 +73,7 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "{args[pathname]} ret={ret}"
+            "detail": "pathname={args[pathname]} ret={ret}"
          }
       },
       {
@@ -78,7 +84,7 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "{args[pathname]} ret={ret}"
+            "detail": "pathname={args[pathname]} ret={ret}"
          }
       },
       {
@@ -89,7 +95,7 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "{args[pathname]} length={args[length]} ret={ret}"
+            "detail": "pathname={args[pathname]} length={args[length]} ret={ret}"
          }
       },
       {
@@ -100,7 +106,7 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "{args[filename]} uid={args[user]} gid={args[group]} ret={ret}"
+            "detail": "filename={args[filename]} uid={args[user]} gid={args[group]} ret={ret}"
          }
       },
       {
@@ -111,7 +117,7 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "{args[filename]} uid={args[user]} gid={args[group]} ret={ret}"
+            "detail": "filename={args[filename]} uid={args[user]} gid={args[group]} ret={ret}"
          }
       },
       {
@@ -122,7 +128,7 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "{args[filename]} mode={args[mode]} ret={ret}"
+            "detail": "filename={args[filename]} mode={args[mode]} ret={ret}"
          }
       },
       {
@@ -133,7 +139,7 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "{args[filename]} mode={args[mode]} ret={ret}"
+            "detail": "filename={args[filename]} mode={args[mode]} ret={ret}"
          }
       },
       {
@@ -155,7 +161,7 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "{args[pathname]} mode={args[mode]} ret={ret}"
+            "detail": "pathname={args[pathname]} mode={args[mode]} ret={ret}"
          }
       },
       {
@@ -166,7 +172,7 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "{args[pathname]} mode={args[mode]} ret={ret}"
+            "detail": "pathname={args[pathname]} mode={args[mode]} ret={ret}"
          }
       },
       {
@@ -307,8 +313,9 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "address={args[uservaddr]} ret={ret}"
-         }
+            "detail": "uservaddr={args[uservaddr]} fd={args[fd]} ret={ret}"
+         },
+         "processor": ["psdig.file_processor.FdResolve"]
       },
       {
          "name": "accept",
@@ -318,8 +325,10 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "address={args[upeer_sockaddr]} ret={ret}"
-         }
+            "detail": "upeer_sockaddr={args[upeer_sockaddr]} ret={ret}"
+         },
+         "processor": ["psdig.file_processor.FdResolve"]
+
       },
       {
          "name": "accept",
@@ -329,8 +338,9 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "address={args[upeer_sockaddr]} ret={ret}"
-         }
+            "detail": "upeer_sockaddr={args[upeer_sockaddr]} ret={ret}"
+         },
+         "processor": ["psdig.file_processor.FdResolve"]
       },
       {
          "name": "bind",
@@ -340,7 +350,7 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "address={args[umyaddr]} ret={ret}"
+            "detail": "umyaddr={args[umyaddr]} ret={ret}"
          }
       },
       {
@@ -351,8 +361,11 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "fd={args[fd]} flags={args[flags]} ret={ret}"
-         }
+            "detail": {
+               "lambda": "'fd=%s' % args['fd'] + ' flags=%u' % args['flags'] + ' ret=%d' % ret + context_str(args)"
+            }
+         },
+         "processor": ["psdig.file_processor.FdResolve"]
       },
       {
          "name": "recvmsg",
@@ -362,7 +375,7 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "fd={args[fd]} flags={args[flags]} addr={args[addr]} ret={ret}"
+            "detail": "addr={args[addr]} fd={args[fd]} flags={args[flags]} ret={ret}"
          }
       },
       {
@@ -373,8 +386,11 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "fd={args[fd]} vlen={args[vlen]} flags={args[flags]} ret={ret}"
-         }
+            "detail": {
+               "lambda": "'fd=%s' % args['fd'] + ' vlen=%u' % args['vlen'] + ' flags=%u' % args['flags'] + ' ret=%d' % ret + context_str(args)"
+            }
+         },
+         "processor": ["psdig.file_processor.FdResolve"]
       },
       {
          "name": "sendmsg",
@@ -384,19 +400,11 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "fd={args[fd]} flags={args[flags]} ret={ret}"
-         }
-      },
-      {
-         "name": "sendmsg",
-         "type": "syscall",
-         "parameters": {
-            "syscall": "sys_sendmsg",
-            "level": {
-               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
-            },
-            "detail": "fd={args[fd]} flags={args[flags]} ret={ret}"
-         }
+            "detail": {
+               "lambda": "'fd=%s' % args['fd'] + ' flags=%u' % args['flags'] + ' ret=%d' % ret + context_str(args)"
+            }
+         },
+         "processor": ["psdig.file_processor.FdResolve"]
       },
       {
          "name": "sendmsg",
@@ -406,7 +414,7 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "fd={args[fd]} len={args[len]} flags={args[flags]} addr={args[addr]} ret={ret}"
+            "detail": "addr={args[addr]} fd={args[fd]} len={args[len]} flags={args[flags]} ret={ret}"
          }
       },
       {  
@@ -417,8 +425,11 @@
             "level": {
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
-            "detail": "fd={args[fd]} vlen={args[vlen]} flags={args[flags]} ret={ret}"
-         }
+            "detail": {
+               "lambda": "'fd=%s' % args['fd'] + ' vlen=%u' % args['vlen'] + ' flags=%u' % args['flags'] + ' ret=%d' % ret + context_str(args)"
+            }
+         },
+         "processor": ["psdig.file_processor.FdResolve"]
       },
       {
          "name": "mount",
