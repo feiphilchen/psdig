@@ -198,6 +198,39 @@
          }
       },
       {
+         "name": "rename",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sys_rename",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "oldname={args[oldname]} newname={args[newname]} ret={ret}"
+         }
+      },
+      {
+         "name": "rename",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sys_renameat",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "olddfd={args[olddfd]} oldname={args[oldname]} newdfd={args[newdfd]} newname={args[newname]} ret={ret}"
+         }
+      },
+      {
+         "name": "rename",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sys_renameat2",
+            "level": {
+               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+            },
+            "detail": "olddfd={args[olddfd]} oldname={args[oldname]} newdfd={args[newdfd]} newname={args[newname]} flags={args[flags]} ret={ret}"
+         }
+      },
+      {
          "name": "kill",
          "type": "syscall",
          "parameters": {
