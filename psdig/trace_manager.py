@@ -7,7 +7,10 @@ import subprocess
 import time
 import logging
 import traceback
-import psutil
+try:
+    import psutil
+except:
+    pass
 import tempfile
 from .tracepoint import TracePoint
 from .event_tcp import EventTcpRecvRst,EventTcpSendRst
