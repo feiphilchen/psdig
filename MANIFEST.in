@@ -3,3 +3,4 @@ include psdig/trace_uprobe/*
 include psdig/*
 include VERSION
 recursive-include libbpf *
+recursive-include json-c *

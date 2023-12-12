@@ -3,6 +3,7 @@ import sys
 import shlex
 import re
 import subprocess
+import tempfile
 from setuptools import setup,find_packages
 from setuptools.command.install import install
 from setuptools.command.build_ext import build_ext
@@ -30,11 +31,19 @@ def install_libbpf(os_id):
     cmd_str = "cd {} && BUILD_STATIC_ONLY=y DESTDIR=/usr/local/share/psdig make install".format(shlex.quote(libbpf_dir_src))
     ret = os.WEXITSTATUS(os.system(cmd_str))
 
+def install_libjsonc(os_id):
+    libjsonc_dir_src=os.path.join(os.path.dirname(__file__), 'json-c')
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        cmd_str = f"cd {tmpdirname} && cmake -DCMAKE_INSTALL_PREFIX=/usr/local/share/psdig/usr {libjsonc_dir_src} && make && make install"
+        ret = os.WEXITSTATUS(os.system(cmd_str))
+
+
 class CustomInstall(install):
     def run(self):
         install.run(self)
         os_id = get_os_id()
         install_libbpf(os_id)
+        install_libjsonc(os_id)
         print("compiling event objects ...")
         compile_event_objs()
 

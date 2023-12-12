@@ -170,7 +170,7 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
     def build_trace_event(self):
         if self.obj_cache and os.path.exists(self.trace_event_elf):
             return
-        cmd = f"gcc {self.trace_event_c} -g -I/usr/local/share/psdig/usr/include -L/usr/local/share/psdig/usr/lib64/ -l:libbpf.a -ljson-c -lelf -lz -lpthread -o {self.trace_event_elf}"
+        cmd = f"gcc {self.trace_event_c} -g -I/usr/local/share/psdig/usr/include -L/usr/local/share/psdig/usr/lib64/ -L/usr/local/share/psdig/usr/lib -l:libbpf.a -l:libjson-c.a -lelf -lz -lpthread -o {self.trace_event_elf}"
         subprocess.run(cmd, shell=True)
  
     def build_trace_objs(self):

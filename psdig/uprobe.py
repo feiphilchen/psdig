@@ -405,7 +405,7 @@ int BPF_KRETPROBE(%s)
                         self.add_handler(uretprobe_id, func_probe['uretprobe'], instance)
                     self.build_bpf_o(instance, uprobe_id, uretprobe_id)
                 self.loaded += 1
-        cmd = f"gcc {self.trace_uprobe_c} -g -I/usr/local/share/psdig/usr/include -L/usr/local/share/psdig/usr/lib64/ -l:libbpf.a -ljson-c -lelf -lz -lpthread -o {self.trace_uprobe_elf}"
+        cmd = f"gcc {self.trace_uprobe_c} -g -I/usr/local/share/psdig/usr/include -L/usr/local/share/psdig/usr/lib64/ -L/usr/local/share/psdig/usr/lib/ -l:libbpf.a -l:libjson-c.a -lelf -lz -lpthread -o {self.trace_uprobe_elf}"
         subprocess.run(cmd, shell=True)
 
     def parse_uprobe_trace(self, event_obj):
