@@ -1,6 +1,7 @@
 import os
 import logging
 import time
+import psutil
 from .data_type import SockAddr
 from .conf import LOGGER_NAME,FD_CACHE
 
@@ -39,6 +40,32 @@ class FdResolve(object):
         else:
             return path
 
+    def fd_socket(self, pid, fd):
+        conns = psutil.Process(pid).connections(kind='all')
+        if conns == None:
+            return None
+        for conn in conns:
+            if conn.fd != fd:
+                continue
+            if conn.family == 1:
+                sa = {}
+                sa['family'] = 1
+                sa['path'] = conn.laddr
+                sock_addr = SockAddr(sa)
+                self.fd_add(pid, fd, sock_addr)
+                return sock_addr
+            elif conn.family == 2 or conn.family == 10:
+                sa = {}
+                sa['family'] = conn.family
+                sa['addr'] = conn.raddr[0]
+                sa['port'] = conn.raddr[1]
+                sock_addr = SockAddr(sa)
+                self.fd_add(pid, fd, sock_addr)
+                return sock_addr
+            else:
+                break
+        return None
+
     def fd_lookup(self, pid, fd):
         key = self.fd_key(pid, fd)
         if key in self.fd_hash:
@@ -49,6 +76,9 @@ class FdResolve(object):
         if os.path.exists(fd_path):
             self.fd_add(pid, fd, fd_path)
             return fd_path
+        if fd_path.startswith('socket:'):
+            return self.fd_socket(pid, fd)
+        return None
 
     def syscall(self, metadata, syscall, args, ret):
         pid = metadata['pid']
