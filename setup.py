@@ -4,6 +4,7 @@ import shlex
 import re
 import subprocess
 import tempfile
+import atexit
 from setuptools import setup,find_packages
 from setuptools.command.install import install
 from setuptools.command.build_ext import build_ext
@@ -37,15 +38,26 @@ def install_libjsonc(os_id):
         cmd_str = f"cd {tmpdirname} && cmake -DCMAKE_INSTALL_PREFIX=/usr/local/share/psdig/usr {libjsonc_dir_src} && make && make install"
         ret = os.WEXITSTATUS(os.system(cmd_str))
 
+def check_asm_dir(os_id):
+    machine = os.uname().machine
+    asm_dir=f'/usr/include/{machine}-linux-gnu/asm'
+    if not os.path.exists('/usr/include/asm') and os.path.exists(asm_dir):
+        cmd_str = f'ln -sf {asm_dir} /usr/include/asm'
+        ret = os.WEXITSTATUS(os.system(cmd_str))
+
+
+def post_install():
+    print("post installation, compiling event objects ...")
+    compile_event_objs()
 
 class CustomInstall(install):
     def run(self):
         install.run(self)
         os_id = get_os_id()
+        check_asm_dir(os_id)
         install_libbpf(os_id)
         install_libjsonc(os_id)
-        print("compiling event objects ...")
-        compile_event_objs()
+        atexit.register(post_install)
 
 setup(
     name = "psdig",

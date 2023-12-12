@@ -3,4 +3,5 @@ psdig/__pycache__
 test/__pycache__
 test/syscall/test_syscall
 test/uprobe_c/test_uprobe
+test/uprobe_cpp/test_uprobe
 dist

@@ -3,7 +3,7 @@
 default: test_app
 	pytest -s
 
-app_dir=syscall uprobe_c
+app_dir=syscall uprobe_c uprobe_cpp
 
 test_app:
 	for dir in $(app_dir); do \
