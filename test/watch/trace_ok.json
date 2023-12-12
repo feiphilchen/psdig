@@ -1,0 +1,37 @@
+{
+   "traces": [
+        {
+           "name":"uprobe",
+           "type":"uprobe",
+           "parameters":{
+               "elf":"uprobe_c/test_uprobe",
+               "function":"uprobed_add1",
+               "level": "INFO",
+               "detail": {
+                   "lambda": "uprobe_format(function, args, ret, metadata)"
+               }
+           }
+        },
+        {
+           "name": "bind",
+           "type": "syscall",
+           "parameters": {
+               "syscall": "sys_bind",
+               "level": {
+                   "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+               }
+            }
+        },
+        {
+           "name": "tcp-rst",
+           "type": "event",
+           "parameters": {
+               "event": "tcp/tcp_receive_reset",
+               "level": "WARNING",
+               "detail": {
+                 "lambda": "'saddr=%s sport=%d daddr=%s dport=%d' % (inet_ntoa(args['saddr'].value), args['sport'], inet_ntoa(args['daddr'].value), args['dport'])"
+               }
+            }
+        }
+    ]
+}

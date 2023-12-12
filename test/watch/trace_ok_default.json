@@ -1,0 +1,26 @@
+{
+   "traces": [
+        {
+           "name":"uprobe",
+           "type":"uprobe",
+           "parameters":{
+               "elf":"uprobe_c/test_uprobe",
+               "function":"uprobed_add1"
+           }
+        },
+        {
+           "name": "bind",
+           "type": "syscall",
+           "parameters": {
+               "syscall": "sys_bind"
+            }
+        },
+        {
+           "name": "tcp-rst",
+           "type": "event",
+           "parameters": {
+               "event": "tcp/tcp_receive_reset"
+            }
+        }
+    ]
+}
