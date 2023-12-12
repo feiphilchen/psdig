@@ -8,7 +8,6 @@ import atexit
 from setuptools import setup,find_packages
 from setuptools.command.install import install
 from setuptools.command.build_ext import build_ext
-from psdig import compile_event_objs
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
@@ -48,6 +47,7 @@ def check_asm_dir(os_id):
 
 def post_install():
     print("post installation, compiling event objects ...")
+    from psdig import compile_event_objs
     compile_event_objs()
 
 class CustomInstall(install):
