@@ -50,9 +50,9 @@ setup(
     packages=['psdig', 'psdig/trace_event', 'psdig/trace_uprobe'],
     long_description=read('README.md'),
     install_requires=[
-        "click",
-        "psutil",
-        "tabulate",
+        "click==8.0.3",
+        "psutil==5.9.6",
+        "tabulate==0.9.0",
         "pyelftools==0.30"
     ],
     zip_safe=False,
