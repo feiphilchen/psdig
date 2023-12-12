@@ -12,14 +12,20 @@
            "name": "bind",
            "type": "syscall",
            "parameters": {
-               "syscall": "sys_bind"
+               "syscall": "sys_bind",
+               "filter": {
+                   "lambda": "metadata['comm']=='python3'"
+               }
             }
         },
         {
            "name": "tcp-rst",
            "type": "event",
            "parameters": {
-               "event": "tcp/tcp_receive_reset"
+               "event": "tcp/tcp_receive_reset",
+               "filter": {
+                   "lambda": "metadata['comm']=='python3'"
+               }
             }
         }
     ]

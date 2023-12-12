@@ -19,6 +19,9 @@
                "syscall": "sys_bind",
                "level": {
                    "lambda": "'INFO' if ret >= 0 else 'ERROR'"
+               },
+               "filter": {
+                   "lambda": "metadata['comm']=='python3'"
                }
             }
         },
@@ -30,6 +33,9 @@
                "level": "WARNING",
                "detail": {
                  "lambda": "'saddr=%s sport=%d daddr=%s dport=%d' % (inet_ntoa(args['saddr'].value), args['sport'], inet_ntoa(args['daddr'].value), args['dport'])"
+               },
+               "filter": {
+                   "lambda": "metadata['comm']=='python3'"
                }
             }
         }
