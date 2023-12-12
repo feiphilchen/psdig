@@ -42,6 +42,7 @@ def watch_headless(pid, uid, comm, output, log, trace_conf):
            comm_filter=comm, event_file=output, log_file=log, conf=trace_conf, \
            tmp_dir=tmpdirname)
         signal.signal(signal.SIGINT, watch_interrupt)
+        signal.signal(signal.SIGTERM, watch_interrupt)
         try:
             pswatch.run_headless()
         except:
