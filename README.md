@@ -17,4 +17,5 @@ psdig is a tool to watch and analyze process events with ebpf. It aims to empowe
 * correlate syscall enter/exit traces to single event and tranlate arguments to human reable format
 * trace events with specified format or lambda function in python one-liners.
 
+![demo](images/demo.gif)
 
