@@ -8,7 +8,7 @@
 | _|   |_______/    |_______/ |__|  \______| 
                                              
 </pre>
-psdig is a tool to watch and analyze process behaviors with ebpf trace. It aims to automate your trace collection and analysis with python so it does not require your ebpf code and bcc tools. Currently, it supports syscall/tracepoint/uprobe events.
+psdig is a tool to watch and analyze process behaviors with ebpf trace. It aims to automate your trace collection and analysis with python so it does not require your ebpf code and bcc tools. Currently, it supports syscall/tracepoint/uprobe events. There are different ways to collect traces for your needs of troubleshooting, security and performance analysis.
 
 ## Features
 * Collect and show process activities in a curse window with filtering, statistics and customized format. Trace can be saved into a file or loaded for later analysis.
@@ -144,10 +144,10 @@ Options:
 #### Examples
 Trace functions call and return(main,uprobed_add1) in program test/uprobe_c/test_uprobe
 ```
-psdig trace uprobe test/uprobe_c/test_uprobe main uprobed_add1
+sudo psdig trace uprobe test/uprobe_c/test_uprobe main uprobed_add1
 ```
 Trace all malloc function call and return which happen in systemd and bash
 ```
-/usr/bin/python3 /usr/local/bin/psdig trace uprobe -c systemd -c bash /lib/x86_64-linux-gnu/libc.so.6 __libc_malloc
+sudo psdig trace uprobe -c systemd -c bash /lib/x86_64-linux-gnu/libc.so.6 __libc_malloc
 ```
 
