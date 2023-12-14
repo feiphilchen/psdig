@@ -4,7 +4,7 @@ import shlex
 import re
 import subprocess
 import tempfile
-import atexit
+import shutil
 from setuptools import setup,find_packages
 from setuptools.command.install import install
 from setuptools.command.build_ext import build_ext
@@ -44,11 +44,11 @@ def check_asm_dir(os_id):
         cmd_str = f'ln -sf {asm_dir} /usr/include/asm'
         ret = os.WEXITSTATUS(os.system(cmd_str))
 
-
-def post_install():
-    print("post installation, compiling event objects ...")
-    from psdig import compile_event_objs
-    compile_event_objs()
+def cache_clean(os_id):
+    print("psdig cache clean ...")
+    BPF_OBJ_DIR="/usr/local/share/psdig/bpf"
+    if os.path.exists(BPF_OBJ_DIR):
+        shutil.rmtree(BPF_OBJ_DIR, ignore_errors=True)
 
 class CustomInstall(install):
     def run(self):
@@ -57,8 +57,7 @@ class CustomInstall(install):
         check_asm_dir(os_id)
         install_libbpf(os_id)
         install_libjsonc(os_id)
-        atexit.register(post_install)
-
+        cache_clean(os_id)
 setup(
     name = "psdig",
     version = read('VERSION').strip(),
@@ -99,3 +98,4 @@ setup(
         ],
     }
 )
+
