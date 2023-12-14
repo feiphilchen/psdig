@@ -63,7 +63,7 @@ setup(
     version = read('VERSION').strip(),
     author = "Fei Chen",
     author_email = "feiphilchen@gmail.com",
-    description = ("Watch and filter process events with a curse window"),
+    description = ("psdig is a tool to watch and analyze process behaviors with ebpf trace"),
     license = 'GNU General Public License version 3.0 (GPLv3)',
     keywords = "events,ebpf,trace",
     url = "https://github.com/feiphilchen/psdig",
@@ -84,13 +84,24 @@ setup(
         "install": CustomInstall
     },
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
+        'Environment :: Console',
+        'Intended Audience :: Developers',
+        'Intended Audience :: System Administrators',
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Topic :: Terminals',
+        'Topic :: Utilities'
     ],
     entry_points={
         'console_scripts': [

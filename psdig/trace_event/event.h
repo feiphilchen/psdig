@@ -1,3 +1,7 @@
+/* 
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Author: feiphilchen@gmail.com
+ */
 #ifndef __EVENT_H__
 #define __EVENT_H__
 

@@ -1,5 +1,5 @@
-#!/usr/bin/python3
-# vim: set filetype=python
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Author: feiphilchen@gmail.com
 import os
 import sys
 import re

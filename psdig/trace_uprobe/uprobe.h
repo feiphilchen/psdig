@@ -1,3 +1,7 @@
+/* 
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Author: feiphilchen@gmail.com
+ */
 #ifndef __UPROBE_H__
 #define __UPROBE_H__
 

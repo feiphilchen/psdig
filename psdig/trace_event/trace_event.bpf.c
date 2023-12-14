@@ -1,3 +1,7 @@
+/* 
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Author: feiphilchen@gmail.com
+ */
 #define __BPF_PROG__
 #include <linux/bpf.h>
 #include <linux/ptrace.h>

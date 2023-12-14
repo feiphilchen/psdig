@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Author: feiphilchen@gmail.com
 import shutil
 from .trace_manager import TraceManager
 from .conf import BPF_OBJ_DIR

@@ -1,3 +1,7 @@
+/* 
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Author: feiphilchen@gmail.com
+ */
 #include <stdio.h>
 #include <assert.h>
 #include <errno.h>
