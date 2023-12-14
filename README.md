@@ -14,7 +14,7 @@ psdig is a tool to watch and analyze process behaviors with ebpf trace. It aims 
 * Collect and show process activities in a curse window with filtering, statistics and customized format. Trace can be saved into a file or loaded for later analysis.
 * Watch your interested events(syscall/tracepoint/uprobe) by defining a custom template with filters and detail formats.
 * One-liner syscall/event trace with specified format or lambda function.
-* Automate c/cpp program function trace with demangled name,arguments and return value.
+* One-liner c/cpp function trace with automatically resolved demangled name,arguments and return value.
 
 ![demo](images/demo.gif)
 
@@ -123,7 +123,7 @@ Traces all commands executed in bash , format command line arguments and print w
 psdig trace syscall -c bash sys_execve -o "lambda:str(metadata['uid']) + ': '+ ' '.join(args['argv'])"
 ```
 
-### C/Cpp function one-liner trace
+### C/CPP function one-liner trace
 #### Usage:
 ```
 # psdig trace uprobe --help
