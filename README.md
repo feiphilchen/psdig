@@ -20,7 +20,7 @@ psdig is a tool to watch and analyze process behaviors with ebpf trace. It aims 
 
 ## Getting started
 
-### Watch process activities in real time
+### Watch process/system activities in real time
 #### Usage:
 ```
 # psdig watch --help
@@ -150,4 +150,14 @@ Trace all malloc function call and return which happen in systemd and bash
 ```
 sudo psdig trace uprobe -c systemd -c bash /lib/x86_64-linux-gnu/libc.so.6 __libc_malloc
 ```
+
+## Feedback
+* Request new feature on Github
+* File bug in GitHub Issues
+
+## License
+Psdig is licensed under [GPLv3+](LICENSE.txt)
+
+Copyright 2023 Feil Chen(feiphilchen@gmail.com). All rights reserved.
+
 
