@@ -37,6 +37,9 @@ class SockAddr(object):
         elif self.family == 16:
             return "{family=16,nl_pid=%u,nl_groups=%u}" % (self.nl_pid, self.nl_groups)
 
+    def __format__(self, spec):
+        return self.__str__()
+
     def __eq__(self, other):
         if self.family == 2:
             addr = "{family=2,addr=%s,port=%u}" % (self.addr, self.port)
@@ -63,6 +66,10 @@ class Pointer(object):
             return "NULL"
         else:
             return f"0x{self.ptr}"
+
+    def __format__(self, spec):
+        return self.__str__()
+
     @property
     def value(self):
         value = bytes.fromhex(self.ptr)
@@ -94,6 +101,9 @@ class Bytes(object):
 
     def __str__(self):
         return self.bs
+
+    def __format__(self, spec):
+        return self.__str__()
 
     @property
     def value(self):
