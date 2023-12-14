@@ -74,7 +74,7 @@ Watch process/system activities which are defined in template trace_template.jso
 sudo psdig watch -t trace_template.json
 ```
 
-### Syscall/Event one-liner trace
+### Syscall/Event trace one-liners
 #### Usage:
 ```
 # psdig trace syscall --help
@@ -123,7 +123,7 @@ Traces all commands executed in bash , format command line arguments and print w
 psdig trace syscall -c bash sys_execve -o "lambda:str(metadata['uid']) + ': '+ ' '.join(args['argv'])"
 ```
 
-### C/CPP function one-liner trace
+### C/CPP function trace one-liners
 #### Usage:
 ```
 # psdig trace uprobe --help
@@ -152,12 +152,14 @@ sudo psdig trace uprobe -c systemd -c bash /lib/x86_64-linux-gnu/libc.so.6 __lib
 ```
 
 ## Feedback
-* Request new feature on Github
-* File bug in GitHub Issues
+Request new feature or file bug on Github:
+[https://github.com/feiphilchen/psdig/issues](https://github.com/feiphilchen/psdig/issues)
 
 ## License
 Psdig is licensed under [GPLv3+](LICENSE.txt)
 
-Copyright 2023 Feil Chen(feiphilchen@gmail.com). All rights reserved.
+Copyright 2023,  Feil Chen(feiphilchen@gmail.com). 
+
+All rights reserved.
 
 
