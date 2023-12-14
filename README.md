@@ -74,7 +74,7 @@ Watch process/system activities which are defined in template trace_template.jso
 sudo psdig watch -t trace_template.json
 ```
 
-### Syscall/Event one-liners
+### Syscall/Event one-liner trace
 #### Usage:
 ```
 # psdig trace syscall --help
@@ -122,3 +122,32 @@ Traces all commands executed in bash , format command line arguments and print w
 ```
 psdig trace syscall -c bash sys_execve -o "lambda:str(metadata['uid']) + ': '+ ' '.join(args['argv'])"
 ```
+
+### C/Cpp function one-liner trace
+#### Usage:
+```
+# psdig trace uprobe --help
+Usage: psdig trace uprobe [OPTIONS] ELF [FUNCTION]...
+
+  Trace uprobe
+
+Options:
+  -o, --output TEXT  Output format
+  -f, --filter TEXT  Filter string
+  -p, --pid INTEGER  Pid filter
+  -u, --uid INTEGER  Uid filter
+  -c, --comm TEXT    Command filter
+  -s, --sym PATH     Symbol file
+  --help             Show this message and exit.
+```
+
+#### Examples
+Trace functions call and return(main,uprobed_add1) in program test/uprobe_c/test_uprobe
+```
+psdig trace uprobe test/uprobe_c/test_uprobe main uprobed_add1
+```
+Trace all malloc function call and return which happen in systemd and bash
+```
+/usr/bin/python3 /usr/local/bin/psdig trace uprobe -c systemd -c bash /lib/x86_64-linux-gnu/libc.so.6 __libc_malloc
+```
+
