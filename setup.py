@@ -50,6 +50,13 @@ def cache_clean(os_id):
     if os.path.exists(BPF_OBJ_DIR):
         shutil.rmtree(BPF_OBJ_DIR, ignore_errors=True)
 
+def psdig_symlink(os_id):
+    psdig_path = os.path.join(sys.prefix, 'bin', 'psdig')
+    symlink = '/usr/bin/psdig'
+    if os.path.exists(psdig_path) and not os.path.exists(symlink):
+        os.symlink(psdig_path, symlink)
+
+
 class CustomInstall(install):
     def run(self):
         install.run(self)
@@ -58,6 +65,8 @@ class CustomInstall(install):
         install_libbpf(os_id)
         install_libjsonc(os_id)
         cache_clean(os_id)
+        psdig_symlink(os_id)
+
 setup(
     name = "psdig",
     version = read('VERSION').strip(),
