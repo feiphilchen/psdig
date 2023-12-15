@@ -18,6 +18,10 @@ psdig is a tool to watch and analyze process behaviors with ebpf trace. It aims 
 
 ![demo](images/demo.gif)
 
+## Install
+
+Check into [INSTALL.md](INSTALL.md) for installation steps.
+
 ## Getting started
 
 ### Watch process/system activities in real time
