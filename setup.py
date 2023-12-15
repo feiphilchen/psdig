@@ -53,7 +53,7 @@ def cache_clean(os_id):
 def psdig_symlink(os_id):
     psdig_path = os.path.join(sys.prefix, 'bin', 'psdig')
     symlink = '/usr/bin/psdig'
-    if os.path.exists(psdig_path) and not os.path.exists(symlink):
+    if not os.path.islink(symlink):
         os.symlink(psdig_path, symlink)
 
 
