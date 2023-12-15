@@ -9,8 +9,7 @@ from .conf import TRACEFS
 class EventSchema(object):
     def __init__(self):
         self.event_fields = {}
-        #self.skipped_args = ["common_type", "common_flags", "common_preempt_count", "common_pid", "__syscall_nr"]
-        self.skipped_args = ["common_type", "common_flags", "common_preempt_count", "common_pid"]
+        self.skipped_args = ["common_type", "common_flags", "common_preempt_count", "common_pid", "common_preempt_lazy_count"]
         self.type_mapping = {
             "unsigned char": "EVENT_FIELD_TYPE_UINT",
             "unsigned short": "EVENT_FIELD_TYPE_UINT",
