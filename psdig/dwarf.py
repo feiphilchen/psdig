@@ -27,6 +27,11 @@ class Dwarf(object):
             if not elffile.has_dwarf_info():
                 return None
             self.dwarfinfo = elffile.get_dwarf_info()
+            self.text_start = self.get_text_start(elffile)
+
+    def get_text_start(self, elffile):
+        sect = elffile.get_section_by_name('.text')
+        return sect['sh_offset'] - sect['sh_addr']
 
     def debug_link(self, elffile):
         debug_link = None
@@ -148,14 +153,14 @@ class Dwarf(object):
                 if origin_value == die.offset:
                     low_pc = next_sibling.attributes.get('DW_AT_low_pc')
                     if low_pc != None:
-                        return low_pc.value
+                        return low_pc.value - self.text_start
         return None
 
     def __resolve_function(self, cu, die, resolve_args=True):
         result = {}
         low_pc = die.attributes.get('DW_AT_low_pc')
         if low_pc:
-            result['addr'] = low_pc.value
+            result['addr'] = low_pc.value - self.text_start
         else:
             addr = self.resolve_abstract_origin_addr(cu, die)
             if addr != None:
