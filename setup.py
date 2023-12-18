@@ -35,8 +35,12 @@ def install_libbpf(os_id):
 
 def install_libjsonc(os_id):
     libjsonc_dir_src=os.path.join(os.path.dirname(__file__), 'json-c')
+    if shutil.which("cmake3") != None:
+        cmake = 'cmake3'
+    else:
+        cmake = 'cmake'
     with tempfile.TemporaryDirectory() as tmpdirname:
-        cmd_str = f"cd {tmpdirname} && cmake -DCMAKE_INSTALL_PREFIX=/usr/local/share/psdig/usr {libjsonc_dir_src} && make && make install"
+        cmd_str = f"cd {tmpdirname} && {cmake} -DCMAKE_INSTALL_PREFIX=/usr/local/share/psdig/usr {libjsonc_dir_src} && make && make install"
         ret = os.WEXITSTATUS(os.system(cmd_str))
         if ret != 0:
             sys.exit('error building libjson-c')
