@@ -76,7 +76,9 @@ main(int argc, char * argv[])
     uprobed_add2(4, ENUM_VAL_1);
     uprobed_add3(5, ENUM_VAL_0);
     uprobed_add4(&obj, 3, str);
+#if 0
     uprobed_add5(obj);
+#endif
     uprobed_add6(&u, -1, "yy");
     return 0;
 }

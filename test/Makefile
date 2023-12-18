@@ -1,7 +1,7 @@
 .PHONY:default clean test_app
 
 default: test_app
-	pytest -s
+	/usr/local/bin/pytest -s
 
 app_dir=syscall uprobe_c uprobe_cpp
 

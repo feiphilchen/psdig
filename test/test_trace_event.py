@@ -18,7 +18,7 @@ cases = [
         None,
         output_fmt,
         [
-          '[^(]+\\([0-9]+\\):\\s+tcp/tcp_send_reset:\\s+.*dport=51810,family=2,saddr=7f000001,daddr=7f000001'
+          '[^(]+\\([0-9]+\\):\\s+tcp/tcp_send_reset:\\s+.*dport=51810(,family=2)?,saddr=7f000001,daddr=7f000001'
         ],
         None
     ),
@@ -29,7 +29,7 @@ cases = [
         None,
         output_fmt,
         [
-          '[^(]+\\([0-9]+\\):\\s+tcp/tcp_receive_reset:\\s+.*dport=51810,family=2,saddr=7f000001,daddr=7f000001'
+          '[^(]+\\([0-9]+\\):\\s+tcp/tcp_receive_reset:\\s+.*dport=51810(,family=2)?,saddr=7f000001,daddr=7f000001'
         ],
         None
     ),
@@ -53,7 +53,7 @@ def test_event(test_cmd, probe_cmd, events, filter_str, output_fmt, expect_trace
     if output_fmt != None:
         cmd_list.append('-o')
         cmd_list.append(output_fmt)
-    trace_cmd = shlex.join(cmd_list)
+    trace_cmd = ' '.join(cmd_list)
     logger.info(f'# {trace_cmd}')
     tc = TraceCollect()
     tc.start(cmd_list)

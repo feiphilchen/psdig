@@ -80,7 +80,7 @@ cases = [
 @pytest.mark.parametrize("test_cmd,watch_cmd,expect_traces,expect_error", cases)
 def test_watch(test_cmd, watch_cmd, expect_traces, expect_error):
     cmd_list = watch_cmd.split()
-    trace_cmd = shlex.join(cmd_list)
+    trace_cmd = ' '.join(cmd_list)
     logger.info(f'# {trace_cmd}')
     tc = TraceCollect()
     tc.start(cmd_list)
