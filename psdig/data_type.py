@@ -61,6 +61,8 @@ class Pointer(object):
         self.ptr = ptr
 
     def __str__(self):
+        if len(self.ptr) % 2 == 1:
+            self.ptr = '0' + self.ptr
         value = bytes.fromhex(self.ptr)
         if int.from_bytes(value, sys.byteorder) == 0:
             return "NULL"
