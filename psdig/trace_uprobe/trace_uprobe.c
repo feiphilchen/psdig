@@ -59,6 +59,16 @@ static void bump_memlock_rlimit(void)
     }
 }
 
+
+static int libbpf_print(enum libbpf_print_level level, const char *format,
+                     va_list args)
+{
+        if (level == LIBBPF_DEBUG || level == LIBBPF_INFO)
+                return 0;
+
+        return vfprintf(stderr, format, args);
+}
+
 int
 init_pid_filter (struct bpf_object * bo)
 {
@@ -609,6 +619,7 @@ main (int argc, char * argv[])
     }
     /* Bump RLIMIT_MEMLOCK to allow BPF sub-system to do anything */
     bump_memlock_rlimit();
+    libbpf_set_print(libbpf_print);
     pthread_mutex_init(&print_mutex, NULL);
     for (pos = 0; pos < uprobe_trace_count; pos++) {
         if (pthread_create(&thread_id[thread_cnt++],
