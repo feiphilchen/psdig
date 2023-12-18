@@ -31,7 +31,7 @@ class Dwarf(object):
 
     def get_text_start(self, elffile):
         sect = elffile.get_section_by_name('.text')
-        return sect['sh_offset'] - sect['sh_addr']
+        return sect['sh_addr'] - sect['sh_offset'] 
 
     def debug_link(self, elffile):
         debug_link = None
