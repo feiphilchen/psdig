@@ -76,6 +76,15 @@ static void bump_memlock_rlimit(void)
     }
 }
 
+static int libbpf_print(enum libbpf_print_level level, const char *format,
+                     va_list args)
+{
+        if (level == LIBBPF_DEBUG || level == LIBBPF_INFO)
+                return 0;
+
+        return vfprintf(stderr, format, args);
+}
+
 void debug(const char *fmt, ...)
 {
   FILE* pFile = fopen("/tmp/debug.txt", "a");
@@ -668,6 +677,7 @@ main (int argc, char * argv[])
     if (parse_args(argc, argv) < 0) {
         exit(1);
     }
+    libbpf_set_print(libbpf_print);
     /* Bump RLIMIT_MEMLOCK to allow BPF sub-system to do anything */
     bump_memlock_rlimit();
     pthread_mutex_init(&print_mutex, NULL);
