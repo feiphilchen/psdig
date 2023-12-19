@@ -14,7 +14,7 @@ import time
 import subprocess
 from .dwarf import Dwarf
 from .data_type import *
-from .conf import LOGGER_NAME
+from .conf import LOGGER_NAME,DEFAULT_CLANG
 
 class Uprobe(object):
     type_mapping = {
@@ -48,10 +48,17 @@ class Uprobe(object):
         self.collect_thread_running = False
         self.collect_thread = None
         self.boot_ts = float("%.6f" % (time.time() - time.monotonic()))
+        self.set_clang()
 
     def set_logger(self):
         self.logger_name = LOGGER_NAME
         self.logger = logging.getLogger(self.logger_name)
+
+    def set_clang(self):
+        if os.path.exists(DEFAULT_CLANG):
+            self.clang = DEFAULT_CLANG
+        else:
+            self.clang = 'clang'
 
     def kernel_ns_to_timestamp(self, ktime_ns):
         elapsed =  float("%.6f" % (ktime_ns/1000000000))
@@ -371,7 +378,7 @@ int BPF_KRETPROBE(%s)
         bpf_c = self.build_bpf_c(instance, uprobe_id, uretprobe_id)
         bname = os.path.basename(bpf_c)
         bpf_o = os.path.join(self.obj_dir, f"{bname}.o")
-        cmd = f"clang -I/usr/local/share/psdig/usr/include -O2 -D__TARGET_ARCH_x86 -target bpf -c {bpf_c} -o {bpf_o}"
+        cmd = f"{self.clang} -I/usr/local/share/psdig/usr/include -O2 -D__TARGET_ARCH_x86 -target bpf -c {bpf_c} -o {bpf_o}"
         subprocess.run(cmd, shell=True)
         offset = instance['addr']
         elf = instance['elf']

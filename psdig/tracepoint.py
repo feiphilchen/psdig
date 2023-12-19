@@ -14,7 +14,7 @@ import pkgutil
 import threading
 from .data_type import *
 from .schema import EventSchema
-from .conf import LOGGER_NAME
+from .conf import LOGGER_NAME,DEFAULT_CLANG
 
 class TracePoint(object):
     type_mapping = {
@@ -48,10 +48,17 @@ class TracePoint(object):
         self.event_mutex = threading.Lock()
         self.loading = 0
         self.loaded = 0
+        self.set_clang()
 
     def set_logger(self):
         self.logger_name = LOGGER_NAME
         self.logger = logging.getLogger(self.logger_name)
+
+    def set_clang(self):
+        if os.path.exists(DEFAULT_CLANG):
+            self.clang = DEFAULT_CLANG
+        else:
+            self.clang = 'clang'
 
     def init_obj_dir(self, obj_dir):
         self.obj_dir = obj_dir
@@ -114,7 +121,7 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
             self.trace_bpf_o.append(bpf_o)
             return
         bpf_c = self.build_event_bpf_c(event)
-        cmd = f"clang -I/usr/local/share/psdig/usr/include -O2 -target bpf -c {bpf_c} -o {bpf_o}"
+        cmd = f"{self.clang} -I/usr/local/share/psdig/usr/include -O2 -target bpf -c {bpf_c} -o {bpf_o}"
         #os.popen(cmd)
         subprocess.run(cmd, shell=True)
         self.trace_bpf_o.append(bpf_o)
@@ -151,7 +158,7 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
             self.trace_bpf_o.append(bpf_o)
             return
         bpf_c = self.build_syscall_bpf_c(events)
-        cmd = f"clang -I/usr/local/share/psdig/usr/include -O2 -target bpf -c {bpf_c} -o {bpf_o}"
+        cmd = f"{self.clang} -I/usr/local/share/psdig/usr/include -O2 -target bpf -c {bpf_c} -o {bpf_o}"
         #os.popen(cmd)
         subprocess.run(cmd, shell=True)
         self.trace_bpf_o.append(bpf_o)
