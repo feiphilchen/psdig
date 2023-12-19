@@ -89,7 +89,7 @@ setup(
     install_requires=[
         "click==8.0.3",
         "psutil==5.9.6",
-        "tabulate==0.9.0",
+        "tabulate",
         "pyelftools==0.30"
     ],
     zip_safe=False,
