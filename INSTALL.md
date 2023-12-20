@@ -1,8 +1,18 @@
 # Psdig Install
 
-## Requirements
+## System Rrequirements
 ### Linux Kernel
-### Packages
+kernel 4.7 is required to use psdig since features were added in below releases:
+```
+- 4.3 - uprobes
+- 4.7 - tracepoints
+```
+
+### DEBUGFS
+The debugfs need to be mounted although in most of OS releases it is configured implicitly. Otherwise you need to mount it by
+```
+mount -t debugfs none /sys/kernel/debug
+```
 
 ## Install Instructions
 ### Ubuntu
