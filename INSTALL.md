@@ -1,11 +1,18 @@
 # Psdig Install
 
-## System Rrequirements
+- [System Requirements](#system-requirements)
+- [Install Instructions](#install-instructions)
+  - [Ubuntu](#ubuntu)
+  - [Debian](#debian)
+  - [RHEL](#rhel)
+  - [Amazon Linux](#amazon-linux)
+
+## System Requirements
 ### Linux Kernel
 kernel 4.7 is required to use psdig since features were added in below releases:
 ```
-- 4.3 - uprobes
-- 4.7 - tracepoints
+* 4.3 - uprobes
+* 4.7 - tracepoints
 ```
 
 ### DEBUGFS
