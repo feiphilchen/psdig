@@ -55,10 +55,11 @@ class Uprobe(object):
         self.logger = logging.getLogger(self.logger_name)
 
     def set_clang(self):
-        if os.path.exists(DEFAULT_CLANG):
-            self.clang = DEFAULT_CLANG
-        else:
-            self.clang = 'clang'
+        for clang in DEFAULT_CLANG:
+            if os.path.exists(clang):
+                self.clang = clang
+                return
+        self.clang = 'clang'
 
     def kernel_ns_to_timestamp(self, ktime_ns):
         elapsed =  float("%.6f" % (ktime_ns/1000000000))

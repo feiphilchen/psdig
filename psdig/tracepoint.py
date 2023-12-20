@@ -55,10 +55,11 @@ class TracePoint(object):
         self.logger = logging.getLogger(self.logger_name)
 
     def set_clang(self):
-        if os.path.exists(DEFAULT_CLANG):
-            self.clang = DEFAULT_CLANG
-        else:
-            self.clang = 'clang'
+        for clang in DEFAULT_CLANG:
+            if os.path.exists(clang):
+                self.clang = clang
+                return
+        self.clang = 'clang'
 
     def init_obj_dir(self, obj_dir):
         self.obj_dir = obj_dir
