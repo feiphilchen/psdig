@@ -223,7 +223,7 @@ class PsWatch(object):
     def stop_watch_thread(self):
         if self.watch_thread:
             self.trace_mgr.stop()
-            self.watch_thread.join()
+            #self.watch_thread.join()
             self.watch_thread = None
 
     def get_message(self):
@@ -307,6 +307,7 @@ class PsWatch(object):
 
     def run(self):
         self.running = True
+        #curses.halfdelay(10)
         self.gui_init()
         self.display_windows()
         if self.load_from == None:

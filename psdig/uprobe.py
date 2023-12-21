@@ -570,7 +570,7 @@ int BPF_KRETPROBE(%s)
             self.logger.info('no uprobes')
             return
         self.logger.info('starting uprobe ...')
-        self.logger.info('running now')
+        self.logger.info('uprobe running now')
         self.start_callout_thread()
         if not async_collect:
             self.collect()

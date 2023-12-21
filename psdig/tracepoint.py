@@ -48,6 +48,7 @@ class TracePoint(object):
         self.event_mutex = threading.Lock()
         self.loading = 0
         self.loaded = 0
+        self.stopped = False
         self.set_clang()
 
     def set_logger(self):
@@ -349,7 +350,7 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
         time.sleep(1)
         if compile_only:
             return
-        self.logger.info('running now')
+        self.logger.info('tracepoint running now')
         self.start_callout_thread()
         if not async_collect:
             self.collect()
@@ -360,6 +361,7 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
         self.logger.info('tracepoint is being stopped ...')
         self.collect_thread_running = False
         self.callout_thread_running = False
+        self.stopped = True
         if self.proc != None:
             self.proc.terminate()
 
