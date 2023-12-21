@@ -8,7 +8,7 @@
 | _|   |_______/    |_______/ |__|  \______| 
                                              
 </pre>
-psdig is a tool to watch and analyze process behaviors with ebpf trace. It aims to automate your trace collection and analysis with python so it does not require your ebpf code and bcc tools. Currently, it supports syscall/tracepoint/uprobe events. There are different ways to collect traces for your needs of troubleshooting, security and performance analysis.
+psdig is a tool to watch and analyze process behaviors with ebpf trace. It aims to automate your trace collection and analysis with python so it does not require your ebpf code and bcc tools. Currently, it supports syscall/tracepoint/uprobe events and provides different ways to collect traces for your needs of troubleshooting, security and performance analysis.
 
 ## Features
 * Collect and show process activities in a curse window with filtering, statistics and customized format. Trace can be saved into a file or loaded for later analysis.
@@ -25,33 +25,6 @@ Check into [INSTALL.md](INSTALL.md) for installation steps.
 ## Getting started
 
 ### Watch process/system activities in real time
-#### Usage:
-```
-# psdig watch --help
-Usage: psdig watch [OPTIONS]
-
-  Watch file system, network and process activity
-
-Options:
-  -p, --pid INTEGER        Pid filter
-  -u, --uid INTEGER        Uid filter
-  -c, --comm TEXT          Command filter
-  -o, --output PATH        Save traces to file
-  -l, --log PATH           Log messages to file
-  -t, --template FILENAME  Template file
-  --headless               Run without curse windows
-  --help                   Show this message and exit.
-
-# psdig load --help
-Usage: psdig load [OPTIONS] FILE
-
-  Load traces from file
-
-Options:
-  -l, --log PATH  Log all messages to file
-  --help          Show this message and exit.
-```
-
 #### Examples
 Traces all process/system activities and display them in a curse window
 ```
@@ -79,33 +52,6 @@ sudo psdig watch -t trace_template.json
 ```
 
 ### Syscall/Event trace one-liners
-#### Usage:
-```
-# psdig trace syscall --help
-Usage: psdig trace syscall [OPTIONS] [SYSCALL]...
-
-  Trace syscall
-
-Options:
-  -o, --output TEXT  Format string
-  -f, --filter TEXT  Filter string
-  -p, --pid INTEGER  Pid filter
-  -u, --uid INTEGER  Uid filter
-  -c, --comm TEXT    Command filter
-  --help             Show this message and exit.
-root@ubuntu01:~# psdig trace event --help
-Usage: psdig trace event [OPTIONS] [EVENT]...
-
-  Trace event
-
-Options:
-  -o, --output TEXT  Format string
-  -f, --filter TEXT  Filter string
-  -p, --pid INTEGER  Pid filter
-  -u, --uid INTEGER  Uid filter
-  -c, --comm TEXT    Command filter
-  --help             Show this message and exit.
-```
 #### Examples
 Traces all file opens 
 ```
@@ -128,23 +74,6 @@ psdig trace syscall -c bash sys_execve -o "lambda:str(metadata['uid']) + ': '+ '
 ```
 
 ### C/CPP function trace one-liners
-#### Usage:
-```
-# psdig trace uprobe --help
-Usage: psdig trace uprobe [OPTIONS] ELF [FUNCTION]...
-
-  Trace uprobe
-
-Options:
-  -o, --output TEXT  Output format
-  -f, --filter TEXT  Filter string
-  -p, --pid INTEGER  Pid filter
-  -u, --uid INTEGER  Uid filter
-  -c, --comm TEXT    Command filter
-  -s, --sym PATH     Symbol file
-  --help             Show this message and exit.
-```
-
 #### Examples
 Trace functions call and return(main,uprobed_add1) in program test/uprobe_c/test_uprobe
 ```
