@@ -36,7 +36,7 @@ PSDIG_PREFIX=/usr/local/share/psdig && \
 PSDIG_PREFIX=/usr/local/share/psdig && \
    PSDIG=psdig && \
    sudo apt-get update && \
-   sudo apt-get install -y python3 python3-pip python3-venv software-properties-common cmake && \
+   sudo apt-get install -y python3 python3-pip python3-venv libelf-dev software-properties-common cmake && \
    wget https://apt.llvm.org/llvm.sh -O /tmp/llvm.sh && \
    sudo bash /tmp/llvm.sh 12 &&
    sudo python3 -m venv ${PSDIG_PREFIX}/python && \
