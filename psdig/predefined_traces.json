@@ -21,7 +21,8 @@
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
             "detail": "filename={args[filename]} mode={args[mode]} flags={args[flags]} ret={ret}"
-         }
+         },
+	 "arch":["x86_64"]
       },
       {
          "name": "read",
@@ -74,7 +75,8 @@
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
             "detail": "pathname={args[pathname]} ret={ret}"
-         }
+         },
+         "arch":["x86_64"]
       },
       {
          "name": "unlink",
@@ -107,7 +109,8 @@
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
             "detail": "filename={args[filename]} uid={args[user]} gid={args[group]} ret={ret}"
-         }
+         },
+	 "arch":["x86_64"]
       },
       {
          "name": "chown",
@@ -129,7 +132,8 @@
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
             "detail": "filename={args[filename]} mode={args[mode]} ret={ret}"
-         }
+         },
+	 "arch":["x86_64"]
       },
       {
          "name": "chmod",
@@ -151,7 +155,8 @@
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
             "detail": "{args[pathname]} ret={ret}"
-         }
+         },
+	 "arch":["x86_64"]
       },
       {
          "name": "mkdir",
@@ -162,7 +167,8 @@
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
             "detail": "pathname={args[pathname]} mode={args[mode]} ret={ret}"
-         }
+         },
+	 "arch":["x86_64"]
       },
       {
          "name": "mkdir",
@@ -184,7 +190,8 @@
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
             "detail": "oldname={args[oldname]} newname={args[newname]} ret={ret}"
-         }
+         },
+	 "arch":["x86_64"]
       },
       {
          "name": "symlink",
@@ -206,7 +213,8 @@
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
             "detail": "oldname={args[oldname]} newname={args[newname]} ret={ret}"
-         }
+         },
+	 "arch":["x86_64"]
       },
       {
          "name": "rename",
@@ -283,7 +291,8 @@
                "lambda": "'INFO' if ret >= 0 else 'ERROR'"
             },
             "detail": "pid={ret}"
-         }
+         },
+	 "arch":["x86_64"]
       },
       {
          "name": "fork",

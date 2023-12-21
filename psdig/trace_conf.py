@@ -5,6 +5,7 @@ import sys
 import logging
 import json
 import pkgutil
+import platform
 from importlib import import_module
 from .lambda_helper import *
 from .dwarf import Dwarf
@@ -321,6 +322,7 @@ class TraceConfFile(object):
             json_conf = json.loads(self.content)
         except:
             return "not a JSON format file"
+        arch = platform.machine()
         trace_def = json_conf.get("traces", [])
         for conf in trace_def:
             conf_str = json.dumps(conf, indent=3)
@@ -330,6 +332,12 @@ class TraceConfFile(object):
             name = conf.get('name')
             if name == None:
                 return f"name is mandatory for trace definition\n{conf_str}"
+            trace_arch = conf.get('arch')
+            if trace_arch != None:
+                if not isinstance(trace_arch, list):
+                    return 'arch must be a list'
+                if arch not in trace_arch:
+                    continue
             param = conf.get('parameters')
             if param == None:
                 return f"no parameters specified for trace\n{conf_str}"
