@@ -83,7 +83,7 @@ PSDIG_PREFIX=/usr/local/share/psdig && \
 PSDIG_PREFIX=/usr/local/share/psdig && \
    PSDIG=psdig && \
    MACHINE=`uname -m` && \
-   sudo yum install -y python3-pip.noarch clang.${MACHINE} cmake.${MACHINE} elfutils-libelf-devel.${MACHINE} && \
+   sudo yum install -y python3-pip.noarch clang.${MACHINE} cmake.${MACHINE} elfutils-libelf-devel.${MACHINE} python3-devel && \
    sudo python3 -m venv ${PSDIG_PREFIX}/python && \
    sudo ${PSDIG_PREFIX}/python/bin/pip3 install wheel && \
    sudo ${PSDIG_PREFIX}/python/bin/pip3 install ${PSDIG}
@@ -93,7 +93,7 @@ PSDIG_PREFIX=/usr/local/share/psdig && \
 PSDIG_PREFIX=/usr/local/share/psdig && \
    PSDIG=psdig && \
    MACHINE=`uname -m` && \
-   sudo yum install -y python3-pip.noarch clang.${MACHINE} cmake3.${MACHINE} elfutils-libelf-devel.${MACHINE} && \
+   sudo yum install -y python3-pip.noarch clang.${MACHINE} cmake3.${MACHINE} elfutils-libelf-devel.${MACHINE} python3-devel && \
    sudo python3 -m venv ${PSDIG_PREFIX}/python && \     
    sudo ${PSDIG_PREFIX}/python/bin/pip3 install wheel && \
    sudo ${PSDIG_PREFIX}/python/bin/pip3 install ${PSDIG}
