@@ -13,8 +13,7 @@ psdig is a tool to watch and analyze process behaviors with ebpf trace. It aims 
 ## Features
 * Collect and show process activities in a curse window with filtering, statistics and customized format. Trace can be saved into a file or loaded for later analysis.
 * Watch your interested events(syscall/tracepoint/uprobe) by defining a custom template with filters and detail formats.
-* One-liner syscall/event trace with specified format or lambda function.
-* One-liner c/cpp function trace with automatically resolved demangled name,arguments and return value.
+* One-liner syscall/event/uprobe trace with specified format or lambda function. c/cpp functions can be resolved with demangled name,arguments and return value.
 
 ![demo](images/demo.gif)
 
@@ -51,7 +50,7 @@ Watch process/system activities which are defined in template trace_template.jso
 sudo psdig watch -t trace_template.json
 ```
 
-### Syscall/Event trace one-liners
+### Syscall/Event/Uprobe trace one-liners
 #### Examples
 Traces all file opens 
 ```
@@ -73,12 +72,11 @@ Traces all commands executed in bash , format command line arguments and print w
 psdig trace syscall -c bash sys_execve -o "lambda:str(metadata['uid']) + ': '+ ' '.join(args['argv'])"
 ```
 
-### C/CPP function trace one-liners
-#### Examples
 Trace functions call and return(main,uprobed_add1) in program test/uprobe_c/test_uprobe
 ```
 sudo psdig trace uprobe test/uprobe_c/test_uprobe main uprobed_add1
 ```
+
 Trace all malloc function call and return which happen in systemd and bash
 ```
 sudo psdig trace uprobe -c systemd -c bash /lib/x86_64-linux-gnu/libc.so.6 __libc_malloc
