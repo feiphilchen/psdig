@@ -45,14 +45,17 @@ def complete_syscall(ctx, param, incomplete):
     return [s for s in syscalls if s.startswith(incomplete)]
 
 def validate_syscall(ctx, param, value):
+    syscalls = Syscall.get_all()
+    list_syscall = ctx.params.get('list')
+    if list_syscall == True:
+        print('\n'.join(syscalls))
+        sys.exit(0)
     if len(value) == 0:
         raise click.BadParameter("no syscall to trace")
-    syscalls = Syscall.get_all()
     for syscall in value:
         if syscall not in syscalls:
             raise click.BadParameter(f'{syscall} is not a valid syscall')
     return list(set(value))
-
 
 @click.command()
 @click.option('--output', '-o', type=str, default=default_syscall_fmt, help="Format string")
@@ -60,8 +63,9 @@ def validate_syscall(ctx, param, value):
 @click.option('--pid', '-p', type=int, multiple=True, help='Pid filter')
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
 @click.option('--comm', '-c', type=str, multiple=True, help='Command filter')
+@click.option('--list', '-l', is_flag=True, help='List all syscalls and exit')
 @click.argument('syscall', nargs=-1, shell_complete=complete_syscall, callback=validate_syscall)
-def syscall_trace(output, filter, pid, uid, comm, syscall):
+def syscall_trace(output, filter, pid, uid, comm, list, syscall):
     """Trace syscall"""
     global tracepoint
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -107,9 +111,13 @@ def complete_event(ctx, param, incomplete):
     return [e for e in events if e.startswith(incomplete)]
 
 def validate_event(ctx, param, value):
+    events = Event.get_all()
+    list_event = ctx.params.get('list')
+    if list_event == True:
+        print('\n'.join(events))
+        sys.exit(0)
     if len(value) == 0:
         raise click.BadParameter("no event to trace")
-    events = Event.get_all()
     for evt in value:
         if evt not in events:
             raise click.BadParameter(f'{evt} is not a valid event')
@@ -121,8 +129,9 @@ def validate_event(ctx, param, value):
 @click.option('--pid', '-p', type=int, multiple=True, help='Pid filter')
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
 @click.option('--comm', '-c', type=str, multiple=True, help='Command filter')
+@click.option('--list', '-l', is_flag=True, help='List all syscalls and exit')
 @click.argument('event', nargs=-1, shell_complete=complete_event, callback=validate_event)
-def event_trace(output, filter, pid, uid, comm, event):
+def event_trace(output, filter, pid, uid, comm, list, event):
     """Trace event"""
     global tracepoint
     with tempfile.TemporaryDirectory() as tmpdirname:
