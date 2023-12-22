@@ -18,8 +18,9 @@ clean:
 
 install:
 	python3 -m venv $(install_prefix)/python
-	$(install_prefix)/python/bin/pip3 install wheel
-	$(install_prefix)/python/bin/pip3 install $(verbose_opt) dist/psdig-$(version).tar.gz
+	$(install_prefix)/python/bin/python3 -m pip install wheel
+	$(install_prefix)/python/bin/python3 -m pip install $(verbose_opt) dist/psdig-$(version).tar.gz
+	$(install_prefix)/python/bin/python3 -m psdig.initialize
 
 test:
 	make -C test
