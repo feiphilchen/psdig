@@ -1,13 +1,5 @@
 # psdig
-<pre>
-.______     _______. _______   __    _______ 
-|   _  \   /       ||       \ |  |  /  _____|
-|  |_)  | |   (----`|  .--.  ||  | |  |  __  
-|   ___/   \   \    |  |  |  ||  | |  | |_ | 
-|  |   .----)   |   |  '--'  ||  | |  |__| | 
-| _|   |_______/    |_______/ |__|  \______| 
-                                             
-</pre>
+<p align="center"><img src="https://github.com/feiphilchen/psdig/blob/main/images/logo.png"></p>
 psdig is a tool to watch and analyze process behaviors with ebpf trace. It aims to automate your trace collection and analysis with python so it does not require your ebpf code and bcc tools. Currently, it supports syscall/tracepoint/uprobe events and provides different ways to collect traces for your needs of troubleshooting, security and performance analysis.
 
 ## Features
