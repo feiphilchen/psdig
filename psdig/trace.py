@@ -129,7 +129,7 @@ def validate_event(ctx, param, value):
 @click.option('--pid', '-p', type=int, multiple=True, help='Pid filter')
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
 @click.option('--comm', '-c', type=str, multiple=True, help='Command filter')
-@click.option('--list', '-l', is_flag=True, help='List all syscalls and exit')
+@click.option('--list', '-l', is_flag=True, help='List all events and exit')
 @click.argument('event', nargs=-1, shell_complete=complete_event, callback=validate_event)
 def event_trace(output, filter, pid, uid, comm, list, event):
     """Trace event"""
