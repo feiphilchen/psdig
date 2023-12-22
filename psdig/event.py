@@ -7,10 +7,13 @@ import click
 import logging
 import time
 import glob
+from tabulate import tabulate
 from .tracepoint import TracePoint
 from .conf import LOGGER_NAME,TRACEFS
+from .schema import EventSchema
 
 class Event(object):
+    remove_args = ["common_type", "common_flags", "common_preempt_count", "common_pid", "__syscall_nr"]
     def __init__(self, tracepoint):
         self.set_logger()
         self.callback = {}
@@ -35,6 +38,36 @@ class Event(object):
             events.append(event)
         return sorted(events)
 
+    @classmethod
+    def table_print(cls, filters=None):
+        events = cls.get_all()
+        schema = EventSchema()
+        table = [['EVENT', 'ARGUMENTS']]
+        for event in events:
+            if filters != None:
+                matched = False
+                for f in filters:
+                    hit = re.search(f, event)
+                    if hit:
+                       matched = True
+                       break
+                if not matched:
+                    continue
+            arg_fields = schema.parse_event_format(event)
+            arg_field_str = cls.field_str(arg_fields)
+            row = event,arg_field_str
+            table.append(row)
+        print(tabulate(table, tablefmt='grid', headers="firstrow"))
+
+    @classmethod
+    def field_str(cls, fields):
+        elems = []
+        for field in fields:
+            if field['name'] in cls.remove_args:
+                continue
+            elems.append("%s %s" % (field['type'], field['name']))
+        return '\n'.join(elems)
+
     def add(self, event_name, callback, arg):
         self.tracepoint.add_event_watch(event_name, self.event_handler)
         self.callback[event_name] = callback
@@ -46,7 +79,6 @@ class Event(object):
 
     def event_handler(self, event):
         event_name = event['event']
-        remove_args = ["common_type", "common_flags", "common_preempt_count", "common_pid", "__syscall_nr"]
         cb = self.callback.get(event_name)
         ctx = self.callback_arg.get(event_name)
         if not cb:
@@ -60,7 +92,7 @@ class Event(object):
         ktime_ns = event['ktime_ns']
         metadata['timestamp'] = self.kernel_ns_to_timestamp(ktime_ns)
         if event:
-            for arg in remove_args:
+            for arg in self.remove_args:
                 if arg in event['parameters']:
                     del event['parameters'][arg]
             cb(event_name, metadata, event['parameters'], ctx)

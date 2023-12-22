@@ -91,6 +91,7 @@ class EventSchema(object):
                 field = self.parse_event_field(matched.group(1))
                 fields.append(field)
         self.event_fields[event] = fields
+        return fields
 
     def get_event_id(self, event_name):
         evt_id = f'EVENT_ID_{event_name}'

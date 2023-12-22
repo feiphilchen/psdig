@@ -45,13 +45,13 @@ def complete_syscall(ctx, param, incomplete):
     return [s for s in syscalls if s.startswith(incomplete)]
 
 def validate_syscall(ctx, param, value):
-    syscalls = Syscall.get_all()
     list_syscall = ctx.params.get('list')
     if list_syscall == True:
-        print('\n'.join(syscalls))
+        Syscall.table_print(None if len(value) == 0 else value)
         sys.exit(0)
     if len(value) == 0:
         raise click.BadParameter("no syscall to trace")
+    syscalls = Syscall.get_all()
     for syscall in value:
         if syscall not in syscalls:
             raise click.BadParameter(f'{syscall} is not a valid syscall')
@@ -111,13 +111,13 @@ def complete_event(ctx, param, incomplete):
     return [e for e in events if e.startswith(incomplete)]
 
 def validate_event(ctx, param, value):
-    events = Event.get_all()
     list_event = ctx.params.get('list')
     if list_event == True:
-        print('\n'.join(events))
+        Event.table_print(None if len(value) == 0 else value)
         sys.exit(0)
     if len(value) == 0:
         raise click.BadParameter("no event to trace")
+    events = Event.get_all()
     for evt in value:
         if evt not in events:
             raise click.BadParameter(f'{evt} is not a valid event')

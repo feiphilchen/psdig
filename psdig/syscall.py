@@ -7,11 +7,14 @@ import click
 import logging
 import time
 import glob
+from tabulate import tabulate
 from .tracepoint import TracePoint
 from .conf import LOGGER_NAME,TRACEFS
+from .schema import EventSchema
 
 class Syscall(object):
     syscall_not_return = ["sys_exit", "sys_exit_group", "sys_execve"]
+    syscall_void_return = ["sys_exit", "sys_exit_group"]
     remove_args = ["common_type", "common_flags", "common_preempt_count", "common_pid", "__syscall_nr"]
     def __init__(self, tracepoint):
         self.set_logger()
@@ -35,6 +38,48 @@ class Syscall(object):
             syscall = "sys_%s" % hit.group(1)
             syscalls.append(syscall)
         return sorted(syscalls)
+
+    @classmethod
+    def table_print(cls, filters=None):
+        path = os.path.join(TRACEFS, "syscalls/sys_enter*")
+        syscalls = []
+        for syscall_enter in glob.glob(path):
+            event_name = os.path.basename(syscall_enter)
+            hit = re.match('sys_enter_(.*)$', event_name)
+            syscalls.append(hit.group(1))
+        syscalls = sorted(syscalls)
+        schema = EventSchema()
+        table = [['SYSCALL', 'ARGUMENTS', 'RETURN']]
+        for syscall in syscalls:
+            full_name = f'sys_{syscall}'
+            if filters != None:
+                matched = False
+                for f in filters:
+                    hit = re.search(f, full_name)
+                    if hit:
+                       matched = True
+                       break
+                if not matched:
+                    continue
+            arg_fields = schema.parse_event_format(f'syscalls/sys_enter_{syscall}')
+            ret_fields = schema.parse_event_format(f'syscalls/sys_exit_{syscall}')
+            arg_field_str = cls.field_str(arg_fields)
+            if full_name not in cls.syscall_void_return:
+                ret_field_str = cls.field_str(ret_fields)
+            else:
+                ret_field_str = ""
+            row = full_name,arg_field_str,ret_field_str
+            table.append(row)
+        print(tabulate(table, tablefmt='grid', headers="firstrow"))
+
+    @classmethod
+    def field_str(cls, fields):
+        elems = []
+        for field in fields:
+            if field['name'] in cls.remove_args:
+                continue
+            elems.append("%s %s" % (field['type'], field['name']))
+        return '\n'.join(elems)
 
     def add(self, syscall, callback, arg):
         short_name = syscall.replace("sys_", "")
