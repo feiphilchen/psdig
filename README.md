@@ -74,8 +74,11 @@ sudo psdig trace uprobe -c systemd -c bash /lib/x86_64-linux-gnu/libc.so.6 __lib
 ```
 
 ## Feedback
-Request new feature or file bug on Github:
+Request new feature or file bug on:
 [https://github.com/feiphilchen/psdig/issues](https://github.com/feiphilchen/psdig/issues)
+
+Post question or proposal on:
+[https://github.com/feiphilchen/psdig/discussions](https://github.com/feiphilchen/psdig/discussions)
 
 ## License
 Psdig is licensed under [GPLv3+](LICENSE.txt)
