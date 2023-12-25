@@ -30,14 +30,14 @@ mount -t debugfs none /sys/kernel/debug
 ### One-line Installer
 
 ```
-wget https://raw.githubusercontent.com/feiphilchen/psdig/main/scripts/install.sh -q -O - | bash
+sudo wget https://raw.githubusercontent.com/feiphilchen/psdig/main/scripts/install.sh -q -O - | bash
 ```
 
 ### Install From Source
 ```
-git clone https://github.com/feiphilchen/psdig.git
-cd psdig
-make deps
-make
-make install
+git clone https://github.com/feiphilchen/psdig.git && \
+cd psdig && \
+make deps && \
+make && \
+sudo make install
 ```
