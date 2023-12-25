@@ -36,8 +36,8 @@ sudo wget https://raw.githubusercontent.com/feiphilchen/psdig/main/scripts/insta
 ### Install From Source
 ```
 git clone https://github.com/feiphilchen/psdig.git && \
-cd psdig && \
-make deps && \
-make && \
-sudo make install
+  cd psdig && \
+  sudo make deps && \
+  make && \
+  sudo make install
 ```
