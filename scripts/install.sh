@@ -94,7 +94,13 @@ install_dependency() {
 }
 
 check_os() {
-    os_id="${OS}-${VERSION}-${MACHINE}"
+    if [ "$OS" == 'rhel' ]
+    then
+        major_version=`echo ${VERSION} | awk -F '.' '{print $1}'`
+        os_id="${OS}-${major_version}-${MACHINE}"
+    else
+        os_id="${OS}-${VERSION}-${MACHINE}"
+    fi
     for os in $SUPPORTED
     do
         if [ "$os" == "$os_id" ]
