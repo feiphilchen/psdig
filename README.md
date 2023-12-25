@@ -60,7 +60,7 @@ sudo psdig trace syscall sys_connect -o "lambda:'{:20s} {:30s} {:10d}'.format(me
 
 Traces all commands executed in bash , format command line arguments and print with UID
 ```
-psdig trace syscall -c bash sys_execve -o "lambda:str(metadata['uid']) + ': '+ ' '.join(args['argv'])"
+sudo psdig trace syscall -c bash sys_execve -o "lambda:str(metadata['uid']) + ': '+ ' '.join(args['argv'])"
 ```
 
 Trace functions call and return(main,uprobed_add1) in program test/uprobe_c/test_uprobe

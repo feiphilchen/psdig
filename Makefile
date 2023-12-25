@@ -1,4 +1,4 @@
-.PHONY:default clean install test
+.PHONY:default clean install test deps
 version_file=VERSION
 install_prefix=/usr/local/share/psdig
 version := $(shell cat ${version_file})
@@ -22,5 +22,7 @@ install:
 	$(install_prefix)/python/bin/python3 -m pip install $(verbose_opt) dist/psdig-$(version).tar.gz
 	$(install_prefix)/python/bin/python3 -m psdig.initialize
 
+deps:
+	bash ./scripts/install.sh --deps
 test:
 	make -C test

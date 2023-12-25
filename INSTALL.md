@@ -27,7 +27,7 @@ mount -t debugfs none /sys/kernel/debug
 - Amazon Linux 2/2023
 
 ## Install Instructions
-### One line installer
+### One-line Installer
 
 ```
 wget https://raw.githubusercontent.com/feiphilchen/psdig/main/scripts/install.sh -q -O - | bash
