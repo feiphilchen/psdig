@@ -12,6 +12,8 @@ SUPPORTED="ubuntu-18.04-x86_64 ubuntu-20.04-x86_64 ubuntu-22.04-x86_64
 ubuntu-18.04-aarch64 ubuntu-20.04-aarch64 ubuntu-22.04-aarch64
 debian-10-x86_64 debian-11-x86_64 debian-12-x86_64
 debian-10-aarch64 debian-11-aarch64 debian-12-aarch64
+amzn-2023-x86_64 amzn-2023-aarch64 amzn-2-x86_64 amzn-2-aarch64
+rhel-9-x86_64 rhel-9-aarch64 rhel-8-x86_64 rhel-8-aarch64 
 "
 
 ubuntu_deps () {
