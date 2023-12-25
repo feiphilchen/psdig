@@ -5,7 +5,7 @@
   - [DEBUGFS](#debugfs)
   - [Operating System](#operating-system)
 - [Install Instructions](#install-instructions)
-  - [One line installer](#one-line-installer)
+  - [One-line installer](#one-line-installer)
   - [Install From Source](#install-from-source)
 
 ## System Requirements
@@ -21,10 +21,10 @@ mount -t debugfs none /sys/kernel/debug
 ```
 
 ### Operating System
-- Ubuntu 18.04/20.04/22.04
-- Debian 10/11/12
-- RHEL 8/9
-- Amazon Linux 2/2023
+- Ubuntu 18.04/20.04/22.04 (x86_64/aarch64)
+- Debian 10/11/12 (x86_64/aarch64)
+- RHEL 8/9 (x86_64/aarch64)
+- Amazon Linux 2/2023 (x86_64/aarch64)
 
 ## Install Instructions
 ### One-line Installer
