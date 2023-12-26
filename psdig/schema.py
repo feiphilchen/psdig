@@ -71,6 +71,8 @@ class EventSchema(object):
             skipped = 1
         else:
             skipped = 0
+        if field_type.startswith('__data_loc'):
+            field_type = field_type.split(' ', 1)[1]
         field = {'name':field_name, 
                  'type':field_type,
                  'offset': int(field_offset),
