@@ -141,7 +141,9 @@ class Dwarf(object):
     def resolve_return(self, cu, die):
         if "DW_AT_type" not in die.attributes:
             return []
-        dietype = cu.get_DIE_from_refaddr(cu.cu_offset + die.attributes["DW_AT_type"].value)
+        cu  = die.cu
+        offset = cu.cu_offset + die.attributes["DW_AT_type"].value
+        dietype = cu.get_DIE_from_refaddr(offset)
         type_list = self.parse_var_type(cu, dietype)
         return type_list
 
@@ -166,7 +168,12 @@ class Dwarf(object):
             if addr != None:
                 result['addr'] = addr
         if resolve_args:
-            args = self.resolve_args(cu, die)
+            origin = die.attributes.get('DW_AT_abstract_origin')
+            if origin != None:
+                origin_node = self.dwarfinfo.get_DIE_from_refaddr(origin.value)
+                args = self.resolve_args(origin_node.cu, origin_node)
+            else:
+                args = self.resolve_args(cu, die)
             result['args'] = args
         return result
 
@@ -175,6 +182,16 @@ class Dwarf(object):
         if name:
             parent = die.get_parent()
             return name.value.decode(),parent,die
+        origin = die.attributes.get('DW_AT_abstract_origin')
+        if origin != None:
+            origin_node = self.dwarfinfo.get_DIE_from_refaddr(origin.value)
+            if origin_node == None:
+                return None,None,None
+            name = origin_node.attributes.get('DW_AT_name')
+            if name == None:
+                return None,None,None
+            parent = origin_node.get_parent()
+            return name.value.decode(),parent,origin_node
         spec = die.attributes.get('DW_AT_specification')
         if spec == None:
             return None,None,None
@@ -217,8 +234,10 @@ class Dwarf(object):
                         decl.insert(0, '%s %s' % (t['type'], t['name']))
                     else:
                         decl.insert(0, '%s' % (t['type']))
-                else:
+                elif 'name' in t:
                     decl.insert(0, t['name'])
+                else:
+                    decl.insert(0, 'void')
             decl_str = ' '.join(decl)
             arg_decls.append(decl_str)
         return ','.join(arg_decls)
