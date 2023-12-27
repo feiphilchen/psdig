@@ -17,17 +17,18 @@ class Dwarf(object):
     def __init__(self, filename):
         self.dwarf_open(filename)
 
-    def dwarf_open(self, filename):
+    def dwarf_open(self, filename, is_link=False):
         with open(filename, 'rb') as f:
             elffile = ELFFile(f)
+            if not is_link:
+                self.text_start = self.get_text_start(elffile)
             debug_link = self.debug_link(elffile)
             if debug_link:
-                self.dwarf_open(debug_link)
+                self.dwarf_open(debug_link, is_link=True)
                 return
             if not elffile.has_dwarf_info():
                 return None
             self.dwarfinfo = elffile.get_dwarf_info()
-            self.text_start = self.get_text_start(elffile)
 
     def get_text_start(self, elffile):
         sect = elffile.get_section_by_name('.text')
@@ -184,13 +185,19 @@ class Dwarf(object):
             return name.value.decode(),parent,die
         origin = die.attributes.get('DW_AT_abstract_origin')
         if origin != None:
-            origin_node = self.dwarfinfo.get_DIE_from_refaddr(origin.value)
-            if origin_node == None:
+            try:
+                origin_node = self.dwarfinfo.get_DIE_from_refaddr(origin.value)
+                if origin_node == None:
+                    return None,None,None
+            except:
                 return None,None,None
             name = origin_node.attributes.get('DW_AT_name')
             if name == None:
                 return None,None,None
-            parent = origin_node.get_parent()
+            try:
+                parent = origin_node.get_parent()
+            except:
+                return None,None,None
             return name.value.decode(),parent,origin_node
         spec = die.attributes.get('DW_AT_specification')
         if spec == None:

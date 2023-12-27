@@ -116,6 +116,8 @@ class Uprobe(object):
                     sym = elf
                 dwarf = Dwarf(sym)
                 instances = dwarf.resolve_function(function)
+                if len(instances) == 0:
+                    raise Exception(f"fail to resolve function {function}")
                 for instance in instances:
                     instance['elf'] = elf
                 self.probe_index[elf][function]['instances'] = instances
@@ -561,8 +563,7 @@ int BPF_KRETPROBE(%s)
         try:
             self.build_uprobe_objs()
         except:
-            self.logger.error('error building uprobe objects')
-            self.logger.error(traceback.format_exc())
+            raise
         if compile_only:
             return
         time.sleep(1)

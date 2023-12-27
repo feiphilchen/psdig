@@ -12,6 +12,8 @@ logger.setLevel(logging.INFO)
 uprobe_c="uprobe_c/test_uprobe"
 uprobe_cpp="uprobe_cpp/test_uprobe"
 output_fmt="lambda:'%s: ' % metadata.get('comm') + uprobe_format(function, args, ret, metadata)"
+libc_path=os.popen("ldd %s | grep libc.so | awk '{print $3}'" % uprobe_c).read().strip()
+print(f"##{libc_path}##")
 cases = [
     (
         uprobe_c, 
@@ -114,7 +116,7 @@ cases = [
         None,
         output_fmt,
         None,
-        "no function"
+        "fail to resolve function"
     ),
     (
         uprobe_c,
@@ -133,6 +135,18 @@ cases = [
         output_fmt,
         None,
         "error resolving symbols"
+    ),
+    (
+        uprobe_c,
+        f'psdig trace uprobe {libc_path} -c test_uprobe',
+        ["__libc_malloc"],
+        None,
+        output_fmt,
+        [
+           "test_uprobe: __libc_malloc\\(bytes=",
+           "test_uprobe: __libc_malloc\\(\\) => "
+        ],
+        None
     )
 ]
 
@@ -150,7 +164,10 @@ def test_uprobe(test_cmd, probe_cmd, functions, filter_str, output_fmt, expect_t
     logger.info(f'# {trace_cmd}')
     tc = TraceCollect()
     tc.start(cmd_list)
-    time.sleep(5)
+    if re.search('libc', probe_cmd):
+        time.sleep(20)
+    else:
+        time.sleep(5)
     logger.info(f'# {test_cmd}')
     subprocess.run(test_cmd, shell=True)
     time.sleep(2)

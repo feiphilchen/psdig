@@ -199,19 +199,7 @@ def validate_uprobe_function(ctx, param, value):
             dwarf = Dwarf(elf)
     except:
         raise click.BadParameter(f'error resolving symbols from {elf}')
-    validated_funcs = []
-    for func in value:
-        func = func.strip()
-        if func in validated_funcs:
-            continue
-        functions = dwarf.resolve_function(func)
-        if functions == None or len(functions) == 0:
-            if sym:
-                raise click.BadParameter(f'no function "{func}" in {sym}')
-            else:
-                raise click.BadParameter(f'no function "{func}" in {elf}')
-        validated_funcs.append(func)
-    return validated_funcs
+    return list(set(value))
 
 default_uprobe_fmt="lambda:time_str(metadata['timestamp']) + ' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + uprobe_format(function, args, ret, metadata)"
 @click.command()
@@ -245,5 +233,9 @@ def uprobe_trace(output, filter, pid, uid, comm, sym, elf, function):
             uprobe.add(elf, func, callback, False, ctx, sym)
         signal.signal(signal.SIGINT, sig_handler)
         signal.signal(signal.SIGTERM, sig_handler)
-        uprobe.start(obj_dir=tmpdirname)
+        try:
+            uprobe.start(obj_dir=tmpdirname)
+        except Exception as e:
+            sys.exit(f"Error: {e}")
+
 
