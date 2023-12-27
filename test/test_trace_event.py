@@ -40,7 +40,7 @@ cases = [
         None,
         output_fmt,
         None,
-        "is not a valid event"
+        "no event to trace"
     )
 ]
 @pytest.mark.parametrize("test_cmd,probe_cmd,events,filter_str,output_fmt,expect_traces,expect_error", cases)

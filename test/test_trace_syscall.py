@@ -67,7 +67,7 @@ cases = [
        "sys_openatxx", 
        None, 
        0, 
-       "is not a valid syscall"
+       "no syscall to trace"
     )
 ]
 

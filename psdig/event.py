@@ -26,7 +26,7 @@ class Event(object):
         self.logger = logging.getLogger(self.logger_name)
 
     @classmethod
-    def get_all(cls):
+    def get_all(cls, patterns=None):
         search = os.path.join(TRACEFS, '**/format')
         format_files = glob.glob(search, recursive=True)
         events = []
@@ -35,7 +35,14 @@ class Event(object):
             event = dirname.replace(TRACEFS, '')
             if event.startswith('/'):
                 event = event[1:]
-            events.append(event)
+            if patterns != None:
+                for pattern in patterns:
+                    hit = re.match(pattern, event)
+                    if hit:
+                        events.append(event)
+            else:
+                events.append(event)
+        events = list(set(events))
         return sorted(events)
 
     @classmethod

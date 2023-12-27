@@ -74,7 +74,7 @@ struct event_field {
 #endif
 
 #define EVENT_NAME_SIZE 64
-#define EVENT_MAX_FIELDS 16
+#define EVENT_MAX_FIELDS 24
 struct event_schema {
    int                id;
 #ifndef __BPF_PROG__

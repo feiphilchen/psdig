@@ -51,11 +51,12 @@ def validate_syscall(ctx, param, value):
         sys.exit(0)
     if len(value) == 0:
         raise click.BadParameter("no syscall to trace")
-    syscalls = Syscall.get_all()
-    for syscall in value:
-        if syscall not in syscalls:
-            raise click.BadParameter(f'{syscall} is not a valid syscall')
-    return list(set(value))
+    syscalls = Syscall.get_all(value)
+    if len(syscalls) == 0:
+        raise click.BadParameter("no syscall to trace")
+    if len(syscalls) > 16:
+        raise click.BadParameter("too many syscalls to trace")
+    return list(set(syscalls))
 
 @click.command()
 @click.option('--output', '-o', type=str, default=default_syscall_fmt, help="Format string")
@@ -117,11 +118,12 @@ def validate_event(ctx, param, value):
         sys.exit(0)
     if len(value) == 0:
         raise click.BadParameter("no event to trace")
-    events = Event.get_all()
-    for evt in value:
-        if evt not in events:
-            raise click.BadParameter(f'{evt} is not a valid event')
-    return list(set(value))
+    events = Event.get_all(value)
+    if len(events) == 0:
+        raise click.BadParameter("no event to trace")
+    if len(events) > 16:
+        raise click.BadParameter("too many events to trace")
+    return list(set(events))
 
 @click.command()
 @click.option('--output', '-o', type=str, default=default_event_fmt,help="Format string")

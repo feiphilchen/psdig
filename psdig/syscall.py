@@ -29,14 +29,21 @@ class Syscall(object):
         self.logger = logging.getLogger(self.logger_name)
 
     @classmethod
-    def get_all(cls):
+    def get_all(cls, patterns=None):
         path = os.path.join(TRACEFS, "syscalls/sys_enter*")
         syscalls = []
         for syscall_enter in glob.glob(path):
             event_name = os.path.basename(syscall_enter)
             hit = re.match('sys_enter_(.*)$', event_name)
             syscall = "sys_%s" % hit.group(1)
-            syscalls.append(syscall)
+            if patterns != None:
+                for pattern in patterns:
+                    hit = re.match(pattern, syscall)
+                    if hit:
+                        syscalls.append(syscall)
+            else:
+                syscalls.append(syscall)
+        syscalls = list(set(syscalls))
         return sorted(syscalls)
 
     @classmethod
