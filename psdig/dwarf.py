@@ -171,12 +171,22 @@ class Dwarf(object):
         if resolve_args:
             origin = die.attributes.get('DW_AT_abstract_origin')
             if origin != None:
-                origin_node = self.dwarfinfo.get_DIE_from_refaddr(origin.value)
+                origin_node = self.get_origin(cu, origin)
                 args = self.resolve_args(origin_node.cu, origin_node)
             else:
                 args = self.resolve_args(cu, die)
             result['args'] = args
         return result
+
+    def get_origin(self, cu, origin):
+        try:
+            return cu.get_DIE_from_refaddr(cu.cu_offset + origin.value)
+        except:
+            try:
+                return self.dwarfinfo.get_DIE_from_refaddr(origin.value)
+            except:
+                return None
+        return None
 
     def get_function_name(self, cu, die):
         name = die.attributes.get('DW_AT_name')
@@ -185,11 +195,8 @@ class Dwarf(object):
             return name.value.decode(),parent,die
         origin = die.attributes.get('DW_AT_abstract_origin')
         if origin != None:
-            try:
-                origin_node = self.dwarfinfo.get_DIE_from_refaddr(origin.value)
-                if origin_node == None:
-                    return None,None,None
-            except:
+            origin_node = self.get_origin(cu, origin)
+            if origin_node == None:
                 return None,None,None
             name = origin_node.attributes.get('DW_AT_name')
             if name == None:

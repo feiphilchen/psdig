@@ -117,7 +117,7 @@ class Uprobe(object):
                 dwarf = Dwarf(sym)
                 instances = dwarf.resolve_function(function)
                 if len(instances) == 0:
-                    raise Exception(f"fail to resolve function {function}")
+                    raise Exception(f"fail to resolve function {function} in {sym}")
                 for instance in instances:
                     instance['elf'] = elf
                 self.probe_index[elf][function]['instances'] = instances
