@@ -16,6 +16,8 @@ struct trace_header {
    unsigned int  uid;
    unsigned int  gid;
    __u64         ktime_ns;
+   long          ustack;
+   long          kstack;
    char          comm[TRACE_COMM_SIZE];
    unsigned char data[0];
 };
@@ -48,6 +50,10 @@ typedef struct trace_data {
     unsigned int       len;
     unsigned char      value[0];
 } trace_data_t;
+
+typedef struct perf_buffer_ctx {
+    int stackmap_fd;
+} perf_buffer_ctx_t;
 
 #define TRACE_DATA_MAX_STR_LEN 512
 #define TRACE_DATA_MAX_BYTES_LEN 512

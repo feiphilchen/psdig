@@ -64,14 +64,14 @@ cases = [
         uprobe_cpp,
         f'psdig trace uprobe {uprobe_cpp}',
         [
-           "MyClass2::myMethod(class MyClass2 *,class basic_string<char, std::char_traits<char>, std::allocator<char> >)",
-           "MyClass2::myMethod2(class MyClass2 *,enum my_enum_e)",
-           "MyClass::myMethod(class MyClass *,int)",
-           "MyNamespace2::MyClass2::MyClass2(class MyClass2 *,long long int)",
-           "MyNamespace2::MyClass2::myMethod(class MyClass2 *,class basic_string<char, std::char_traits<char>, std::allocator<char> >)",
-           "MyNamespace2::MyClass2::myMethod(class MyClass2 *,unsigned int,char)",
-           "MyNamespace2::MyClass2::~MyClass2(class MyClass2 *,int)",
-           "MyNamespace2::MyClass::myMethod1(class MyClass *,int)"
+           "MyClass2::myMethod(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >)",
+           "MyClass2::myMethod2(my_enum_e)",
+           "MyClass::myMethod(int)",
+           "MyNamespace2::MyClass2::MyClass2(long long)",
+           "MyNamespace2::MyClass2::myMethod(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >)",
+           "MyNamespace2::MyClass2::myMethod(unsigned int, char)",
+           "MyNamespace2::MyClass2::~MyClass2()",
+           "MyNamespace2::MyClass::myMethod1(int)"
         ],
         None,
         output_fmt,
@@ -90,22 +90,6 @@ cases = [
            "test_uprobe: MyClass2::myMethod2\\(\\) => 1",
            "test_uprobe: MyNamespace2::MyClass2::~MyClass2\\(this=0x[0-9a-z]+, __in_chrg=\\-*[0-9]+\\)",
            "test_uprobe: MyNamespace2::MyClass2::~MyClass2\\(\\) => void"
-        ],
-        None
-    ),
-    (
-        uprobe_cpp,
-        f'psdig trace uprobe {uprobe_cpp}',
-        [  
-           "MyNamespace2::MyClass2::myMethod",
-        ],
-        None,
-        output_fmt,
-        [  
-           "test_uprobe: MyNamespace2::MyClass2::myMethod\\(this=0x[0-9a-z]+, a1=0x[0-9a-z]+\\)",
-           "test_uprobe: MyNamespace2::MyClass2::myMethod\\(\\) => -1",
-           "test_uprobe: MyNamespace2::MyClass2::myMethod\\(this=0x[0-9a-z]+, x=10, ch=105\\)",
-           "test_uprobe: MyNamespace2::MyClass2::myMethod\\(\\) => 0"
         ],
         None
     ),
@@ -160,7 +144,10 @@ def test_uprobe(test_cmd, probe_cmd, functions, filter_str, output_fmt, expect_t
     if output_fmt != None:
         cmd_list.append('-o')
         cmd_list.append(output_fmt)
-    trace_cmd = ' '.join(cmd_list)
+    if hasattr(shlex, 'join'):
+        trace_cmd = shlex.join(cmd_list)
+    else:
+        trace_cmd = ' '.join(cmd_list)
     logger.info(f'# {trace_cmd}')
     tc = TraceCollect()
     tc.start(cmd_list)

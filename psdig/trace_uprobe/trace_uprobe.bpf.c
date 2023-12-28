@@ -5,6 +5,7 @@
 #include <linux/bpf.h>
 #include <linux/ptrace.h>
 #include <linux/sched.h>
+#include <linux/perf_event.h>
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_helpers.h>
 #include "uprobe.h"
@@ -66,6 +67,15 @@ struct bpf_map_def SEC("maps") exclude_pid_filter = {
     .value_size = sizeof(int),
     .max_entries = 64
 };
+
+struct bpf_map_def SEC("maps") stackmap = {
+	.type = BPF_MAP_TYPE_STACK_TRACE,
+	.key_size = sizeof(__u32),
+	.value_size = PERF_MAX_STACK_DEPTH * sizeof(__u64),
+	.max_entries = 10000,
+};
+#define KERN_STACKID_FLAGS (0 | BPF_F_FAST_STACK_CMP)
+#define USER_STACKID_FLAGS (0 | BPF_F_FAST_STACK_CMP | BPF_F_USER_STACK)
 
 static int
 check_pid_filter(unsigned int pid)
@@ -275,7 +285,7 @@ obj_start (trace_t * t, __u32 field_cnt)
 }
 
 static trace_t *
-__trace_init (__u32 id)
+__trace_init (void *ctx, __u32 id)
 {
     trace_t    * trace;
     int          zero = 0;
@@ -307,11 +317,21 @@ __trace_init (__u32 id)
     if (filter_out > 0) {
         return NULL;
     }
+#ifdef __PSDIG_KSTACK__
+    trace->hdr.kstack = bpf_get_stackid(ctx, &stackmap, KERN_STACKID_FLAGS);
+#else
+    trace->hdr.kstack = -1;   
+#endif
+#ifdef __PSDIG_USTACK__
+    trace->hdr.ustack = bpf_get_stackid(ctx, &stackmap, USER_STACKID_FLAGS);
+#else
+    trace->hdr.ustack = -1;
+#endif
     return trace;
 }
 
-#define trace_init(t, id) do { \
-   (t) = __trace_init(id); \
+#define trace_init(ctx, t, id) do { \
+   (t) = __trace_init(ctx, id); \
    if ((t) == NULL) {  \
        return 0; \
    } \
@@ -331,14 +351,14 @@ trace_send (void *ctx, trace_t * trace)
 
 #define uprobe_enter_start(id) \
    trace_t    * t; \
-   trace_init(t, id);
+   trace_init(ctx, t, id);
 
 #define uprobe_enter_finish() \
    trace_send(ctx, t);
 
 #define uprobe_ret_start(id) \
    trace_t    * t; \
-   trace_init(t, id);
+   trace_init(ctx, t, id);
 
 #define uprobe_ret_finish() \
    trace_send(ctx, t);

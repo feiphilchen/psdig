@@ -15,20 +15,50 @@ from .conf import LOGGER_NAME
 
 class Dwarf(object):
     def __init__(self, filename):
+        self.text_syms = {}
         self.dwarf_open(filename)
 
-    def dwarf_open(self, filename, is_link=False):
+    def dwarf_open(self, filename):
         with open(filename, 'rb') as f:
             elffile = ELFFile(f)
-            if not is_link:
-                self.text_start = self.get_text_start(elffile)
+            self.text_start = self.get_text_start(elffile)
             debug_link = self.debug_link(elffile)
             if debug_link:
-                self.dwarf_open(debug_link, is_link=True)
+                self.dwarf_open_debuglink(debug_link)
                 return
             if not elffile.has_dwarf_info():
                 return None
             self.dwarfinfo = elffile.get_dwarf_info()
+            self.sym_file = filename
+            self.parse_text_symbols(filename)
+
+    def dwarf_open_debuglink(self, filename):
+        with open(filename, 'rb') as f:
+            elffile = ELFFile(f)
+            if not elffile.has_dwarf_info():
+                return None
+            self.dwarfinfo = elffile.get_dwarf_info()
+            self.sym_file = filename
+            self.parse_text_symbols(filename)
+
+    def parse_text_symbols(self, sym_file):
+        lines = os.popen(f'nm -C {sym_file}').readlines()
+        for line in lines:
+            hit = re.match('([0-9a-zA-Z]+)\\s+[TW]\\s+(.*)$', line)
+            if hit:
+                func_addr = int(hit.group(1), 16)
+                func_name = hit.group(2)
+                self.text_syms[func_name] = func_addr
+
+    def addr2line(self, addr):
+        result = os.popen(f"addr2line -e %s 0x%x" % (self.sym_file, addr)).read()
+        result = result.split(':')
+        if len(result) != 2:
+            return None,None
+        if result[0] == '??':
+            return None,None
+        else:
+            return result[0],int(result[1])
 
     def get_text_start(self, elffile):
         sect = elffile.get_section_by_name('.text')
@@ -189,23 +219,16 @@ class Dwarf(object):
         return None
 
     def get_function_name(self, cu, die):
-        name = die.attributes.get('DW_AT_name')
-        if name:
-            parent = die.get_parent()
-            return name.value.decode(),parent,die
         origin = die.attributes.get('DW_AT_abstract_origin')
         if origin != None:
             origin_node = self.get_origin(cu, origin)
             if origin_node == None:
                 return None,None,None
-            name = origin_node.attributes.get('DW_AT_name')
-            if name == None:
-                return None,None,None
-            try:
-                parent = origin_node.get_parent()
-            except:
-                return None,None,None
-            return name.value.decode(),parent,origin_node
+            die = origin_node
+        name = die.attributes.get('DW_AT_name')
+        if name:
+            parent = die.get_parent()
+            return name.value.decode(),parent,die
         spec = die.attributes.get('DW_AT_specification')
         if spec == None:
             return None,None,None
@@ -290,47 +313,47 @@ class Dwarf(object):
 
     def resolve_function(self, func_str):
         funcs = []
+        if func_str not in self.text_syms:
+            return funcs
+        func_addr = self.text_syms[func_str]
+        file,lineno = self.addr2line(func_addr)
         namespace,class_name,function,func_args = self.parse_function_str(func_str)
         if function == None:
             return funcs
         for CU in self.dwarfinfo.iter_CUs():
             top_DIE = CU.get_top_DIE()
+            if top_DIE.tag != 'DW_TAG_compile_unit':
+                continue
+            cu_name = top_DIE.attributes.get('DW_AT_name')
+            cu_dir = top_DIE.attributes.get('DW_AT_comp_dir')
+            if cu_name == None or cu_dir == None:
+                continue
+            cu_path = os.path.join(cu_dir.value.decode(), cu_name.value.decode())
+            if cu_path != file:
+                continue
             for child in top_DIE.iter_children():
                 if child.tag == 'DW_TAG_subprogram':
-                    funcname,parent,decl = self.get_function_name(CU, child)
-                    if funcname == function:
+                    low_pc = child.attributes.get('DW_AT_low_pc')
+                    if low_pc:
+                        low_pc_value = low_pc.value
+                    else:
+                        low_pc_value = None
+                    if low_pc_value == func_addr:
+                        funcname,parent,decl = self.get_function_name(CU, child)
                         result = self.__resolve_function(CU, child)
-                        if result == None or 'addr' not in result:
+                        if result == None:
                             continue
+                        result['addr'] = func_addr - self.text_start
                         args_decl = self.args_to_dec(result['args'])
-                        func_ns,func_class = self.resolve_function_parent(parent)
-                        if func_args != None and not self.func_args_eq(func_args, args_decl):
-                            continue
-                        if func_ns == namespace and func_class == class_name:
-                            result['function'] = self.function_full_name(function, class_name, namespace)
-                            result['ret'] =  self.resolve_return(CU, decl)
-                            funcs.append(result)
+                        full_name = func_str.split('(')[0]
+                        result['function'] = full_name
+                        result['ret'] =  self.resolve_return(CU, decl)
+                        funcs.append(result)
         return funcs
 
     def all_functions(self):
         functions = []
-        for CU in self.dwarfinfo.iter_CUs():
-            top_DIE = CU.get_top_DIE()
-            for child in top_DIE.iter_children():
-                if child.tag == 'DW_TAG_subprogram':
-                    funcname,parent,decl = self.get_function_name(CU, child)
-                    if funcname == None:
-                        continue
-                    result = self.__resolve_function(CU, child)
-                    if result == None or 'addr' not in result:
-                        continue
-                    args_decl = self.args_to_dec(result['args'])
-                    func_ns,func_class = self.resolve_function_parent(parent)
-                    fullname = self.function_full_name(funcname,func_class,func_ns)
-                    if func_class != None:
-                        decl = fullname + '(' + args_decl + ')'
-                        functions.append(decl)
-                    else:
-                        functions.append(fullname)
+        for func in self.text_syms:
+            functions.append(func)
         return sorted(list(set(functions)))
 
