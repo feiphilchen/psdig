@@ -20,13 +20,13 @@ ubuntu_deps () {
     if [ "$1" == "20.04" -o "$1" == "22.04" ]
     then
         apt-get update && \
-        apt-get install -y python3 python3-pip python3-venv libelf-dev clang cmake && \
+        apt-get install -y python3 python3-pip python3-venv libelf-dev clang cmake binutils && \
         python3 -m venv ${PSDIG_PREFIX}/python && \
         ${PSDIG_PREFIX}/python/bin/python3 -m pip install wheel
     elif [ "$1" == "18.04" ]
     then
         apt-get update && \
-        apt-get install -y python3 python3-pip python3-venv libelf-dev software-properties-common cmake wget && \
+        apt-get install -y python3 python3-pip python3-venv libelf-dev software-properties-common cmake wget binutils && \
         wget https://apt.llvm.org/llvm.sh -O /tmp/llvm.sh && \
         bash /tmp/llvm.sh 12 &&
         python3 -m venv ${PSDIG_PREFIX}/python && \
@@ -38,13 +38,13 @@ debian_deps () {
     if [ "$1" == "12" -o "$1" == "11" ]
     then
         apt-get update && \
-        apt-get install -y python3 python3-pip python3-venv libelf-dev clang cmake && \
+        apt-get install -y python3 python3-pip python3-venv libelf-dev clang cmake binutils && \
         python3 -m venv ${PSDIG_PREFIX}/python && \
         ${PSDIG_PREFIX}/python/bin/python3 -m pip install wheel
     elif [ "$1" == "10" ]
     then
         apt-get update && \
-        apt-get install -y python3 python3-pip python3-venv libelf-dev software-properties-common cmake wget && \
+        apt-get install -y python3 python3-pip python3-venv libelf-dev software-properties-common cmake wget binutils && \
         wget https://apt.llvm.org/llvm.sh -O /tmp/llvm.sh && \
         bash /tmp/llvm.sh 12 &&
         python3 -m venv ${PSDIG_PREFIX}/python && \
@@ -55,12 +55,12 @@ debian_deps () {
 al_deps () {
     if [ "$1" == "2023" ]
     then
-        yum install -y python3-pip.noarch clang.${MACHINE} cmake.${MACHINE} elfutils-libelf-devel.${MACHINE} python3-devel && \
+        yum install -y python3-pip.noarch clang.${MACHINE} cmake.${MACHINE} elfutils-libelf-devel.${MACHINE} python3-devel binutils && \
         python3 -m venv ${PSDIG_PREFIX}/python && \
         ${PSDIG_PREFIX}/python/bin/python3 -m pip install wheel
     elif [ "$1" == "2" ]
     then
-        yum install -y python3-pip.noarch clang.${MACHINE} cmake3.${MACHINE} elfutils-libelf-devel.${MACHINE} python3-devel && \
+        yum install -y python3-pip.noarch clang.${MACHINE} cmake3.${MACHINE} elfutils-libelf-devel.${MACHINE} python3-devel binutils && \
         python3 -m venv ${PSDIG_PREFIX}/python && \
         ${PSDIG_PREFIX}/python/bin/python3 -m pip install wheel
     fi
@@ -70,7 +70,7 @@ rhel_deps () {
     major_version=`echo $1 | awk -F '.' '{print $1}'`
     if [ "$major_version" == "8" -o "$major_version" == "9" ]
     then
-        yum install -y python3-pip.noarch clang.${MACHINE} cmake.${MACHINE} elfutils-libelf-devel.${MACHINE} python3-devel && \
+        yum install -y python3-pip.noarch clang.${MACHINE} cmake.${MACHINE} elfutils-libelf-devel.${MACHINE} python3-devel binutils && \
         python3 -m venv ${PSDIG_PREFIX}/python && \
         ${PSDIG_PREFIX}/python/bin/python3 -m pip install wheel
     fi
