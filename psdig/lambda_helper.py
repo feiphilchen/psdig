@@ -2,9 +2,13 @@
 # Author: feiphilchen@gmail.com
 import socket
 from datetime import datetime
+from .data_type import *
 
 def inet_ntoa(addr):
-    return socket.inet_ntoa(addr)
+    if isinstance(addr, Bytes):
+        return socket.inet_ntoa(addr.value)
+    else:
+        return socket.inet_ntoa(addr)
 
 def time_str(timestamp):
     dt = datetime.fromtimestamp(timestamp)

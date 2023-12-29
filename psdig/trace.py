@@ -22,6 +22,9 @@ def sig_handler(sig, frame):
         uprobe.stop()
     sys.exit(0)
 
+def message_print(msg):
+    sys.stderr.write(msg)
+
 default_syscall_fmt="lambda:time_str(metadata['timestamp']) + ' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + syscall_format(syscall, args, ret, metadata)"
 def syscall_print_fmt(syscall, metadata, args, ret, ctx):
     fmt,filter_f = ctx
@@ -90,22 +93,14 @@ def syscall_trace(output, filter, pid, uid, comm, list, syscall):
         signal.signal(signal.SIGTERM, sig_handler)
         tracepoint.start(obj_dir=tmpdirname)
 
-default_event_fmt="lambda:time_str(metadata['timestamp']) + ' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + f' {name}: ' + ','.join([f'{k}={v}' for k,v in args.items()])"
-def event_print_fmt(name, metadata, args, ctx):
-    fmt,filter_f = ctx
-    if filter_f:
-        filter_ret = filter_f(name, metadata, args)
-        if not filter_ret:
-            return
-    print(fmt.format(name=name, metadata=metadata, args=args))
-
-def event_print_lambda(name, metadata, args, ctx):
+default_event_fmt="time_str(metadata['timestamp']) + ' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + f' {event}: ' + ','.join([f'{k}={v}' for k,v in args.items()])"
+def event_print_lambda(event, metadata, args, ctx):
     lambda_f,filter_f = ctx
     if filter_f:
-        filter_ret = filter_f(name, metadata, args)
+        filter_ret = filter_f(event, metadata, args)
         if not filter_ret:
             return
-    print(lambda_f(name, metadata, args))
+    print(lambda_f(event, metadata, args))
 
 def complete_event(ctx, param, incomplete):
     events = Event.get_all()
@@ -140,21 +135,19 @@ def event_trace(output, filter, pid, uid, comm, list, event):
         tracepoint = TracePoint(pid_filter=pid, uid_filter=uid, comm_filter=comm)
         event_obj = Event(tracepoint)
         if filter:
-            filter_f = lambda name,metadata,args:eval(filter)
+            filter_f = lambda event,metadata,args:eval(filter)
         else:
             filter_f = None
-        if output.strip().startswith('lambda:'):
-            lambda_str = output.split(':', 1)[1]
-            lambda_f = lambda name,metadata,args:eval(lambda_str)
-            ctx = lambda_f,filter_f
-            callback = event_print_lambda
-        else:
-            ctx = output,filter_f
-            callback = event_print_fmt
+        lambda_str = output
+        lambda_f = lambda event,metadata,args:eval(lambda_str)
+        ctx = lambda_f,filter_f
+        callback = event_print_lambda
         for evt in event:
              event_obj.add(evt, callback, ctx)
         signal.signal(signal.SIGINT, sig_handler)
         signal.signal(signal.SIGTERM, sig_handler)
+        message_print("psdig: tracing %s\n" % ','.join(event))
+        message_print("ctrl + C to stop ...\n")
         tracepoint.start(obj_dir=tmpdirname)
 
 def uprobe_print_fmt(function, metadata, args, ret, ctx):

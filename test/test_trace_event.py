@@ -9,7 +9,7 @@ import shlex
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-output_fmt="lambda:' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + f' {name}: ' + ','.join([f'{k}={v}' for k,v in args.items()])"
+output_fmt="' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + f' {event}: ' + ','.join([f'{k}={v}' for k,v in args.items()])"
 cases = [
     (
         "python3 event/tcp_send_reset.py", 
