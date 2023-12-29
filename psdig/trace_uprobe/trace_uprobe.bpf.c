@@ -149,6 +149,9 @@ trace_add_str (trace_t * t, char * str)
     int            ret;
     void         * buf;
 
+    if (str == NULL) {
+        return -1;
+    }
     if (t->hdr.len < TRACE_MAX_SIZE - sizeof(trace_data_t)) {
         data = (trace_data_t *)(t->hdr.len + (void *)t);
         data->type = TRACE_DATA_TYPE_STR;
@@ -270,7 +273,10 @@ __read_str (trace_t * t, char * str, char * field)
         return -1;
     }
     if (trace_add_str(t, str) < 0) {
-        return -1;
+        if (trace_add(t, &str, sizeof(void *), TRACE_DATA_TYPE_PTR) < 0) {
+            return -1;
+        }
+        return 0;
     }
     return 0;
 }

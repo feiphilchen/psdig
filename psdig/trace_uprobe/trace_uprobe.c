@@ -258,7 +258,6 @@ trace_read_float (trace_data_t         * data,
         json_object_object_add(jobj, field_name, json_object_new_double(flt));
     } else if (ulen == sizeof(double)) {
         memcpy(&dbl, data->value, ulen);
-        fprintf(stderr, "%lf\n", dbl);
         json_object_object_add(jobj, field_name, json_object_new_double(dbl));
     } else {
         return -EINVAL;
