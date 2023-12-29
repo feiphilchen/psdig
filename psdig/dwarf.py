@@ -10,7 +10,9 @@ import traceback
 import pkgutil
 import threading
 import binascii
+import time
 from elftools.elf.elffile import ELFFile
+from elftools.dwarf.descriptions import describe_form_class
 from .conf import LOGGER_NAME
 
 class Dwarf(object):
@@ -317,20 +319,28 @@ class Dwarf(object):
             return funcs
         func_addr = self.text_syms[func_str]
         file,lineno = self.addr2line(func_addr)
-        namespace,class_name,function,func_args = self.parse_function_str(func_str)
-        if function == None:
-            return funcs
         for CU in self.dwarfinfo.iter_CUs():
             top_DIE = CU.get_top_DIE()
             if top_DIE.tag != 'DW_TAG_compile_unit':
                 continue
-            cu_name = top_DIE.attributes.get('DW_AT_name')
-            cu_dir = top_DIE.attributes.get('DW_AT_comp_dir')
-            if cu_name == None or cu_dir == None:
-                continue
-            cu_path = os.path.join(cu_dir.value.decode(), cu_name.value.decode())
-            if cu_path != file:
-                continue
+            low_pc = top_DIE.attributes.get('DW_AT_low_pc')
+            high_pc = top_DIE.attributes.get('DW_AT_high_pc')
+            addr_in_range = False
+            if low_pc != None and high_pc != None:
+                low_addr = low_pc.value
+                highpc_attr_class = describe_form_class(high_pc.form)
+                if highpc_attr_class == 'address':
+                    high_addr = high_pc.value
+                elif highpc_attr_class == 'constant':
+                    high_addr = low_addr + high_pc.value
+                else:
+                    continue
+                if func_addr < low_addr or func_addr >= high_addr:
+                    continue
+                addr_in_range = True
+            if not addr_in_range:
+                if top_DIE.get_full_path() != file:
+                    continue
             for child in top_DIE.iter_children():
                 if child.tag == 'DW_TAG_subprogram':
                     low_pc = child.attributes.get('DW_AT_low_pc')
@@ -349,6 +359,7 @@ class Dwarf(object):
                         result['function'] = full_name
                         result['ret'] =  self.resolve_return(CU, decl)
                         funcs.append(result)
+                        return funcs
         return funcs
 
     def all_functions(self):
