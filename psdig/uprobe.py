@@ -41,6 +41,7 @@ class Uprobe(object):
         self.loading = 0
         self.loaded = 0
         self.probe_handlers = {}
+        self.bind_queue = {}
         self.symbols = symbols
         self.ignore_self = ignore_self
         self.pid = os.getpid()
@@ -88,7 +89,7 @@ class Uprobe(object):
         id_str = hashlib.md5(probe_str.encode('utf-8')).hexdigest()[0:8]
         return int(id_str, 16)
 
-    def add(self, elf_path, function, callback, enter=True, arg=None, sym=None):
+    def add(self, elf_path, function, callback, enter=True, arg=None, sym=None, bind=False):
         elf_path = os.path.abspath(elf_path)
         if sym:
             self.symbols[elf_path] = sym
@@ -104,7 +105,7 @@ class Uprobe(object):
             self.probe_index[elf_path][function] = {}
         if probe_type not in self.probe_index[elf_path][function]:
             self.probe_index[elf_path][function][probe_type] = new_probe
-        cb = callback,arg
+        cb = callback,arg,bind
         self.probe_index[elf_path][function][probe_type]['callbacks'].append(cb)
 
     def resolve_functions(self):
@@ -128,15 +129,15 @@ class Uprobe(object):
         else:
             self.probe_handlers[probe_id] = [handler]
 
-    def add_handler(self, probe_id, probe, instance):
+    def add_handler(self, probe_id, peer_id, probe, instance):
         elf = probe['elf']
         function_name = instance['function']
         addr = instance['addr']
         function = {"name":function_name,"elf":elf, "addr":addr}
         name = probe['type']
         for cb in probe['callbacks']:
-            callback,arg = cb
-            handler = name,function,callback,arg
+            callback,arg,bind = cb
+            handler = name,function,callback,arg,bind,peer_id
             self._add_handler(probe_id, handler)
         if elf not in self.functions:
             self.functions[elf] = {}
@@ -427,10 +428,10 @@ int BPF_KRETPROBE(%s)
                     addr = instance['addr']
                     if 'uprobe' in func_probe:
                         uprobe_id = self.probe_id(elf, function, addr, True)
-                        self.add_handler(uprobe_id, func_probe['uprobe'], instance)
+                        self.add_handler(uprobe_id, uretprobe_id, func_probe['uprobe'], instance)
                     if 'uretprobe' in func_probe:
                         uretprobe_id = self.probe_id(elf, function, addr, False)
-                        self.add_handler(uretprobe_id, func_probe['uretprobe'], instance)
+                        self.add_handler(uretprobe_id, uprobe_id, func_probe['uretprobe'], instance)
                     self.build_bpf_o(instance, uprobe_id, uretprobe_id)
                 self.loaded += 1
         cmd = f"gcc {self.trace_uprobe_c} -g -I/usr/local/share/psdig/usr/include -L/usr/local/share/psdig/usr/lib64/ -L/usr/local/share/psdig/usr/lib/ -l:libbpf.a -l:libjson-c.a -lelf -lz -lpthread -o {self.trace_uprobe_elf}"
@@ -456,13 +457,38 @@ int BPF_KRETPROBE(%s)
                     new_value = cls(event_obj['parameters'][arg])
                     event_obj['parameters'][arg] = new_value
 
+    def bind_probe_push(self, uprobe_id, metadata, args):
+        tid = metadata['tid']
+        if uprobe_id not in self.bind_queue:
+            self.bind_queue[uprobe_id] = {}
+        if tid not in self.bind_queue[uprobe_id]:
+            self.bind_queue[uprobe_id][tid] = []
+        bind_probe = metadata,args
+        self.bind_queue[uprobe_id][tid].append(bind_probe)
+
+    def bind_probe_pop(self, uprobe_id, metadata):
+        tid = metadata['tid']
+        if uprobe_id not in self.bind_queue:
+            return None,None
+        if tid not in self.bind_queue[uprobe_id]:
+            return None,None
+        if len(self.bind_queue[uprobe_id][tid]) == 0:
+            return None,None
+        enter_metadata,args = self.bind_queue[uprobe_id][tid].pop(-1)
+        if len(self.bind_queue[uprobe_id][tid]) == 0:
+            del self.bind_queue[uprobe_id][tid]
+        if len(self.bind_queue[uprobe_id]) == 0:
+            del self.bind_queue[uprobe_id]
+        metadata['latency'] = metadata['ktime_ns'] - enter_metadata['ktime_ns']
+        return metadata,args
+
     def call_probe_handlers(self, event_obj):
         uprobe_id = event_obj['id']
         self.params_type_convert(event_obj)
         if uprobe_id in self.probe_handlers:
             metadata,args = self.parse_uprobe_trace(event_obj)
             for handler in self.probe_handlers[uprobe_id]:
-                name,func,callback,ctx = handler
+                name,func,callback,ctx,bind,peer_id = handler
                 if name == 'uretprobe':
                     metadata['enter'] = False
                     ret = args.get('ret')
@@ -470,6 +496,12 @@ int BPF_KRETPROBE(%s)
                 else:
                     metadata['enter'] = True
                     ret = None
+                if bind:
+                    if metadata['enter'] == True:
+                        self.bind_probe_push(uprobe_id, metadata, args)
+                        return
+                    else:
+                        metadata,args = self.bind_probe_pop(peer_id, metadata)
                 if ctx == None:
                     callback(func, metadata, args, ret)
                 else:

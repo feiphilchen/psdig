@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 uprobe_c="uprobe_c/test_uprobe"
 uprobe_cpp="uprobe_cpp/test_uprobe"
-output_fmt="lambda:'%s: ' % metadata.get('comm') + uprobe_format(function, args, ret, metadata)"
+output_fmt="'%s: ' % metadata.get('comm') + uprobe_format(function, args, ret, metadata)"
 libc_path=os.popen("ldd %s | grep libc.so | awk '{print $3}'" % uprobe_c).read().strip()
 print(f"##{libc_path}##")
 cases = [

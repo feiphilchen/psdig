@@ -150,14 +150,6 @@ def event_trace(output, filter, pid, uid, comm, list, event):
         message_print("ctrl + C to stop ...\n")
         tracepoint.start(obj_dir=tmpdirname)
 
-def uprobe_print_fmt(function, metadata, args, ret, ctx):
-    fmt,filter_f = ctx
-    if filter_f:
-        filter_ret = filter_f(function, metadata, args, ret)
-        if not filter_ret:
-            return
-    print(fmt.format(metadata=metadata, function=function, args=args, ret=ret))
-
 def uprobe_print_lambda(function, metadata, args, ret, ctx):
     lambda_f,filter_f = ctx
     if filter_f:
@@ -194,7 +186,7 @@ def validate_uprobe_function(ctx, param, value):
         raise click.BadParameter(f'error resolving symbols from {elf}')
     return list(set(value))
 
-default_uprobe_fmt="lambda:time_str(metadata['timestamp']) + ' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + uprobe_format(function, args, ret, metadata)"
+default_uprobe_fmt="time_str(metadata['timestamp']) + ' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + uprobe_format(function, args, ret, metadata)"
 @click.command()
 @click.option('--output', '-o', type=str, default=default_uprobe_fmt, help="Output format")
 @click.option('--filter', '-f', type=str, help="Filter string")
@@ -202,9 +194,10 @@ default_uprobe_fmt="lambda:time_str(metadata['timestamp']) + ' %s(%s): '%(metada
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
 @click.option('--comm', '-c', type=str, multiple=True, help='Command filter')
 @click.option('--sym', '-s', type=click.Path(exists=True), help='Symbol file')
+@click.option('--bind', '-b', is_flag=True, help='Bind enter and return probe')
 @click.argument('elf', type=click.Path(exists=True))
 @click.argument('function', nargs=-1, shell_complete=complete_uprobe_function, callback=validate_uprobe_function)
-def uprobe_trace(output, filter, pid, uid, comm, sym, elf, function):
+def uprobe_trace(output, filter, pid, uid, comm, sym, bind, elf, function):
     """Trace uprobe"""
     global uprobe
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -213,17 +206,15 @@ def uprobe_trace(output, filter, pid, uid, comm, sym, elf, function):
             filter_f = lambda function,metadata,args,ret:eval(filter)
         else:
             filter_f = None
-        if output.strip().startswith('lambda:'):
-            lambda_str = output.split(':', 1)[1]
-            lambda_f = lambda function,metadata,args,ret:eval(lambda_str)
-            ctx = lambda_f,filter_f
-            callback = uprobe_print_lambda
-        else:
-            ctx = output,filter_f
-            callback = uprobe_print_fmt
+        lambda_str = output
+        lambda_f = lambda function,metadata,args,ret:eval(lambda_str)
+        ctx = lambda_f,filter_f
+        callback = uprobe_print_lambda
+        message_print("psdig: tracing %s from %s\n" % (','.join(function), elf))
+        message_print("ctrl + C to stop ...\n")
         for func in function:
-            uprobe.add(elf, func, callback, True, ctx, sym)
-            uprobe.add(elf, func, callback, False, ctx, sym)
+            uprobe.add(elf, func, callback, True, ctx, sym, bind)
+            uprobe.add(elf, func, callback, False, ctx, sym, bind)
         signal.signal(signal.SIGINT, sig_handler)
         signal.signal(signal.SIGTERM, sig_handler)
         try:
