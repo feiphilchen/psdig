@@ -44,6 +44,13 @@ def syscall_format(syscall, args=None, ret=None, metadata=None, argmaxlen=64):
     else:
         return f"{syscall}{arg_str}"
 
+def l_pad_string(s, width):
+    lines = s.splitlines()
+    return "\n".join(
+        f"%s{line}" % str(" " * width)
+        for line in lines
+    )
+
 def uprobe_format(function, args=None, ret=None, metadata=None, argmaxlen=64):
     name = function['name']
     enter = metadata['enter']
@@ -70,11 +77,15 @@ def uprobe_format(function, args=None, ret=None, metadata=None, argmaxlen=64):
                 val = f"{k}={val}"
                 arg_str_list.append(val)
         arg_str = "(" + ", ".join(arg_str_list) + ")"
+    if 'ustack' in metadata:
+        ustack_str = "\n  backtrace:\n%s" % l_pad_string(str(metadata['ustack']), 4)
+    else:
+        ustack_str = ""
     if not enter:
         ret = 'void' if ret == None else ret
-        return f"{name}{arg_str} => {ret}"
+        return f"{name}{arg_str} => {ret}{ustack_str}"
     else:
-        return f"{name}{arg_str}"
+        return f"{name}{arg_str}{ustack_str}"
 
 def context_str(args):
     filename = args.get('@file')

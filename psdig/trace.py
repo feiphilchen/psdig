@@ -147,7 +147,7 @@ def event_trace(output, filter, pid, uid, comm, list, event):
         signal.signal(signal.SIGINT, sig_handler)
         signal.signal(signal.SIGTERM, sig_handler)
         message_print("psdig: tracing %s\n" % ','.join(event))
-        message_print("ctrl + C to stop ...\n")
+        message_print("Ctrl + C to stop ...\n")
         tracepoint.start(obj_dir=tmpdirname)
 
 def uprobe_print_lambda(function, metadata, args, ret, ctx):
@@ -195,13 +195,19 @@ default_uprobe_fmt="time_str(metadata['timestamp']) + ' %s(%s): '%(metadata.get(
 @click.option('--comm', '-c', type=str, multiple=True, help='Command filter')
 @click.option('--sym', '-s', type=click.Path(exists=True), help='Symbol file')
 @click.option('--bind', '-b', is_flag=True, help='Bind enter and return probe')
+@click.option('--user-stack', '-U', is_flag=True, help='Collect user stack trace')
+@click.option('--kernel-stack', '-K', is_flag=True, help='Colllect kernel stack trace')
 @click.argument('elf', type=click.Path(exists=True))
 @click.argument('function', nargs=-1, shell_complete=complete_uprobe_function, callback=validate_uprobe_function)
-def uprobe_trace(output, filter, pid, uid, comm, sym, bind, elf, function):
+def uprobe_trace(output, filter, pid, uid, comm, sym, bind, user_stack, kernel_stack, elf, function):
     """Trace uprobe"""
     global uprobe
     with tempfile.TemporaryDirectory() as tmpdirname:
-        uprobe = Uprobe(pid_filter=pid, uid_filter=uid, comm_filter=comm)
+        uprobe = Uprobe(pid_filter=pid, 
+                uid_filter=uid, 
+                comm_filter=comm,
+                ustack=user_stack,
+                kstack=kernel_stack)
         if filter:
             filter_f = lambda function,metadata,args,ret:eval(filter)
         else:
@@ -211,7 +217,7 @@ def uprobe_trace(output, filter, pid, uid, comm, sym, bind, elf, function):
         ctx = lambda_f,filter_f
         callback = uprobe_print_lambda
         message_print("psdig: tracing %s from %s\n" % (','.join(function), elf))
-        message_print("ctrl + C to stop ...\n")
+        message_print("Ctrl + C to stop ...\n")
         for func in function:
             uprobe.add(elf, func, callback, True, ctx, sym, bind)
             uprobe.add(elf, func, callback, False, ctx, sym, bind)

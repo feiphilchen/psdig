@@ -15,6 +15,7 @@ import subprocess
 import platform
 from .dwarf import Dwarf
 from .data_type import *
+from .backtrace import Backtrace
 from .conf import LOGGER_NAME,DEFAULT_CLANG
 
 class Uprobe(object):
@@ -27,7 +28,9 @@ class Uprobe(object):
                        uid_filter=[], 
                        comm_filter=[],
                        symbols={}, 
-                       ignore_self=True):
+                       ignore_self=True,
+                       ustack=False,
+                       kstack=False):
         self.set_logger()
         self.probe_index = {}
         self.functions = {}
@@ -35,6 +38,8 @@ class Uprobe(object):
         self.pid_filter = pid_filter
         self.uid_filter = uid_filter
         self.comm_filter = comm_filter
+        self.kstack = kstack
+        self.ustack = ustack
         self.pid = os.getpid()
         self.event_bucket = {}
         self.event_mutex = threading.Lock()
@@ -50,6 +55,7 @@ class Uprobe(object):
         self.collect_thread_running = False
         self.collect_thread = None
         self.boot_ts = float("%.6f" % (time.time() - time.monotonic()))
+        self.backtrace = Backtrace()
         self.set_clang()
         self.set_arch()
 
@@ -115,8 +121,8 @@ class Uprobe(object):
                     sym = self.symbols[elf]
                 else:
                     sym = elf
-                dwarf = Dwarf(sym)
-                instances = dwarf.resolve_function(function)
+                self.dwarf = Dwarf(sym)
+                instances = self.dwarf.resolve_function(function)
                 if len(instances) == 0:
                     raise Exception(f"fail to resolve function {function} in {sym}")
                 for instance in instances:
@@ -358,7 +364,12 @@ class Uprobe(object):
         num_insts = len(insts)
         insts = [f"trace_add_obj(t, {num_insts})"] + insts
         inst_str = ";\n    ".join(insts)
-        content = '#include "trace_uprobe.bpf.c"\n'
+        content = ""
+        if self.ustack:
+            content += "#define __PSDIG_USTACK__\n"
+        if self.kstack:
+            content += "#define __PSDIG_KSTACK__\n"
+        content += '#include "trace_uprobe.bpf.c"\n'
         if uprobe_enter:
             uprobe_enter_str="""
 SEC("uprobe/uprobe_enter")
@@ -456,6 +467,8 @@ int BPF_KRETPROBE(%s)
                     cls = self.type_mapping[arg_type]
                     new_value = cls(event_obj['parameters'][arg])
                     event_obj['parameters'][arg] = new_value
+        if 'ustack' in event_obj:
+            event_obj['ustack'] = self.backtrace.resolve_ustack(event_obj['pid'], event_obj['ustack'])
 
     def bind_probe_push(self, uprobe_id, metadata, args):
         tid = metadata['tid']

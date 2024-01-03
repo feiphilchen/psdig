@@ -17,7 +17,7 @@ from .conf import LOGGER_NAME
 
 class Dwarf(object):
     def __init__(self, filename):
-        self.text_syms = {}
+        self.text_syms = None
         self.dwarf_open(filename)
 
     def dwarf_open(self, filename):
@@ -32,7 +32,6 @@ class Dwarf(object):
                 return None
             self.dwarfinfo = elffile.get_dwarf_info()
             self.sym_file = filename
-            self.parse_text_symbols(filename)
 
     def dwarf_open_debuglink(self, filename):
         with open(filename, 'rb') as f:
@@ -41,9 +40,9 @@ class Dwarf(object):
                 return None
             self.dwarfinfo = elffile.get_dwarf_info()
             self.sym_file = filename
-            self.parse_text_symbols(filename)
 
     def parse_text_symbols(self, sym_file):
+        self.text_syms = {}
         lines = os.popen(f'nm -C {sym_file}').readlines()
         for line in lines:
             hit = re.match('([0-9a-zA-Z]+)\\s+[TW]\\s+(.*)$', line)
@@ -53,7 +52,8 @@ class Dwarf(object):
                 self.text_syms[func_name] = func_addr
 
     def addr2line(self, addr):
-        result = os.popen(f"addr2line -e %s 0x%x" % (self.sym_file, addr)).read()
+        cmd = "addr2line -e %s 0x%x" % (self.sym_file, addr)
+        result = os.popen(cmd).read()
         result = result.split(':')
         if len(result) != 2:
             return None,None
@@ -314,6 +314,8 @@ class Dwarf(object):
         return decl_0 == decl_1
 
     def resolve_function(self, func_str):
+        if self.text_syms == None:
+            self.parse_text_symbols(self.sym_file)
         funcs = []
         if func_str not in self.text_syms:
             return funcs
@@ -363,6 +365,8 @@ class Dwarf(object):
         return funcs
 
     def all_functions(self):
+        if self.text_syms == None:
+            self.parse_text_symbols(self.sym_file)
         functions = []
         for func in self.text_syms:
             functions.append(func)
