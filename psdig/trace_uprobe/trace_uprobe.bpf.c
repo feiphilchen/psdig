@@ -75,7 +75,7 @@ struct bpf_map_def SEC("maps") stackmap = {
 	.max_entries = 10000,
 };
 #define KERN_STACKID_FLAGS (0 | BPF_F_FAST_STACK_CMP)
-#define USER_STACKID_FLAGS (0 | BPF_F_FAST_STACK_CMP | BPF_F_USER_STACK)
+#define USER_STACKID_FLAGS (0 | BPF_F_FAST_STACK_CMP | BPF_F_USER_STACK | BPF_F_REUSE_STACKID)
 
 static int
 check_pid_filter(unsigned int pid)

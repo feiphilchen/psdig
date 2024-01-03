@@ -387,7 +387,7 @@ trace_read_stack (int                    stackmap,
             json_object_array_add(jarray, json_object_new_uint64(ip[i]));
         }
     }
-    bpf_map_delete_elem(stackmap, &stackid);
+    //bpf_map_delete_elem(stackmap, &stackid);
     return 0;
 }
 
