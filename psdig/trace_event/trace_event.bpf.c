@@ -6,6 +6,7 @@
 #include <linux/bpf.h>
 #include <linux/ptrace.h>
 #include <linux/sched.h>
+#include <linux/perf_event.h>
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_helpers.h>
 #include "event_schema.h"
@@ -88,6 +89,16 @@ struct bpf_map_def SEC("maps") tmp_syscall_ctx = {
     .value_size = sizeof(struct syscall_context),
     .max_entries = 1
 };
+
+struct bpf_map_def SEC("maps") stackmap = {
+        .type = BPF_MAP_TYPE_STACK_TRACE,
+        .key_size = sizeof(__u32),
+        .value_size = PERF_MAX_STACK_DEPTH * sizeof(__u64),
+        .max_entries = 10000,
+};
+#define KERN_STACKID_FLAGS (0)
+#define USER_STACKID_FLAGS (0 | BPF_F_FAST_STACK_CMP | BPF_F_USER_STACK | BPF_F_REUSE_STACKID)
+
 
 static inline int
 read_event_field_bytes (void                 * ctx, 
@@ -416,6 +427,18 @@ syscall_finish (void                * ctx,
     }
     evt->hdr.ktime_ns = sc->ktime_ns;
     evt->hdr.duration = ktime_ns - sc->ktime_ns;
+#ifdef __PSDIG_KSTACK__
+    evt->hdr.kstack = bpf_get_stackid(ctx, &stackmap, KERN_STACKID_FLAGS);
+    event_bpf_printk(1, "kstack=%ld", evt->hdr.kstack);
+#else
+    evt->hdr.kstack = -1;
+#endif
+#ifdef __PSDIG_USTACK__
+    evt->hdr.ustack = bpf_get_stackid(ctx, &stackmap, USER_STACKID_FLAGS);
+    event_bpf_printk(1, "ustack=%ld", evt->hdr.ustack);
+#else
+    evt->hdr.ustack = -1;
+#endif
     #pragma unroll
     for (pos = 0;  pos < start_schema->field_nr; pos++) {
         ef = &start_schema->fields[pos];

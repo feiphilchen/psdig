@@ -39,10 +39,14 @@ def syscall_format(syscall, args=None, ret=None, metadata=None, argmaxlen=64):
                 val = f"{k}={val}"
                 arg_str_list.append(val)
         arg_str = "(" + ", ".join(arg_str_list) + ")"
-    if ret != None:
-        return f"{syscall}{arg_str} => {ret}"
+    if 'ustack' in metadata:
+        ustack_str = "\n  backtrace:\n%s" % l_pad_string(str(metadata['ustack']), 4)
     else:
-        return f"{syscall}{arg_str}"
+        ustack_str = ""
+    if ret != None:
+        return f"{syscall}{arg_str} => {ret}{ustack_str}"
+    else:
+        return f"{syscall}{arg_str}{ustack_str}"
 
 def l_pad_string(s, width):
     lines = s.splitlines()

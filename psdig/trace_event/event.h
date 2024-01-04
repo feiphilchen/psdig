@@ -42,6 +42,8 @@ struct event_header {
    unsigned int  flags;
    __u64         duration;
    int           ret_id;
+   long          ustack;
+   long          kstack;
    char          comm[EVENT_COMM_SIZE];
 };
 
@@ -99,6 +101,11 @@ struct syscall_context {
     __u64         ktime_ns;
     unsigned char data[1024];
 };
+
+
+typedef struct perf_buffer_ctx {
+    int stackmap_fd;
+} perf_buffer_ctx_t;
 
 typedef union event_sockaddr event_sockaddr_t;
 

@@ -15,6 +15,7 @@ import threading
 from .data_type import *
 from .schema import EventSchema
 from .conf import LOGGER_NAME,DEFAULT_CLANG
+from .backtrace import Backtrace
 
 class TracePoint(object):
     type_mapping = {
@@ -26,7 +27,8 @@ class TracePoint(object):
                        uid_filter=[], 
                        comm_filter=[],
                        ignore_self=True, 
-                       obj_cache=True):
+                       obj_cache=True,
+                       ustack=False):
         self.event_handlers = {}
         self.syscall_handlers = {}
         self.syscall_events = {}
@@ -37,6 +39,7 @@ class TracePoint(object):
         self.proc = None
         self.pid_filter = pid_filter
         self.uid_filter = uid_filter
+        self.ustack = ustack
         self.comm_filter = comm_filter
         self.ignore_self = ignore_self
         self.pid = os.getpid()
@@ -49,6 +52,7 @@ class TracePoint(object):
         self.loading = 0
         self.loaded = 0
         self.stopped = False
+        self.backtrace = Backtrace()
         self.set_clang()
 
     def set_logger(self):
@@ -108,7 +112,10 @@ class TracePoint(object):
         bpf_c_file = os.path.join(self.obj_dir, f"event_{event_id}.bpf.c")
         event_func = f"func_{event_id}"
         event_schema = self.schema.get_event_schema_name(event)
-        content="""#include "trace_event.bpf.c"
+        content = ""
+        if self.ustack:
+            content += "#define __PSDIG_USTACK__\n"
+        content +="""#include "trace_event.bpf.c"
 EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
 """ % (event, event_func, event_schema)
         with open(bpf_c_file, 'w') as fp:
@@ -133,7 +140,10 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
         enter_event_id = enter_event_id.lower()
         bpf_c_file = os.path.join(self.obj_dir, f"syscall_{enter_event_id}.bpf.c")
         enter_event_func = f"func_{enter_event_id}"
-        content = "#include \"trace_event.bpf.c\"\n"
+        content = ""
+        if self.ustack:
+            content += "#define __PSDIG_USTACK__\n"
+        content += "#include \"trace_event.bpf.c\"\n"
         enter_schema = self.schema.get_event_schema_name(events[0])
         if len(events) > 1:
             exit_schema = self.schema.get_event_schema_name(events[1])
@@ -211,6 +221,8 @@ EVENT_TRACE_FUNC("tracepoint/%s", %s, %s)
                     cls = self.type_mapping[arg_type]
                     new_value = cls(event_obj['parameters'][arg])
                     event_obj['parameters'][arg] = new_value
+        if 'ustack' in event_obj:
+            event_obj['ustack'] = self.backtrace.resolve_ustack(event_obj['pid'], event_obj['ustack'])
 
     def call_event_handlers(self, event_obj):
         event = event_obj['event']

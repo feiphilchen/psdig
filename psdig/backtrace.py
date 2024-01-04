@@ -3,6 +3,7 @@
 import os
 import sys
 import psutil
+import traceback
 from .dwarf import Dwarf
 
 class Stack(object):

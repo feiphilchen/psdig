@@ -81,8 +81,9 @@ class Dwarf(object):
             self.addr_cache[addr] = None,None,None
             return None,None,None
         else:
-            self.addr_cache[addr] = func,result[0],int(result[1])
-            return func,result[0],int(result[1])
+            lineno = result[1].split()[0]
+            self.addr_cache[addr] = func,result[0],int(lineno)
+            return func,result[0],int(lineno)
 
     def get_text_start(self, elffile):
         sect = elffile.get_section_by_name('.text')

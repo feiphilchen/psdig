@@ -128,6 +128,8 @@ class Syscall(object):
         metadata['pid'] = event['pid']
         metadata['uid'] = event['uid']
         metadata['comm'] = event["comm"]
+        if 'ustack' in event:
+            metadata['ustack'] = event["ustack"]
         for arg in self.remove_args:
             if arg in event['parameters']:
                 del event['parameters'][arg]

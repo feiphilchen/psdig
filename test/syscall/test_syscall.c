@@ -10,6 +10,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <linux/un.h>
+#include <unistd.h>
+
 void 
 syscall_openat (void)
 {
@@ -92,8 +94,15 @@ void syscall_tcp_bind_unix (void)
 int 
 main(int argc, char * argv[]) 
 {
-    if (argc != 2) {
+    unsigned int      sleep_sec = 0;
+
+    if (argc < 2) {
         return -1;
+    }
+    if (argc > 2) {
+        if (strcmp(argv[2], "-s") == 0) {
+            sleep_sec = 3;
+        }
     }
     if (strcmp(argv[1], "openat") == 0) {
         syscall_openat();
@@ -109,6 +118,9 @@ main(int argc, char * argv[])
         syscall_tcp_bind_v6();
     } else if (strcmp(argv[1], "unix-bind") == 0) {
         syscall_tcp_bind_unix();
+    }
+    if (sleep_sec > 0) {
+        sleep(sleep_sec);
     }
     return 0;
 }

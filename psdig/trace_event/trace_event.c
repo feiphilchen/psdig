@@ -18,6 +18,7 @@
 #include <sys/resource.h>
 #include <arpa/inet.h>
 #include <linux/bpf.h>
+#include <linux/perf_event.h>
 #include "bpf/bpf.h"
 #include "bpf/libbpf.h"
 #include "event_schema.h"
@@ -321,6 +322,35 @@ event_read (void               * ptr,
     return (int)(ptr - start);
 }
 
+static  int
+event_read_stack (int                    stackmap,
+                  long                   stackid,
+                  struct json_object   * jobj,
+                  const char           * name)
+{
+    __u64 ip[PERF_MAX_STACK_DEPTH] = {};
+    int   i;
+    struct json_object   *jarray;
+
+
+    if (bpf_map_lookup_elem(stackmap, &stackid, ip) != 0) {
+        return -EINVAL;
+    }
+    jarray = json_object_new_array();
+    if (jarray == NULL) {
+        bpf_map_delete_elem(stackmap, &stackid);
+        return -ENOMEM;
+    }
+    json_object_object_add(jobj, name, jarray);
+    for (i = PERF_MAX_STACK_DEPTH - 1; i >= 0; i--) {
+        if (ip[i] != 0) {
+            json_object_array_add(jarray, json_object_new_uint64(ip[i]));
+        }
+    }
+    //bpf_map_delete_elem(stackmap, &stackid);
+    return 0;
+}
+
 void print_bpf_output(void *ctx, 
                       int cpu,
                       void *data, 
@@ -332,6 +362,7 @@ void print_bpf_output(void *ctx,
     int                   ret;
     struct json_object   *jobj,  *jparams, *jschema;
     const char          * json_str;
+    perf_buffer_ctx_t   * pb_ctx = (perf_buffer_ctx_t *)ctx;
 
     evt = data;
     schema = &event_schemas[evt->id];
@@ -354,6 +385,12 @@ void print_bpf_output(void *ctx,
     }
     json_object_object_add(jobj, "parameters", jparams);
     json_object_object_add(jobj, "schema", jschema);
+    if (evt->ustack >= 0) {
+        event_read_stack(pb_ctx->stackmap_fd, evt->ustack, jobj, "ustack");
+    }
+    if (evt->kstack >= 0) {
+        event_read_stack(pb_ctx->stackmap_fd, evt->kstack, jobj, "kstack");
+    }
     ret = event_read(ptr, schema, jparams, jschema);
     if (ret < 0) {
         goto err_exit;
@@ -507,7 +544,7 @@ init_comm_filter (struct bpf_object * bo)
 
 
 struct perf_buffer *
-init_perf_buffer (struct bpf_object * bo)
+init_perf_buffer (struct bpf_object * bo, perf_buffer_ctx_t * pb_ctx)
 {
     int                      pb_map_fd;
     struct perf_buffer     * pb;
@@ -519,7 +556,7 @@ init_perf_buffer (struct bpf_object * bo)
          return NULL;
     }
     pb_opts.sz = sizeof(size_t);
-    pb = perf_buffer__new(pb_map_fd, 8, print_bpf_output, NULL, NULL, &pb_opts);
+    pb = perf_buffer__new(pb_map_fd, 8, print_bpf_output, NULL, pb_ctx, &pb_opts);
     if (pb == NULL) {
          fprintf(stderr, "ERROR: perf_buffer__new failed\n");
         return NULL;
@@ -534,7 +571,9 @@ event_trace_thread (void * obj)
     struct perf_buffer * pb;
     struct bpf_link  * links[2];
     struct bpf_object * bo;
-    int    j = 0, ret;
+    int                 stackmap_fd;
+    perf_buffer_ctx_t   pb_ctx;
+    int                 j = 0, ret;
 
     bo = bpf_object__open((char *)obj);
     if (bo == NULL) {
@@ -555,6 +594,12 @@ event_trace_thread (void * obj)
             }
             j++;
     }
+    stackmap_fd = bpf_object__find_map_fd_by_name(bo, "stackmap");
+    if (stackmap_fd < 0) {
+         fprintf(stderr, "ERROR: bpf_object__find_map_fd_by_name failed\n");
+         return NULL;
+    }
+    pb_ctx.stackmap_fd = stackmap_fd;
     if (init_pid_filter(bo) < 0) {
         fprintf(stderr, "ERROR: fail to initialize pid filter\n");
         return NULL;
@@ -567,7 +612,7 @@ event_trace_thread (void * obj)
         fprintf(stderr, "ERROR: fail to initialize comm filter\n");
         return NULL;
     }
-    pb = init_perf_buffer(bo);
+    pb = init_perf_buffer(bo, &pb_ctx);
     if (pb == NULL) {
         fprintf(stderr, "ERROR: fail to initialize perf buffer\n");
         return NULL;

@@ -68,12 +68,13 @@ def validate_syscall(ctx, param, value):
 @click.option('--uid', '-u', type=int, multiple=True, help='Uid filter')
 @click.option('--comm', '-c', type=str, multiple=True, help='Command filter')
 @click.option('--list', '-l', is_flag=True, help='List all syscalls and exit')
+@click.option('--user-stack', '-U', is_flag=True, help='Collect user stack trace')
 @click.argument('syscall', nargs=-1, shell_complete=complete_syscall, callback=validate_syscall)
-def syscall_trace(output, filter, pid, uid, comm, list, syscall):
+def syscall_trace(output, filter, pid, uid, comm, list, user_stack, syscall):
     """Trace syscall"""
     global tracepoint
     with tempfile.TemporaryDirectory() as tmpdirname:
-        tracepoint = TracePoint(pid_filter=pid, uid_filter=uid, comm_filter=comm)
+        tracepoint = TracePoint(pid_filter=pid, uid_filter=uid, comm_filter=comm, ustack=user_stack)
         syscall_obj = Syscall(tracepoint)
         if filter:
             filter_f = lambda syscall,metadata,args,ret:eval(filter)
