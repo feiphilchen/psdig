@@ -2,6 +2,7 @@
 #include "string.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 struct test_struct2 {
     unsigned int xx;
@@ -66,7 +67,13 @@ main(int argc, char * argv[])
     char *             str="ssss";
     int64_t          t = -1;
     unsigned long long t12;
+    unsigned int      sleep_sec = 0;
 
+    if (argc > 1) {
+        if (strcmp(argv[1], "-s") == 0) {
+            sleep_sec = 3;
+        }
+    }
     strcpy(obj.name, str);
     u.x = 0;
     obj.x = 1;
@@ -80,6 +87,9 @@ main(int argc, char * argv[])
     uprobed_add5(obj);
 #endif
     uprobed_add6(&u, -1, "yy");
+    if (sleep_sec > 0) {
+        sleep(sleep_sec);
+    }
     return 0;
 }
 

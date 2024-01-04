@@ -45,19 +45,19 @@ class Backtrace(object):
                     if addr >= start_addr and addr < end_addr:
                         dwarf = self.get_dwarf(m.path)
                         offset = addr - start_hash[m.path]
-                        file,lineno = dwarf.addr2line(offset)
-                        if file != None:
-                            frame = f"[0x%x] {file}:{lineno} (%s+0x%x)" % (addr, m.path, offset)
+                        func,file,lineno = dwarf.addr2func(offset)
+                        if func != None:
+                            frame = f"[0x%x] {func}() at {file}:{lineno} (%s+0x%x)" % (addr, m.path, offset)
                         else:
-                            frame = "[0x%x] ?:? (%s+0x%x)" % (addr, m.path, offset)
+                            frame = "[0x%x] ?() at ?:? (%s+0x%x)" % (addr, m.path, offset)
                         resolved.append(frame)
                         frame_added = True
                         break
                 if not frame_added:
-                    frame = "[0x%x] ?:?" % addr
+                    frame = "[0x%x]" % addr
                     resolved.append(frame)
         except:
-            resolved = ["[0x%x] ?:?" % addr for addr in stack]
+            resolved = ["[0x%x]" % addr for addr in stack]
             return Stack(stack, resolved)
         return Stack(stack, resolved)
 

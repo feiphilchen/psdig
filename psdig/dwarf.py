@@ -18,6 +18,7 @@ from .conf import LOGGER_NAME
 class Dwarf(object):
     def __init__(self, filename):
         self.text_syms = None
+        self.addr_cache = {}
         self.dwarf_open(filename)
 
     def dwarf_open(self, filename):
@@ -61,6 +62,27 @@ class Dwarf(object):
             return None,None
         else:
             return result[0],int(result[1])
+
+    def addr2func(self, addr):
+        if addr in self.addr_cache:
+            return self.addr_cache[addr]
+        cmd = "addr2line -f -e %s 0x%x" % (self.sym_file, addr)
+        result = os.popen(cmd).read().splitlines()
+        func = result[0]
+        file_lineno = result[1]
+        if func == '??':
+            self.addr_cache[addr] = None,None,None
+            return None,None,None
+        result = file_lineno.split(':')
+        if len(result) != 2:
+            self.addr_cache[addr] = None,None,None
+            return None,None,None
+        if result[0] == '??':
+            self.addr_cache[addr] = None,None,None
+            return None,None,None
+        else:
+            self.addr_cache[addr] = func,result[0],int(result[1])
+            return func,result[0],int(result[1])
 
     def get_text_start(self, elffile):
         sect = elffile.get_section_by_name('.text')
