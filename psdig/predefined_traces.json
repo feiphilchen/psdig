@@ -1,7 +1,7 @@
 {
    "traces": [
       {
-         "name": "open",
+         "name": "fs:open",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_openat",
@@ -13,7 +13,7 @@
          "processor": ["psdig.file_processor.FdResolve"]
       },
       {
-         "name": "open",
+         "name": "fs:open",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_open",
@@ -25,7 +25,7 @@
 	 "arch":["x86_64"]
       },
       {
-         "name": "read",
+         "name": "fs:read",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_read",
@@ -39,7 +39,7 @@
          "processor": ["psdig.file_processor.FdResolve"]
       },
       {
-         "name": "write",
+         "name": "fs:write",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_write",
@@ -53,7 +53,7 @@
          "processor": ["psdig.file_processor.FdResolve"]
       },
       {
-         "name": "close",
+         "name": "fs:close",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_close",
@@ -67,7 +67,7 @@
          "processor": ["psdig.file_processor.FdResolve"]
       },
       {
-         "name": "unlink",
+         "name": "fs:unlink",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_unlink",
@@ -79,7 +79,7 @@
          "arch":["x86_64"]
       },
       {
-         "name": "unlink",
+         "name": "fs:unlink",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_unlinkat",
@@ -90,7 +90,7 @@
          }
       },
       {
-         "name": "truncate",
+         "name": "fs:truncate",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_truncate",
@@ -101,7 +101,7 @@
          }
       },
       {
-         "name": "chown",
+         "name": "fs:chown",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_chown",
@@ -113,7 +113,7 @@
 	 "arch":["x86_64"]
       },
       {
-         "name": "chown",
+         "name": "fs:chown",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_fchownat",
@@ -124,7 +124,7 @@
          }
       },
       {
-         "name": "chmod",
+         "name": "fs:chmod",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_chmod",
@@ -136,7 +136,7 @@
 	 "arch":["x86_64"]
       },
       {
-         "name": "chmod",
+         "name": "fs:chmod",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_fchmodat",
@@ -147,7 +147,7 @@
          }
       },
       {
-         "name": "rmdir",
+         "name": "fs:rmdir",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_rmdir",
@@ -159,7 +159,7 @@
 	 "arch":["x86_64"]
       },
       {
-         "name": "mkdir",
+         "name": "fs:mkdir",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_mkdir",
@@ -171,7 +171,7 @@
 	 "arch":["x86_64"]
       },
       {
-         "name": "mkdir",
+         "name": "fs:mkdir",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_mkdirat",
@@ -182,7 +182,7 @@
          }
       },
       {
-         "name": "symlink",
+         "name": "fs:symlink",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_symlink",
@@ -194,7 +194,7 @@
 	 "arch":["x86_64"]
       },
       {
-         "name": "symlink",
+         "name": "fs:symlink",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_symlinkat",
@@ -205,7 +205,7 @@
          }
       },
       {
-         "name": "rename",
+         "name": "fs:rename",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_rename",
@@ -217,7 +217,7 @@
 	 "arch":["x86_64"]
       },
       {
-         "name": "rename",
+         "name": "fs:rename",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_renameat",
@@ -228,7 +228,7 @@
          }
       },
       {
-         "name": "rename",
+         "name": "fs:rename",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_renameat2",
@@ -239,7 +239,7 @@
          }
       },
       {
-         "name": "mmap",
+         "name": "fs:mmap",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_mmap",
@@ -251,7 +251,7 @@
          "processor": ["psdig.file_processor.FdResolve"]
       },
       {
-         "name": "munmap",
+         "name": "fs:munmap",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_munmap",
@@ -262,7 +262,29 @@
          }
       },
       {
-         "name": "kill",
+         "name": "fs:mount",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sys_mount",
+            "level": {
+               "lambda": "'INFO' if ret == 0 else 'ERROR'"
+            },
+            "detail": "dev_name={args[dev_name]} dir_name={args[dir_name]} type={args[type]} ret={ret}"
+         }
+      },
+      {
+         "name": "fs:umount",
+         "type": "syscall",
+         "parameters": {
+            "syscall": "sys_umount",
+            "level": {
+               "lambda": "'INFO' if ret == 0 else 'ERROR'"
+            },
+            "detail": "name={args[name]} flags={args[flags]} ret={ret}"
+         }
+      },
+      {
+         "name": "process:kill",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_kill",
@@ -273,7 +295,7 @@
          }
       },
       {
-         "name": "exec",
+         "name": "process:exec",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_execve",
@@ -283,7 +305,7 @@
          }
       },
       {
-         "name": "fork",
+         "name": "process:fork",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_fork",
@@ -295,7 +317,7 @@
 	 "arch":["x86_64"]
       },
       {
-         "name": "fork",
+         "name": "process:fork",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_clone",
@@ -306,7 +328,7 @@
          }
       },
       {
-         "name": "exit",
+         "name": "process:exit",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_exit",
@@ -317,7 +339,7 @@
          }
       },
       {
-         "name": "exit",
+         "name": "process:exit",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_exit_group",
@@ -328,7 +350,7 @@
          }
       },
       {
-         "name": "setuid",
+         "name": "process:setuid",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_setuid",
@@ -339,7 +361,7 @@
          }
       },
       {
-         "name": "sethostname",
+         "name": "sys:sethostname",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_sethostname",
@@ -350,7 +372,7 @@
          }
       },
       {
-         "name": "socket",
+         "name": "socket:socket",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_socket",
@@ -360,7 +382,7 @@
          }
       },
       {
-         "name": "listen",
+         "name": "socket:listen",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_listen",
@@ -371,7 +393,7 @@
          }
       },
       {
-         "name": "connect",
+         "name": "socket:connect",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_connect",
@@ -383,7 +405,7 @@
          "processor": ["psdig.file_processor.FdResolve"]
       },
       {
-         "name": "accept",
+         "name": "socket:accept",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_accept",
@@ -396,7 +418,7 @@
 
       },
       {
-         "name": "accept",
+         "name": "socket:accept",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_accept4",
@@ -408,7 +430,7 @@
          "processor": ["psdig.file_processor.FdResolve"]
       },
       {
-         "name": "bind",
+         "name": "socket:bind",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_bind",
@@ -419,7 +441,7 @@
          }
       },
       {
-         "name": "recvmsg",
+         "name": "socket:recvmsg",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_recvmsg",
@@ -433,7 +455,7 @@
          "processor": ["psdig.file_processor.FdResolve"]
       },
       {
-         "name": "recvmsg",
+         "name": "socket:recvmsg",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_recvfrom",
@@ -444,7 +466,7 @@
          }
       },
       {
-         "name": "recvmsg",
+         "name": "socket:recvmsg",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_recvmmsg",
@@ -458,7 +480,7 @@
          "processor": ["psdig.file_processor.FdResolve"]
       },
       {
-         "name": "sendmsg",
+         "name": "socket:sendmsg",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_sendmsg",
@@ -472,7 +494,7 @@
          "processor": ["psdig.file_processor.FdResolve"]
       },
       {
-         "name": "sendmsg",
+         "name": "socket:sendmsg",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_sendto",
@@ -483,7 +505,7 @@
          }
       },
       {  
-         "name": "sendmsg",
+         "name": "socket:sendmsg",
          "type": "syscall",
          "parameters": {
             "syscall": "sys_sendmmsg",
@@ -497,29 +519,7 @@
          "processor": ["psdig.file_processor.FdResolve"]
       },
       {
-         "name": "mount",
-         "type": "syscall",
-         "parameters": {
-            "syscall": "sys_mount",
-            "level": {
-               "lambda": "'INFO' if ret == 0 else 'ERROR'"
-            },
-            "detail": "dev_name={args[dev_name]} dir_name={args[dir_name]} type={args[type]} ret={ret}"
-         }
-      },
-      {
-         "name": "umount",
-         "type": "syscall",
-         "parameters": {
-            "syscall": "sys_umount",
-            "level": {
-               "lambda": "'INFO' if ret == 0 else 'ERROR'"
-            },
-            "detail": "name={args[name]} flags={args[flags]} ret={ret}"
-         }
-      },
-      {
-         "name": "tcp-recv-rst",
+         "name": "tcp:recv-rst",
          "type": "event",
          "parameters": {
             "event": "tcp/tcp_receive_reset",
@@ -530,13 +530,70 @@
          }
       },
       {
-         "name": "tcp-send-rst",
+         "name": "tcp:send-rst",
          "type": "event",
          "parameters": {
             "event": "tcp/tcp_send_reset",
             "level": "WARNING",
             "detail": {
                "lambda": "'saddr=%s sport=%d daddr=%s dport=%d' % (inet_ntoa(args['saddr'].value), args['sport'], inet_ntoa(args['daddr'].value), args['dport'])"
+            }
+         }
+      },
+      {
+         "name": "tcp:retrans-skb",
+         "type": "event",
+         "parameters": {
+            "event": "tcp/tcp_retransmit_skb",
+            "level": "WARNING",
+            "detail": {
+               "lambda": "'saddr=%s sport=%d daddr=%s dport=%d' % (inet_ntoa(args['saddr'].value), args['sport'], inet_ntoa(args['daddr'].value), args['dport'])"
+            }
+         }
+      },
+      {
+         "name": "tcp:retrans-synack",
+         "type": "event",
+         "parameters": {
+            "event": "tcp/tcp_retransmit_synack",
+            "level": "WARNING",
+            "detail": {
+               "lambda": "'saddr=%s sport=%d daddr=%s dport=%d' % (inet_ntoa(args['saddr'].value), args['sport'], inet_ntoa(args['daddr'].value), args['dport'])"
+            }
+         }
+      },
+      {
+         "name": "bio:rq-insert",
+         "type": "event",
+         "parameters": {
+            "event": "block/block_rq_insert",
+            "level": "INFO",
+            "detail": {
+               "lambda": "'dev=%s rwbs=%s sector=%u nr_sector=%u bytes=%u' % (dev_id(args['dev']), str(args['rwbs'].decode()), args['sector'], args['nr_sector'], args['bytes'])"
+            }
+         }
+      },
+      {
+         "name": "bio:rq-issue",
+         "type": "event",
+         "parameters": {
+            "event": "block/block_rq_issue",
+            "level": "INFO",
+            "detail": {
+               "lambda": "'dev=%s rwbs=%s sector=%u nr_sector=%u bytes=%u' % (dev_id(args['dev']), str(args['rwbs'].decode()), args['sector'], args['nr_sector'], args['bytes'])"
+            }
+         }
+      },
+      {
+         "name": "bio:rq-complete",
+         "type": "event",
+         "parameters": {
+            "event": "block/block_rq_complete",
+            "level": {
+               "lambda": "'INFO' if args['error'] == 0 else 'ERROR'"
+            },
+            "detail": {
+               "lambda": "'dev=%s rwbs=%s sector=%u nr_sector=%u error=%d' % (dev_id(args['dev']), str(args['rwbs'].decode()), args['sector'], args['nr_sector'], args['error'])"
             }
          }
       }

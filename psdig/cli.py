@@ -65,7 +65,8 @@ def trace_load(stdscr, input_file, log):
             pswatch.stop()
 
 def validate_conf(ctx, param, value):
-    conf = TraceConfFile(value)
+    groups = ctx.params.get('group')
+    conf = TraceConfFile(value, groups=groups)
     error = conf.load()
     if error is not None:
         raise click.BadParameter(error)
@@ -79,8 +80,9 @@ def validate_conf(ctx, param, value):
 @click.option('--log', '-l', type=click.Path(), help='Log messages to file')
 @click.option('--template', '-t', type=click.File('r'), callback=validate_conf, help='Template file')
 @click.option('--headless', is_flag=True, help='Run without curse windows')
-def watch(pid, uid, comm, output, log, template, headless):
-    """Watch file system, network and process activity"""
+@click.option('--group', '-g', type=click.Choice(['fs', 'socket', 'sys', 'process', 'tcp', 'bio']), multiple=True, help='Include group of predefined events')
+def watch(pid, uid, comm, output, log, template, headless, group):
+    """Watch file system, network and process activities"""
     if not headless:
         wrapper(watch_start, pid, uid, comm, output, log, template)
     else:

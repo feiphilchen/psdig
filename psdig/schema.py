@@ -46,6 +46,8 @@ class EventSchema(object):
             "pid_t": "EVENT_FIELD_TYPE_UINT",
             "size_t": "EVENT_FIELD_TYPE_UINT",
             "umode_t": "EVENT_FIELD_TYPE_UINT",
+            "dev_t": "EVENT_FIELD_TYPE_UINT",
+            "sector_t": "EVENT_FIELD_TYPE_UINT",
             "char *": "EVENT_FIELD_TYPE_STR",
             "const char *": "EVENT_FIELD_TYPE_STR",
             "const char *const *": "EVENT_FIELD_TYPE_STR_LIST",

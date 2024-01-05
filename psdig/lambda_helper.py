@@ -101,3 +101,8 @@ def context_str(args):
     else:
         prefix = ""
     return prefix
+
+def dev_id(dev):
+    major = dev >> 20
+    minor = dev & ((1 <<20) - 1)
+    return f"{major},{minor}"

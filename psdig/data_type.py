@@ -111,6 +111,9 @@ class Bytes(object):
     def value(self):
         return bytes.fromhex(self.bs)
 
+    def decode(self):
+        return bytes.fromhex(self.bs).split(b'\x00',1)[0].decode('ascii').rstrip('\x00')
+
     def __eq__(self, other):
         if isinstance(other, str):
             return self.bs == other

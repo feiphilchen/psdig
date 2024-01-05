@@ -282,11 +282,13 @@ class UprobeTraceConf(TraceConf):
     
 class TraceConfFile(object):
     trace_type = ["syscall", "event", "uprobe", "uretprobe"]
-    def __init__(self, fd=None):
+    def __init__(self, fd=None, groups=None):
         if fd != None:
             self.content = fd.read()
+            self.groups = None
         else:
             self.content = self.read_default_conf()
+            self.groups = groups
         self.event = []
         self.syscall = []
         self.uprobe = []
@@ -332,6 +334,14 @@ class TraceConfFile(object):
             name = conf.get('name')
             if name == None:
                 return f"name is mandatory for trace definition\n{conf_str}"
+            if self.groups != None:
+                group_name = name.split(":", 1)
+                if len(group_name) > 1:
+                    group = group_name[0]
+                else:
+                    continue
+                if group not in self.groups:
+                    continue
             trace_arch = conf.get('arch')
             if trace_arch != None:
                 if not isinstance(trace_arch, list):
