@@ -14,14 +14,24 @@ Check into [INSTALL.md](INSTALL.md) for installation steps.
 
 ## Getting started
 
-### Watch process/system activities in real time
+### Grouped watch
+Grouped watch is to trace a number of syscalls/events/uprobes in a batch. Pre-defined trace groups are:
+ * file system
+ * socket
+ * process
+ * tcp
+ * bio
+
 #### Examples
-Traces all process/system activities and display them in a curse window
+Traces all activities and display them in a curse window
 ```
 sudo psdig watch
 ```
-
-Traces all process/system activities and print to console without GUI
+Traces only process and socket related system activities
+```
+sudo psdig watch -g process -g socket
+```
+Traces all activities and print to console without GUI
 ```
 sudo psdig watch --headless
 ```
@@ -42,6 +52,8 @@ sudo psdig watch -t trace_template.json
 ```
 
 ### Syscall/Event/Uprobe trace one-liners
+One-liner can be used to contruct your trace quickly. With filter and formatter options, you can customize output field and limit trace number. 
+
 #### Examples
 Traces all file opens 
 ```
@@ -55,12 +67,12 @@ sudo psdig trace syscall sys_openat -f "metadata['comm'] == 'systemd'" -o "{meta
 
 Traces all connections which are initiatied by self, print command, server address and latency with format specifier
 ```
-sudo psdig trace syscall sys_connect -o "lambda:'{:20s} {:30s} {:10d}'.format(metadata['comm'], args['uservaddr'], metadata['latency'])"
+sudo psdig trace syscall sys_connect -o "'{:20s} {:30s} {:10d}'.format(metadata['comm'], args['uservaddr'], metadata['latency'])"
 ```
 
-Traces all commands executed in bash , format command line arguments and print with UID
+Traces all commands executed in bash, format command line arguments and print with UID
 ```
-sudo psdig trace syscall -c bash sys_execve -o "lambda:str(metadata['uid']) + ': '+ ' '.join(args['argv'])"
+sudo psdig trace syscall -c bash sys_execve -o "str(metadata['uid']) + ': '+ ' '.join(args['argv'])"
 ```
 
 Trace functions call and return(main,uprobed_add1) in program test/uprobe_c/test_uprobe
@@ -68,9 +80,10 @@ Trace functions call and return(main,uprobed_add1) in program test/uprobe_c/test
 sudo psdig trace uprobe test/uprobe_c/test_uprobe main uprobed_add1
 ```
 
-Trace all malloc function call and return which happen in systemd and bash
+Trace all malloc/free function call and return 
 ```
-sudo psdig trace uprobe -c systemd -c bash /lib/x86_64-linux-gnu/libc.so.6 __libc_malloc
+glibc=`ldd /usr/bin/ls | grep libc.so | awk '{print $3}'` && \
+  sudo psdig trace uprobe "$glibc" malloc free
 ```
 
 ## Feedback
