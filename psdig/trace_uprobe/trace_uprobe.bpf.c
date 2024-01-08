@@ -72,7 +72,7 @@ struct bpf_map_def SEC("maps") stackmap = {
 	.type = BPF_MAP_TYPE_STACK_TRACE,
 	.key_size = sizeof(__u32),
 	.value_size = PERF_MAX_STACK_DEPTH * sizeof(__u64),
-	.max_entries = 10000,
+	.max_entries = 1000,
 };
 #define KERN_STACKID_FLAGS (0 | BPF_F_FAST_STACK_CMP)
 #define USER_STACKID_FLAGS (0 | BPF_F_FAST_STACK_CMP | BPF_F_USER_STACK | BPF_F_REUSE_STACKID)
