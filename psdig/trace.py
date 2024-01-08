@@ -92,6 +92,9 @@ def syscall_trace(output, filter, pid, uid, comm, list, user_stack, syscall):
             syscall_obj.add(s, callback, ctx)
         signal.signal(signal.SIGINT, sig_handler)
         signal.signal(signal.SIGTERM, sig_handler)
+        func_strs = ','.join([f"{func}()" for func in syscall])
+        message_print("psdig: tracing %s\n" % func_strs)
+        message_print("pressing Ctrl + C to stop ...\n")
         tracepoint.start(obj_dir=tmpdirname)
 
 default_event_fmt="time_str(metadata['timestamp']) + ' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + f' {event}: ' + ','.join([f'{k}={v}' for k,v in args.items()])"
