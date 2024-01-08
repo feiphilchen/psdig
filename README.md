@@ -55,22 +55,22 @@ sudo psdig watch -t trace_template.json
 One-liner can be used to contruct your trace quickly. With filter and formatter options, you can customize output field and limit trace number. 
 
 #### Examples
-Traces all file opens 
+Trace all file opens 
 ```
 sudo psdig trace syscall sys_openat
 ```
 
-Traces all file opens happens in systemd, print command, pid, filename to console
+Trace commands which are openning files under /proc
 ```
-sudo psdig trace syscall sys_openat -f "metadata['comm'] == 'systemd'" -o "{metadata[comm]}({metadata[pid]}) {args[filename]}"
+sudo psdig trace syscall sys_openat -f "args['filename'].startswith('/proc/')" -o "metadata['comm'] + ':' + args['filename']"
 ```
 
-Traces all connections which are initiatied by self, print command, server address and latency with format specifier
+Trace all connections which are initiatied by self, print command, server address and latency with format specifier
 ```
 sudo psdig trace syscall sys_connect -o "'{:20s} {:30s} {:10d}'.format(metadata['comm'], args['uservaddr'], metadata['latency'])"
 ```
 
-Traces all commands executed in bash, format command line arguments and print with UID
+Trace all commands executed in bash, format command line arguments and print with UID
 ```
 sudo psdig trace syscall -c bash sys_execve -o "str(metadata['uid']) + ': '+ ' '.join(args['argv'])"
 ```
