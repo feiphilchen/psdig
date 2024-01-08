@@ -16,6 +16,7 @@ import tempfile
 import signal
 
 pswatch=None
+watch_groups = ['fs', 'socket', 'sys', 'process', 'tcp', 'bio']
 
 def watch_interrupt(sig, frame):
     pswatch.stop()
@@ -64,12 +65,24 @@ def trace_load(stdscr, input_file, log):
         finally:
             pswatch.stop()
 
+def message_print(msg):
+    sys.stderr.write(msg)
+
 def validate_conf(ctx, param, value):
     groups = ctx.params.get('group')
+    headless = ctx.params.get('headless')
     conf = TraceConfFile(value, groups=groups)
     error = conf.load()
     if error is not None:
         raise click.BadParameter(error)
+    if headless:
+        if value != None:
+            message_print("watching events/syscalls from template\n")
+        elif groups != None:
+            message_print("watching groups - %s\n" % ",".join(groups))
+        else:
+            message_print("watching groups - %s\n" % ",".join(watch_groups))
+        message_print("pressing Ctrl + C to stop ...\n")
     return conf
 
 @click.command()
@@ -80,7 +93,7 @@ def validate_conf(ctx, param, value):
 @click.option('--log', '-l', type=click.Path(), help='Log messages to file')
 @click.option('--template', '-t', type=click.File('r'), callback=validate_conf, help='Template file')
 @click.option('--headless', is_flag=True, help='Run without curse windows')
-@click.option('--group', '-g', type=click.Choice(['fs', 'socket', 'sys', 'process', 'tcp', 'bio']), multiple=True, help='Include group of predefined events')
+@click.option('--group', '-g', type=click.Choice(watch_groups), multiple=True, help='Include group of predefined events')
 def watch(pid, uid, comm, output, log, template, headless, group):
     """Watch file system, network and process activities"""
     if not headless:
