@@ -56,7 +56,7 @@ class Dwarf(object):
         cmd = "addr2line -e %s 0x%x" % (self.sym_file, addr)
         result = os.popen(cmd).read()
         result = result.split(':')
-        if len(result) != 2:
+        if len(result) != 2 or not result[1].isdigit():
             return None,None
         if result[0] == '??':
             return None,None
