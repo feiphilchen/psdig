@@ -25,7 +25,7 @@ def sig_handler(sig, frame):
 def message_print(msg):
     sys.stderr.write(msg)
 
-default_syscall_fmt="lambda:time_str(metadata['timestamp']) + ' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + syscall_format(syscall, args, ret, metadata)"
+default_syscall_fmt="time_str(metadata['timestamp']) + ' %s(%s): '%(metadata.get('comm'), metadata.get('pid')) + syscall_format(syscall, args, ret, metadata)"
 def syscall_print_fmt(syscall, metadata, args, ret, ctx):
     fmt,filter_f = ctx
     if filter_f:
@@ -80,14 +80,10 @@ def syscall_trace(output, filter, pid, uid, comm, list, user_stack, syscall):
             filter_f = lambda syscall,metadata,args,ret:eval(filter)
         else:
             filter_f = None
-        if output.strip().startswith('lambda:'):
-            lambda_str = output.split(':', 1)[1]
-            lambda_f = lambda syscall,metadata,args,ret:eval(lambda_str)
-            ctx = lambda_f,filter_f
-            callback = syscall_print_lambda
-        else:
-            ctx = output,filter_f
-            callback = syscall_print_fmt
+        lambda_str = output
+        lambda_f = lambda syscall,metadata,args,ret:eval(lambda_str)
+        ctx = lambda_f,filter_f
+        callback = syscall_print_lambda
         for s in syscall:
             syscall_obj.add(s, callback, ctx)
         signal.signal(signal.SIGINT, sig_handler)

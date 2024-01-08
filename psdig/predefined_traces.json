@@ -361,17 +361,6 @@
          }
       },
       {
-         "name": "sys:sethostname",
-         "type": "syscall",
-         "parameters": {
-            "syscall": "sys_sethostname",
-            "level": {
-               "lambda": "'INFO' if ret >= 0 else 'ERROR'"
-            },
-            "detail": "hostname={args[name]} ret={ret}"
-         }
-      },
-      {
          "name": "socket:socket",
          "type": "syscall",
          "parameters": {

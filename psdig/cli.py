@@ -16,7 +16,7 @@ import tempfile
 import signal
 
 pswatch=None
-watch_groups = ['fs', 'socket', 'sys', 'process', 'tcp', 'bio']
+watch_groups = ['fs', 'socket', 'process', 'tcp', 'bio']
 
 def watch_interrupt(sig, frame):
     pswatch.stop()
