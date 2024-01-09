@@ -54,7 +54,7 @@ class Dwarf(object):
 
     def addr2line(self, addr):
         cmd = "addr2line -e %s 0x%x" % (self.sym_file, addr)
-        result = os.popen(cmd).read()
+        result = os.popen(cmd).read().strip()
         result = result.split(':')
         if len(result) != 2 or not result[1].isdigit():
             return None,None
@@ -110,12 +110,18 @@ class Dwarf(object):
                     return path
         return None
 
+    def get_die_by_refaddr(self, cu, attr):
+        if attr.form in ['DW_FORM_ref1', 'DW_FORM_ref2', 'DW_FORM_ref4', 'DW_FORM_ref8', 'DW_FORM_ref_udata']:
+            return cu.get_DIE_from_refaddr(cu.cu_offset + attr.value)
+        else:
+            return cu.dwarfinfo.get_DIE_from_refaddr(attr.value)
+
     def parse_var_type(self, cu, dietype):
         if dietype.tag == "DW_TAG_pointer_type":
             size = dietype.attributes.get('DW_AT_byte_size').value
             type_list = [{"type": "ptr", "size": size}]
             if 'DW_AT_type' in dietype.attributes:
-                parent_dietype = cu.get_DIE_from_refaddr(cu.cu_offset + dietype.attributes["DW_AT_type"].value)
+                parent_dietype = self.get_die_by_refaddr(cu, dietype.attributes["DW_AT_type"])
                 parent_type_list = self.parse_var_type(cu, parent_dietype)
                 return type_list + parent_type_list
             else:
@@ -156,25 +162,25 @@ class Dwarf(object):
                 type_list = [{"type": "class", "size": size}]
             return type_list
         elif dietype.tag == "DW_TAG_typedef":
-            typedef_dietype = cu.get_DIE_from_refaddr(cu.cu_offset + dietype.attributes["DW_AT_type"].value)
+            typedef_dietype = self.get_die_by_refaddr(cu, dietype.attributes["DW_AT_type"])
             return self.parse_var_type(cu, typedef_dietype)
         elif dietype.tag == "DW_TAG_const_type":
             if "DW_AT_type" in dietype.attributes:
-                const_dietype = cu.get_DIE_from_refaddr(cu.cu_offset + dietype.attributes["DW_AT_type"].value)
+                const_dietype = self.get_die_by_refaddr(cu, dietype.attributes["DW_AT_type"])
                 return self.parse_var_type(cu, const_dietype)
             else:
                 return [{"type": "const", "size": 1}]
         elif dietype.tag == "DW_TAG_subroutine_type":
             if "DW_AT_type" in dietype.attributes:
-                subrouting_dietype = cu.get_DIE_from_refaddr(cu.cu_offset + dietype.attributes["DW_AT_type"].value)
+                subrouting_dietype = self.get_die_by_refaddr(cu, dietype.attributes["DW_AT_type"])
                 return self.parse_var_type(cu, subrouting_dietype)
             else:
                 return [{"type": "subrouting", "size": 1}]
         elif dietype.tag == "DW_TAG_array_type":
-            array_dietype = cu.get_DIE_from_refaddr(cu.cu_offset + dietype.attributes["DW_AT_type"].value)
+            array_dietype = self.get_die_by_refaddr(cu, dietype.attributes["DW_AT_type"])
             return self.parse_var_type(cu, array_dietype)
         elif dietype.tag == "DW_TAG_volatile_type":
-            vol_dietype = cu.get_DIE_from_refaddr(cu.cu_offset + dietype.attributes["DW_AT_type"].value)
+            vol_dietype = self.get_die_by_refaddr(cu, dietype.attributes["DW_AT_type"])
             return self.parse_var_type(cu, vol_dietype)
 
     def resolve_args(self, cu, die):
@@ -188,7 +194,7 @@ class Dwarf(object):
                     arg['name'] = name.value.decode()
                 if "DW_AT_type" not in child.attributes:
                     continue
-                dietype = cu.get_DIE_from_refaddr(cu.cu_offset + child.attributes["DW_AT_type"].value)
+                dietype = self.get_die_by_refaddr(cu, child.attributes["DW_AT_type"])
                 argtype = self.parse_var_type(cu, dietype)
                 arg['type'] = argtype
                 args.append(arg)
@@ -199,13 +205,13 @@ class Dwarf(object):
             return []
         cu  = die.cu
         offset = cu.cu_offset + die.attributes["DW_AT_type"].value
-        dietype = cu.get_DIE_from_refaddr(offset)
+        dietype = self.get_die_by_refaddr(cu, die.attributes["DW_AT_type"])
         type_list = self.parse_var_type(cu, dietype)
         return type_list
 
     def resolve_abstract_origin_addr(self, cu, die):
         if die.attributes.get('DW_AT_sibling') != None:
-            next_sibling = cu.get_DIE_from_refaddr(cu.cu_offset + die.attributes.get('DW_AT_sibling').value)
+            next_sibling = self.get_die_by_refaddr(cu, die.attributes.get('DW_AT_sibling'))
             if next_sibling.attributes.get('DW_AT_abstract_origin') != None:
                 origin_value = next_sibling.attributes.get('DW_AT_abstract_origin').value
                 if origin_value == die.offset:
@@ -234,14 +240,7 @@ class Dwarf(object):
         return result
 
     def get_origin(self, cu, origin):
-        try:
-            return cu.get_DIE_from_refaddr(cu.cu_offset + origin.value)
-        except:
-            try:
-                return self.dwarfinfo.get_DIE_from_refaddr(origin.value)
-            except:
-                return None
-        return None
+        return self.get_die_by_refaddr(cu, origin)
 
     def get_function_name(self, cu, die):
         origin = die.attributes.get('DW_AT_abstract_origin')
@@ -257,7 +256,7 @@ class Dwarf(object):
         spec = die.attributes.get('DW_AT_specification')
         if spec == None:
             return None,None,None
-        spec_die = cu.get_DIE_from_refaddr(cu.cu_offset + spec.value)
+        spec_die = self.get_die_by_refaddr(cu, spec)
         if spec_die == None:
             return None,None,None
         die_name = spec_die.attributes.get('DW_AT_name')
