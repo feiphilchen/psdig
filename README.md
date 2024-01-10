@@ -1,10 +1,12 @@
 <p align="center"><img src="https://github.com/feiphilchen/psdig/blob/main/images/logo.png"></p>
-psdig is a tool to watch and analyze process behaviors with ebpf trace. It aims to automate your trace collection and analysis with python so it does not require your ebpf code and bcc tools. Currently, it supports syscall/tracepoint/uprobe events and provides different ways to collect traces for your needs of troubleshooting, security and performance analysis.
+psdig is a dynamic tracing tool to watch and analyze process behaviors with ebpf. It aims to automate your trace collection and analysis with python so it does not require your ebpf code and bcc tools. Currently, it supports syscall/tracepoint/uprobe events and provides different ways to collect traces for your needs of troubleshooting, security and performance analysis.
 
 ## Features
-* Collect and show process activities in a curse window with filtering, statistics and customized format. Trace can be saved into a file or loaded for later analysis.
-* Watch your interested events(syscall/tracepoint/uprobe) by defining a custom template with filters and detail formats.
-* One-liner syscall/event/uprobe trace with specified format or lambda function. c/cpp functions can be resolved with demangled name,arguments and return value.
+* **Grouped watch**: trace a number of syscalls/events/uprobes in a batch and display them in curses window with filtering, statistics and customized format. Trace can be saved into a file or loaded for later analysis.
+* **One-liner trace** with customized filter and format. Filter and formatter are easily defined with python lambda syntax. For uprobe, c/cpp functions are resolved with demangled name,arguments and return value automatically. One liner trace includes:
+    * syscall tracer
+    * event tracer
+    * uprobe tracer
 
 ![demo](images/demo.gif)
 
@@ -23,7 +25,7 @@ Grouped watch is to trace a number of syscalls/events/uprobes in a batch. Pre-de
  * bio
 
 #### Examples
-Traces all activities and display them in a curse window
+Traces all activities and display them in curses window
 ```
 sudo psdig watch
 ```
@@ -36,12 +38,12 @@ Traces all activities and print to console without GUI
 sudo psdig watch --headless
 ```
 
-Traces systemd and bash activities, display in curse window and save to file trace.db
+Traces systemd and bash activities, save to file trace.db
 ```
 sudo psdig watch -c systemd -c bash -o trace.db
 ```
 
-Load from file trace.db and display in curse window
+Load from traces from file trace.db and display in curses window
 ```
 sudo psdig load trace.db
 ```
