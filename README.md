@@ -3,7 +3,7 @@ psdig is a dynamic tracing tool to watch and analyze process behaviors with ebpf
 
 ## Features
 * **Grouped watch**: trace a number of syscalls/events/uprobes in a batch and display them in curses window with filtering, statistics and customized format. Trace can be saved into a file or loaded for later analysis.
-* **One-liner trace** with customized filter and format. Filter and formatter are easily defined with python lambda syntax. For uprobe, c/cpp functions are resolved with demangled name,arguments and return value automatically. One liner trace includes:
+* **One-liner trace**: trace quickly with customized filter and format. Filter and formatter are easily defined with python lambda syntax. For uprobe, c/cpp functions are resolved with demangled name,arguments and return value automatically. One liner trace includes:
     * syscall tracer
     * event tracer
     * uprobe tracer
@@ -87,6 +87,9 @@ Trace all malloc/free function call and return
 glibc=`ldd /usr/bin/ls | grep libc.so | awk '{print $3}'` && \
   sudo psdig trace uprobe "$glibc" malloc free
 ```
+
+## Tutorial
+See [Tutorial.md](doc/tutorial.md) for more usage information.
 
 ## Feedback
 Request new feature or file bug on:
